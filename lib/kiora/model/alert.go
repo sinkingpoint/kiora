@@ -81,7 +81,7 @@ func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
 
 	a.Status = deserializeStatusFromProto(proto.Status())
 
-	a.StartTime = time.UnixMilli(proto.StartTime())
+	a.StartTime = time.UnixMilli(proto.StartTime()).UTC()
 
 	endTime := proto.EndTime()
 	if endTime > 0 {

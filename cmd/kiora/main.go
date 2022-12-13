@@ -5,6 +5,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
 	"github.com/sinkingpoint/kiora/internal/server"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
 var CLI struct {
@@ -23,7 +24,7 @@ func main() {
 	serverConfig := server.NewServerConfig()
 	serverConfig.ListenAddress = CLI.ListenAddress
 
-	server := server.NewKioraServer(serverConfig)
+	server := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
 	if err := server.ListenAndServe(); err != nil {
 		log.Err(err).Msg("failed to listen and serve")
 	}

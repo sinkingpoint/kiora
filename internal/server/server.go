@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sinkingpoint/kiora/internal/server/apiv1"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
 // TLSPair is a pair of paths representing the path to a certificate and private key.
@@ -44,17 +46,21 @@ func NewServerConfig() serverConfig {
 // KioraServer is a server that serves the main Kiora API.
 type KioraServer struct {
 	serverConfig
+	db kioradb.DB
 }
 
-func NewKioraServer(conf serverConfig) *KioraServer {
+func NewKioraServer(conf serverConfig, db kioradb.DB) *KioraServer {
 	return &KioraServer{
 		serverConfig: conf,
+		db:           db,
 	}
 }
 
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
 func (k *KioraServer) ListenAndServe() error {
 	r := mux.NewRouter()
+
+	apiv1.Register(r, k.db)
 
 	server := http.Server{
 		Addr:         k.ListenAddress,
