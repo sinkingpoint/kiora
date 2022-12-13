@@ -4,6 +4,10 @@ using Go = import "/go.capnp";
 $Go.package("kioraproto");
 $Go.import("internal/dto/kioraproto");
 
+struct Alerts {
+  alerts @0 :List(Alert);
+}
+
 # An alert is the raw data in Kiora - something went wrong,
 # and we might need to tell people about it.
 struct Alert {
