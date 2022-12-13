@@ -10,4 +10,7 @@ import (
 type DB interface {
 	// ProcessAlerts takes alerts and processes them, adding new ones and resolving old ones.
 	ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
+
+	// GetAlerts gets all the alerts currently in the database.
+	GetAlerts(ctx context.Context) ([]model.Alert, error)
 }

@@ -29,6 +29,10 @@ func (m *mockDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 	return nil
 }
 
+func (m *mockDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
+	return m.alerts, nil
+}
+
 func TestPostAlerts(t *testing.T) {
 	// Construct a referenceTime that is used for each alert, and is expected to be found in the db.
 	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
