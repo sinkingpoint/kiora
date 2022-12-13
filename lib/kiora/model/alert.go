@@ -42,7 +42,7 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 // be ascertained by Kiora through interactions with other models (e.g. silences).
 type Alert struct {
 	// Labels defines the metadata on the alert that is used for deduplication purposes.
-	Labels map[string]string
+	Labels Labels
 
 	// Annotations defines them metadata on the alert that _isn't_ used for deduplication. This can be links etc.
 	Annotations map[string]string

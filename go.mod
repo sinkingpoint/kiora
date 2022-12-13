@@ -6,6 +6,7 @@ require (
 	capnproto.org/go/capnp/v3 v3.0.0-alpha.12
 	github.com/alecthomas/kong v0.7.1
 	github.com/awalterschulze/gographviz v2.0.3+incompatible
+	github.com/cespare/xxhash v1.1.0
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/raft v1.3.11
 	github.com/rs/zerolog v1.28.0
