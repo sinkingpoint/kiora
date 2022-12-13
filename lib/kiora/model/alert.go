@@ -42,22 +42,22 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 // be ascertained by Kiora through interactions with other models (e.g. silences).
 type Alert struct {
 	// Labels defines the metadata on the alert that is used for deduplication purposes.
-	Labels Labels
+	Labels Labels `json:"labels"`
 
 	// Annotations defines them metadata on the alert that _isn't_ used for deduplication. This can be links etc.
-	Annotations map[string]string
+	Annotations map[string]string `json:"annotations"`
 
 	// Status is the status of the alert in the system.
-	Status AlertStatus
+	Status AlertStatus `json:"status"`
 
 	// StartTime is when the alert first started firing.
-	StartTime time.Time
+	StartTime time.Time `json:"startTime"`
 
 	// TimeOutDeadline is when the alert should be marked as timed out, assuming no further messages come in.
-	TimeOutDeadline time.Time
+	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
 }
 
-// DeserializeFromProto creates a model.Alert from a proto aler
+// DeserializeFromProto creates a model.Alert from a proto alert
 func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
 	labelsProto, err := proto.Labels()
 	if err != nil {
