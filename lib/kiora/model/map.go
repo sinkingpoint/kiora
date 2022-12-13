@@ -16,9 +16,9 @@ func (s Labels) Hash() LabelsHash {
 	hash := xxhash.New()
 
 	for k, v := range s {
-		hash.Sum([]byte(k))
-		hash.Sum(hashSep)
-		hash.Sum([]byte(v))
+		hash.Write([]byte(k))
+		hash.Write(hashSep)
+		hash.Write([]byte(v))
 	}
 
 	return hash.Sum64()

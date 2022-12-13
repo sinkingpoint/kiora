@@ -21,15 +21,6 @@ func NewInMemoryDB() *inMemoryDB {
 
 func (i *inMemoryDB) processAlert(alert model.Alert) {
 	labelsHash := alert.Labels.Hash()
-
-	// The only thing we change on incoming alerts is to extend the start time back
-	// if we have one before its start time.
-	if existingAlert, hasAlert := i.alerts[labelsHash]; hasAlert {
-		if existingAlert.StartTime.Before(alert.StartTime) {
-			alert.StartTime = existingAlert.StartTime
-		}
-	}
-
 	i.alerts[labelsHash] = alert
 }
 
