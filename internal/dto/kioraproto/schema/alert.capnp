@@ -1,8 +1,8 @@
 using Go = import "/go.capnp";
 @0xbca48e54c9238692;
 
-$Go.package("dto");
-$Go.import("internal/dto");
+$Go.package("kioraproto");
+$Go.import("internal/dto/kioraproto");
 
 # An alert is the raw data in Kiora - something went wrong,
 # and we might need to tell people about it.
