@@ -24,6 +24,16 @@ type raftConfig struct {
 	Bootstrap         bool
 }
 
+func NewRaftConfig(localID string) raftConfig {
+	return raftConfig{
+		LocalID:           localID,
+		LocalAddress:      "localhost:4279",
+		DataDir:           "./kiora/data",
+		SnapshotRetention: 3,
+		Bootstrap:         true,
+	}
+}
+
 func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker) (*raft.Raft, error) {
 	c := raft.DefaultConfig()
 	c.LocalID = raft.ServerID(config.LocalID)
