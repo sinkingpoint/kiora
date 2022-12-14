@@ -1,6 +1,6 @@
 # Proto
 
-Cap'n Proto / Protobuf is hard, so this folder structure attempts to keep it somewhat contained. Here, we define structures that are used for both Prometheus (or other alerting clients) -> Kiora, and Kiora -> Kiora (via raft) communication. As such, it doesn't contain any _operational state_, e.g. Alerts don't have whether or not they are silenced in them - that's something that Kiora works out for itself.
+Cap'n Proto is hard, so this folder structure attempts to keep it somewhat contained. Here, we define structures that are used for both Prometheus (or other alerting clients) -> Kiora, and Kiora -> Kiora (via raft) communication. As such, it doesn't contain any _operational state_, e.g. Alerts don't have whether or not they are silenced in them - that's something that Kiora works out for itself.
 
 ## Generation
 
