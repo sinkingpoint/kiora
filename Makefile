@@ -33,3 +33,7 @@ $(PROTO_OUTPUTS): $(PROTO_TARGETS)
 
 .PHONY: generate
 generate: $(PROTO_OUTPUTS)
+
+.PHONY: generate-clean
+generate-clean:
+	rm $(PROTO_OUTPUTS)
