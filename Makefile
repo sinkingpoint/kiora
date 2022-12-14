@@ -26,7 +26,7 @@ build-unchecked:
 	go build -o ./artifacts/kiora ./cmd/kiora
 
 run: build
-	./artifacts/kiora
+	./artifacts/kiora -c ./testdata/kiora.dot --raft.data-dir artifacts/kiora-raft-data
 
 PROTO_TARGETS = $(wildcard internal/dto/kioraproto/schema/*.capnp)
 PROTO_OUTPUTS = $(patsubst internal/dto/kioraproto/schema/%.capnp,internal/dto/kioraproto/%.capnp.go,$(PROTO_TARGETS))

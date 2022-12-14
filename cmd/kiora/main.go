@@ -13,7 +13,8 @@ import (
 
 var CLI struct {
 	ListenAddress string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
-	ConfigFile    string `name:"config.file" help:"the config file to load config from" default:"./kiora.toml"`
+	ConfigFile    string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
+	RaftDataDir   string `name:"raft.data-dir" help:"the directory to put database state in" default:"./kiora/data"`
 }
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 	serverConfig.ListenAddress = CLI.ListenAddress
 
 	config := raft.NewRaftConfig("local")
+	config.DataDir = CLI.RaftDataDir
 	stateMachine := raft.NewAlertTracker(kioradb.NewInMemoryDB())
 	_, err = raft.NewRaft(context.Background(), config, stateMachine)
 	if err != nil {

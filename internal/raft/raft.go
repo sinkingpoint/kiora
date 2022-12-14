@@ -38,6 +38,9 @@ func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker)
 	c := raft.DefaultConfig()
 	c.LocalID = raft.ServerID(config.LocalID)
 	baseDir := filepath.Join(config.DataDir, config.LocalID)
+	if err := os.MkdirAll(baseDir, 0o700); err != nil {
+		return nil, err
+	}
 
 	logDBPath := filepath.Join(baseDir, LOGDB_FILE_NAME)
 	logDB, err := boltdb.NewBoltStore(logDBPath)
