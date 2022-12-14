@@ -18,6 +18,12 @@ const (
 	// AlertStatusFiring marks alerts that are currently active.
 	AlertStatusFiring AlertStatus = "firing"
 
+	// AlertStatusProcessing marks alerts that have been accepted, but aren't active for whatever reason.
+	AlertStatusProcessing AlertStatus = "processing"
+
+	// AlertStatusAcked marks alerts that are firing, but have been acknowledged by a human.
+	AlertStatusAcked AlertStatus = "acked"
+
 	// AlertStatusResolved marks alerts that were firing but have now been resolved.
 	AlertStatusResolved AlertStatus = "resolved"
 
