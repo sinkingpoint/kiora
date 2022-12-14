@@ -4,7 +4,7 @@ using Go = import "/go.capnp";
 $Go.package("kioraproto");
 $Go.import("internal/dto/kioraproto");
 
-struct Alerts {
+struct PostAlertsRequest {
   alerts @0 :List(Alert);
 }
 

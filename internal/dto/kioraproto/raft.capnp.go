@@ -91,12 +91,12 @@ func (s RaftLog_log) Message() *capnp.Message {
 func (s RaftLog_log) Segment() *capnp.Segment {
 	return capnp.Struct(s).Segment()
 }
-func (s RaftLog_log) Alerts() (Alerts, error) {
+func (s RaftLog_log) Alerts() (PostAlertsRequest, error) {
 	if capnp.Struct(s).Uint16(0) != 0 {
 		panic("Which() != alerts")
 	}
 	p, err := capnp.Struct(s).Ptr(0)
-	return Alerts(p.Struct()), err
+	return PostAlertsRequest(p.Struct()), err
 }
 
 func (s RaftLog_log) HasAlerts() bool {
@@ -106,29 +106,29 @@ func (s RaftLog_log) HasAlerts() bool {
 	return capnp.Struct(s).HasPtr(0)
 }
 
-func (s RaftLog_log) SetAlerts(v Alerts) error {
+func (s RaftLog_log) SetAlerts(v PostAlertsRequest) error {
 	capnp.Struct(s).SetUint16(0, 0)
 	return capnp.Struct(s).SetPtr(0, capnp.Struct(v).ToPtr())
 }
 
 // NewAlerts sets the alerts field to a newly
-// allocated Alerts struct, preferring placement in s's segment.
-func (s RaftLog_log) NewAlerts() (Alerts, error) {
+// allocated PostAlertsRequest struct, preferring placement in s's segment.
+func (s RaftLog_log) NewAlerts() (PostAlertsRequest, error) {
 	capnp.Struct(s).SetUint16(0, 0)
-	ss, err := NewAlerts(capnp.Struct(s).Segment())
+	ss, err := NewPostAlertsRequest(capnp.Struct(s).Segment())
 	if err != nil {
-		return Alerts{}, err
+		return PostAlertsRequest{}, err
 	}
 	err = capnp.Struct(s).SetPtr(0, capnp.Struct(ss).ToPtr())
 	return ss, err
 }
 
-func (s RaftLog_log) Silences() (Silences, error) {
+func (s RaftLog_log) Silences() (PostSilencesRequest, error) {
 	if capnp.Struct(s).Uint16(0) != 1 {
 		panic("Which() != silences")
 	}
 	p, err := capnp.Struct(s).Ptr(0)
-	return Silences(p.Struct()), err
+	return PostSilencesRequest(p.Struct()), err
 }
 
 func (s RaftLog_log) HasSilences() bool {
@@ -138,18 +138,18 @@ func (s RaftLog_log) HasSilences() bool {
 	return capnp.Struct(s).HasPtr(0)
 }
 
-func (s RaftLog_log) SetSilences(v Silences) error {
+func (s RaftLog_log) SetSilences(v PostSilencesRequest) error {
 	capnp.Struct(s).SetUint16(0, 1)
 	return capnp.Struct(s).SetPtr(0, capnp.Struct(v).ToPtr())
 }
 
 // NewSilences sets the silences field to a newly
-// allocated Silences struct, preferring placement in s's segment.
-func (s RaftLog_log) NewSilences() (Silences, error) {
+// allocated PostSilencesRequest struct, preferring placement in s's segment.
+func (s RaftLog_log) NewSilences() (PostSilencesRequest, error) {
 	capnp.Struct(s).SetUint16(0, 1)
-	ss, err := NewSilences(capnp.Struct(s).Segment())
+	ss, err := NewPostSilencesRequest(capnp.Struct(s).Segment())
 	if err != nil {
-		return Silences{}, err
+		return PostSilencesRequest{}, err
 	}
 	err = capnp.Struct(s).SetPtr(0, capnp.Struct(ss).ToPtr())
 	return ss, err
@@ -180,11 +180,11 @@ func (f RaftLog_log_Future) Struct() (RaftLog_log, error) {
 	p, err := f.Future.Ptr()
 	return RaftLog_log(p.Struct()), err
 }
-func (p RaftLog_log_Future) Alerts() Alerts_Future {
-	return Alerts_Future{Future: p.Future.Field(0, nil)}
+func (p RaftLog_log_Future) Alerts() PostAlertsRequest_Future {
+	return PostAlertsRequest_Future{Future: p.Future.Field(0, nil)}
 }
-func (p RaftLog_log_Future) Silences() Silences_Future {
-	return Silences_Future{Future: p.Future.Field(0, nil)}
+func (p RaftLog_log_Future) Silences() PostSilencesRequest_Future {
+	return PostSilencesRequest_Future{Future: p.Future.Field(0, nil)}
 }
 
 const schema_efede801da2b560c = "x\xda\x12\xb8\xed\xc0b\xc8\xab\xcf\xca\xc0\x14h\xc3\xca" +
@@ -198,11 +198,11 @@ const schema_efede801da2b560c = "x\xda\x12\xb8\xed\xc0b\xc8\xab\xcf\xca\xc0\x14h
 	"?\x0b#\x03\x83\xa0\xa6\x15\x03C\xa0\x0a3c\xa0\x01" +
 	"\x13#/\xe3\xbf\xff\"\x8c Q]/\x06\x86@\x1d" +
 	"f\xc6@\x0b&F\xfb\xc4\x9c\xd4\xa2\x92bF\x81\xff" +
-	"\x12\xec\xc7\xbc,\xab\x8e\x7ff``d\x14``\xfc" +
-	"_\x9c\x99\x93\x9a\x97\x9cZ\xcc\xc0\xc0\xc0(\xf0?\xa1" +
-	"\xfc\xf8\x8c\x1b\x19o&\xc0d1lg\xceO\x0f`" +
-	"d\x0cdaf\x01)A\xf8Z\x90W\x89\x81\x89=" +
-	"'?\x1d\x10\x00\x00\xff\xff9\x9bTY"
+	"q\xaf&\xfd~\xdb\xb0o*\x03\x03#\xa3\x00\x03\xe3" +
+	"\xff\xe2\xcc\x9c\xd4\xbc\xe4\xd4b\x06\x06\x06F\x81\xff\x8b" +
+	"U\xc5=\xa6O2\x9c\x09\x93\xc5\xb0\x9d9?=\x80" +
+	"\x911\x90\x85\x99\x05\xa4\x04\xe1kA^%\x06&\xf6" +
+	"\x9c\xfct@\x00\x00\x00\xff\xff\x81\x8eTz"
 
 func init() {
 	schemas.Register(schema_efede801da2b560c,

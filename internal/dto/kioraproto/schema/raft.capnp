@@ -9,7 +9,7 @@ $Go.import("internal/dto/kioraproto");
 # A message that is replicated around the Raft cluster
 struct RaftLog {
     log :union {
-        alerts @0 :Alert.Alerts;
-        silences @1 :Silence.Silences;
+        alerts @0 :Alert.PostAlertsRequest;
+        silences @1 :Silence.PostSilencesRequest;
     }
 }

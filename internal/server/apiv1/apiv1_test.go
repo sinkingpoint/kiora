@@ -42,7 +42,7 @@ func TestPostAlerts(t *testing.T) {
 	arena := capnp.SingleSegment(nil)
 	msg, seg, err := capnp.NewMessage(arena)
 	require.NoError(t, err)
-	alert, err := kioraproto.NewRootAlerts(seg)
+	alert, err := kioraproto.NewRootPostAlertsRequest(seg)
 	require.NoError(t, err)
 	alerts, err := kioraproto.NewAlert_List(seg, 1)
 	require.NoError(t, err)

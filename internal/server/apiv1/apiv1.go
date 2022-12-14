@@ -58,7 +58,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		rootAlerts, err := kioraproto.ReadRootAlerts(msg)
+		rootAlerts, err := kioraproto.ReadRootPostAlertsRequest(msg)
 		if err != nil {
 			http.Error(w, "failed to decode body", http.StatusBadRequest)
 			return

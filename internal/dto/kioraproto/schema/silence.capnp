@@ -4,7 +4,7 @@ using Go = import "/go.capnp";
 $Go.package("kioraproto");
 $Go.import("internal/dto/kioraproto");
 
-struct Silences {
+struct PostSilencesRequest {
     silences @0 :List(Silence);
 }
 
