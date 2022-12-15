@@ -30,14 +30,14 @@ func main() {
 
 	config := raft.NewRaftConfig("local")
 	config.DataDir = CLI.RaftDataDir
-	stateMachine := raft.NewAlertTracker(kioradb.NewInMemoryDB())
-	_, err = raft.NewRaft(context.Background(), config, stateMachine)
+	config.Bootstrap = false
+	db, err := raft.NewRaftDB(context.Background(), config, kioradb.NewInMemoryDB())
 	if err != nil {
 		log.Err(err).Msg("failed to initialize raft")
 		return
 	}
 
-	server := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
+	server := server.NewKioraServer(serverConfig, db)
 	if err := server.ListenAndServe(); err != nil {
 		log.Err(err).Msg("failed to listen and serve")
 	}

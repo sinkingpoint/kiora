@@ -43,6 +43,17 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 	}
 }
 
+func (a *AlertStatus) MapToProto() kioraproto.AlertStatus {
+	switch *a {
+	case AlertStatusResolved:
+		fallthrough
+	case AlertStatusTimedOut:
+		return kioraproto.AlertStatus_resolved
+	default:
+		return kioraproto.AlertStatus_firing
+	}
+}
+
 // Alert is the _operational state_ of the alert. As opposed to the protobuf structs
 // that are the values being transmitted, this struct contains all the state that might
 // be ascertained by Kiora through interactions with other models (e.g. silences).
