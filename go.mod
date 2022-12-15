@@ -3,7 +3,6 @@ module github.com/sinkingpoint/kiora
 go 1.18
 
 require (
-	capnproto.org/go/capnp/v3 v3.0.0-alpha.12
 	github.com/Jille/raft-grpc-transport v1.3.0
 	github.com/alecthomas/kong v0.7.1
 	github.com/awalterschulze/gographviz v2.0.3+incompatible
@@ -14,6 +13,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
 	google.golang.org/grpc v1.51.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (
@@ -33,10 +33,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

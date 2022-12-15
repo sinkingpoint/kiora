@@ -16,7 +16,7 @@ fmt:
 	go fmt ./...
 
 .PHONY: ci
-ci: fmt lint test
+ci: generate fmt lint test
 
 .PHONY: build
 build: generate ci build-unchecked
@@ -28,11 +28,10 @@ build-unchecked:
 run: build
 	./artifacts/kiora -c ./testdata/kiora.dot --raft.data-dir artifacts/kiora-raft-data
 
-PROTO_TARGETS = $(wildcard internal/dto/kioraproto/schema/*.capnp)
-PROTO_OUTPUTS = $(patsubst internal/dto/kioraproto/schema/%.capnp,internal/dto/kioraproto/%.capnp.go,$(PROTO_TARGETS))
+PROTO_TARGETS = $(wildcard internal/dto/kioraproto/schema/*.proto)
+PROTO_OUTPUTS = $(patsubst internal/dto/kioraproto/schema/%.proto,internal/dto/kioraproto/%.pb.go,$(PROTO_TARGETS))
 $(PROTO_OUTPUTS): $(PROTO_TARGETS)
-	test -n "$(GOPATH)" || (echo 'missing $$GOPATH' ; exit 1)
-	capnp compile -I$(GOPATH)/src/capnproto.org/go/capnp/std -ogo:internal/dto/kioraproto --src-prefix internal/dto/kioraproto/schema $^
+	cd internal/dto/kioraproto/schema && protoc --go_opt=paths=source_relative --go_out=../ $(patsubst internal/dto/kioraproto/schema/%,%,$^)
 
 .PHONY: generate
 generate: $(PROTO_OUTPUTS)

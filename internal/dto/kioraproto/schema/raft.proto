@@ -1,0 +1,14 @@
+syntax = "proto3";
+package kioraproto;
+
+import "alert.proto";
+import "silence.proto";
+
+option go_package = "github.com/sinkingpoint/internal/dto/kioraproto";
+
+message RaftLogMessage {
+    oneof log {
+        PostAlertsMessage alerts = 1;
+        PostSilencesRequest silences = 2;
+    }
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+package kioraproto;
+
+option go_package = "github.com/sinkingpoint/internal/dto/kioraproto";
+
+message PostSilencesRequest {
+    repeated Silence silences = 1;
+}
+
+message Silence {
+    
+}

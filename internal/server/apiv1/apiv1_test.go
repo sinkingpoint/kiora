@@ -10,12 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"capnproto.org/go/capnp/v3"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ kioradb.DB = &mockDB{}
@@ -39,22 +40,18 @@ func TestPostAlerts(t *testing.T) {
 	require.NoError(t, err)
 
 	// Construct, then Marshal a kioraproto.Alert.
-	arena := capnp.SingleSegment(nil)
-	msg, seg, err := capnp.NewMessage(arena)
-	require.NoError(t, err)
-	alert, err := kioraproto.NewRootPostAlertsRequest(seg)
-	require.NoError(t, err)
-	alerts, err := kioraproto.NewAlert_List(seg, 1)
-	require.NoError(t, err)
+	msg := kioraproto.PostAlertsMessage{
+		Alerts: []*kioraproto.Alert{
+			{
+				Status: kioraproto.AlertStatus_firing,
+				StartTime: &timestamppb.Timestamp{
+					Seconds: referenceTime.Unix(),
+				},
+			},
+		},
+	}
 
-	a, err := kioraproto.NewAlert(seg)
-	require.NoError(t, err)
-	a.SetStatus(kioraproto.AlertStatus_firing)
-	a.SetStartTime(referenceTime.UnixMilli())
-	require.NoError(t, alerts.Set(0, a))
-
-	require.NoError(t, alert.SetAlerts(alerts))
-	alertBytes, err := msg.Marshal()
+	alertBytes, err := proto.Marshal(&msg)
 	require.NoError(t, err)
 
 	tests := []struct {

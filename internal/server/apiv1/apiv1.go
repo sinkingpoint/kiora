@@ -7,11 +7,11 @@ import (
 	"io"
 	"net/http"
 
-	"capnproto.org/go/capnp/v3"
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"google.golang.org/protobuf/proto"
 )
 
 func Register(router *mux.Router, db kioradb.DB) {
@@ -47,33 +47,20 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&alerts); err != nil {
 			http.Error(w, "failed to decode body", http.StatusBadRequest)
+			return
 		}
 	case "application/x-capnp":
 		// TODO(cdouch): Move this into a helper function so we're not having to manually decode
 		// every struct each time.
-		decoder := capnp.NewDecoder(io.NopCloser(bytes.NewBuffer(body)))
-		msg, err := decoder.Decode()
-		if err != nil {
+		protoAlerts := kioraproto.PostAlertsMessage{}
+		if err := proto.Unmarshal(body, &protoAlerts); err != nil {
 			http.Error(w, "failed to decode body", http.StatusBadRequest)
 			return
 		}
 
-		rootAlerts, err := kioraproto.ReadRootPostAlertsRequest(msg)
-		if err != nil {
-			http.Error(w, "failed to decode body", http.StatusBadRequest)
-			return
-		}
-
-		protoAlerts, err := rootAlerts.Alerts()
-		if err != nil {
-			http.Error(w, "failed to decode body", http.StatusBadRequest)
-			return
-		}
-
-		for i := 0; i < protoAlerts.Len(); i++ {
-			protoAlert := protoAlerts.At(i)
+		for _, protoAlert := range protoAlerts.Alerts {
 			var alert model.Alert
-			if err := alert.DeserializeFromProto(&protoAlert); err != nil {
+			if err := alert.DeserializeFromProto(protoAlert); err != nil {
 				http.Error(w, "failed to decode body", http.StatusBadRequest)
 				return
 			}

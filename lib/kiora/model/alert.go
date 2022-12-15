@@ -65,33 +65,16 @@ type Alert struct {
 
 // DeserializeFromProto creates a model.Alert from a proto alert
 func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
-	labelsProto, err := proto.Labels()
-	if err != nil {
-		return err
+	a.Labels = proto.Labels
+	a.Annotations = proto.Annotations
+	a.Status = deserializeStatusFromProto(proto.Status)
+
+	if proto.StartTime != nil {
+		a.StartTime = time.UnixMilli(proto.StartTime.AsTime().UnixMilli()).UTC()
 	}
 
-	a.Labels, err = deserializeStringMapFromProto(labelsProto)
-	if err != nil {
-		return err
-	}
-
-	annotationsProto, err := proto.Annotations()
-	if err != nil {
-		return err
-	}
-
-	a.Annotations, err = deserializeStringMapFromProto(annotationsProto)
-	if err != nil {
-		return err
-	}
-
-	a.Status = deserializeStatusFromProto(proto.Status())
-
-	a.StartTime = time.UnixMilli(proto.StartTime()).UTC()
-
-	endTime := proto.EndTime()
-	if endTime > 0 {
-		a.TimeOutDeadline = time.UnixMilli(endTime)
+	if proto.EndTime != nil && proto.EndTime.Nanos > 0 {
+		a.TimeOutDeadline = time.UnixMilli(proto.EndTime.AsTime().UnixMilli())
 	} else {
 		a.TimeOutDeadline = a.StartTime.Add(DEFAULT_TIMEOUT_INTERVAL)
 	}

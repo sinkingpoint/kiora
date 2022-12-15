@@ -4,16 +4,15 @@ package raft
 // we panic to avoid generating an inconsistency in the states between instances.
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 
-	"capnproto.org/go/capnp/v3"
 	"github.com/hashicorp/raft"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ raft.FSM = &alertTracker{}
@@ -36,23 +35,11 @@ func (a *alertTracker) Apply(l *raft.Log) any {
 		panic(fmt.Sprintf("BUG: failed to unmarshal raft message (%q). Stopping to avoid an inconsistency. This should never happen, please report.", err))
 	}
 
-	log := msg.Log()
-
-	switch log.Which() {
-	case kioraproto.RaftLog_log_Which_alerts:
-		alertsWrapper, err := log.Alerts()
-		if err != nil {
-			panic(fmt.Sprintf("BUG: failed to unmarshal alerts (%q), in an alerts raft log. Stopping to avoid an inconsistency. This should never happen, please report.", err))
-		}
-
-		alerts, err := alertsWrapper.Alerts()
-		if err != nil {
-			panic(fmt.Sprintf("BUG: failed to unmarshal alerts (%q), in an alerts message. Stopping to avoid an inconsistency. This should never happen, please report.", err))
-		}
-
-		a.processAlerts(alerts)
+	switch log := msg.Log.(type) {
+	case *kioraproto.RaftLogMessage_Alerts:
+		a.processAlerts(log.Alerts)
 	default:
-		panic(fmt.Sprintf("BUG: Got a type of message that we haven't handled (%q)", log.Which()))
+		panic(fmt.Sprintf("BUG: Got a type of message that we haven't handled (%q)", log))
 	}
 
 	return nil
@@ -60,13 +47,12 @@ func (a *alertTracker) Apply(l *raft.Log) any {
 
 // processAlerts handles the Alerts raft message, decoding the alerts into the model
 // and passing them into the db for further processing.
-func (a *alertTracker) processAlerts(protoAlerts kioraproto.Alert_List) {
+func (a *alertTracker) processAlerts(protoAlerts *kioraproto.PostAlertsMessage) {
 	alerts := []model.Alert{}
 
-	for i := 0; i < protoAlerts.Len(); i++ {
-		protoAlert := protoAlerts.At(i)
+	for _, protoAlert := range protoAlerts.Alerts {
 		var alert model.Alert
-		if err := alert.DeserializeFromProto(&protoAlert); err != nil {
+		if err := alert.DeserializeFromProto(protoAlert); err != nil {
 			panic(fmt.Sprintf("BUG: failed to unmarshal a model.Alert from a proto alert: %q", err))
 		}
 
@@ -87,12 +73,12 @@ func (a *alertTracker) Restore(snapshot io.ReadCloser) error {
 }
 
 // decodeLogMessage decodes the raw bytes into a kioraproto.RaftLog
-func decodeLogMessage(raw []byte) (kioraproto.RaftLog, error) {
-	decoder := capnp.NewDecoder(io.NopCloser(bytes.NewBuffer(raw)))
-	msg, err := decoder.Decode()
-	if err != nil {
-		return kioraproto.RaftLog{}, err
+func decodeLogMessage(raw []byte) (*kioraproto.RaftLogMessage, error) {
+	msg := kioraproto.RaftLogMessage{}
+
+	if err := proto.Unmarshal(raw, &msg); err != nil {
+		return nil, err
 	}
 
-	return kioraproto.ReadRootRaftLog(msg)
+	return &msg, nil
 }
