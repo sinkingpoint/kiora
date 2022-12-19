@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/raft"
 	boltdb "github.com/hashicorp/raft-boltdb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const LOGDB_FILE_NAME = "log.dat"
@@ -60,7 +61,9 @@ func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker)
 	}
 
 	// TODO(cdouch): Allow securing the transport with the config.
-	tm := transport.New(raft.ServerAddress(config.LocalAddress), []grpc.DialOption{})
+	tm := transport.New(raft.ServerAddress(config.LocalAddress), []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	})
 
 	r, err := raft.NewRaft(c, stateMachine, logDB, stableDB, snapshotStore, tm.Transport())
 	if err != nil {

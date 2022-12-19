@@ -12,7 +12,7 @@ import (
 var _ kioradb.DB = &RaftDB{}
 
 type RaftDB struct {
-	raft *raft.Raft
+	Raft *raft.Raft
 	db   kioradb.DB
 }
 
@@ -23,7 +23,7 @@ func NewRaftDB(ctx context.Context, config raftConfig, backingDB kioradb.DB) (*R
 	}
 
 	return &RaftDB{
-		raft: raft,
+		Raft: raft,
 		db:   backingDB,
 	}, nil
 }
@@ -36,7 +36,7 @@ func (r *RaftDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 		return err
 	}
 
-	r.raft.Apply(bytes, 0)
+	r.Raft.Apply(bytes, 0)
 	return nil
 }
 

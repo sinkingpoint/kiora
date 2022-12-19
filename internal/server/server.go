@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
+	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
@@ -61,6 +63,10 @@ func (k *KioraServer) ListenAndServe() error {
 	r := mux.NewRouter()
 
 	apiv1.Register(r, k.db)
+
+	if raft, ok := k.db.(*raft.RaftDB); ok {
+		raftadmin.Register(r, raft.Raft)
+	}
 
 	server := http.Server{
 		Addr:         k.ListenAddress,
