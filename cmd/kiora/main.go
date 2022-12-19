@@ -16,7 +16,9 @@ var CLI struct {
 	ListenAddress string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
 	ConfigFile    string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
 	RaftDataDir   string `name:"raft.data-dir" help:"the directory to put database state in" default:"./kiora/data"`
+	RaftBootstrap bool   `name:"raft.bootstrap" help:"If set, bootstrap a new raft cluster"`
 	LocalID       string `name:"raft.local-id" help:"the name of this node in the raft cluster" default:""`
+	RaftListenURL string `name:"raft.listen-url" help:"the address for the raft node to listen on" default:"localhost:4279"`
 }
 
 func main() {
@@ -38,9 +40,10 @@ func main() {
 	serverConfig := server.NewServerConfig()
 	serverConfig.ListenAddress = CLI.ListenAddress
 
-	config := raft.NewRaftConfig("local")
+	config := raft.NewRaftConfig(CLI.LocalID)
 	config.DataDir = CLI.RaftDataDir
-	config.Bootstrap = false
+	config.LocalAddress = CLI.RaftListenURL
+	config.Bootstrap = CLI.RaftBootstrap
 	db, err := raft.NewRaftDB(context.Background(), config, kioradb.NewInMemoryDB())
 	if err != nil {
 		log.Err(err).Msg("failed to initialize raft")

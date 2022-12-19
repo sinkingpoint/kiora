@@ -25,8 +25,13 @@ build: generate ci build-unchecked
 build-unchecked:
 	go build -o ./artifacts/kiora ./cmd/kiora
 
+.PHONY: run
 run: build
 	./artifacts/kiora -c ./testdata/kiora.dot --raft.data-dir artifacts/kiora-raft-data
+
+.PHONY: run-cluster
+run-cluster:
+	./testdata/run-cluster.sh
 
 PROTO_TARGETS = $(wildcard internal/dto/kioraproto/schema/*.proto)
 PROTO_OUTPUTS = $(patsubst internal/dto/kioraproto/schema/%.proto,internal/dto/kioraproto/%.pb.go,$(PROTO_TARGETS))
