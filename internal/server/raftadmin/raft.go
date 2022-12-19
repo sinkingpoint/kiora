@@ -16,6 +16,7 @@ func Register(router *mux.Router, r *raft.Raft) {
 	}
 
 	router.Path("/admin/raft/add_member").Methods(http.MethodPost).HandlerFunc(handler.AddMember)
+	router.Path("/admin/raft/status").Methods(http.MethodGet).HandlerFunc(handler.GetCluster)
 }
 
 type raftHandler struct {
@@ -52,4 +53,37 @@ func (h *raftHandler) AddMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *raftHandler) GetCluster(w http.ResponseWriter, r *http.Request) {
+	type server struct {
+		Name    string `json:"id"`
+		Address string `json:"address"`
+		Leader  bool   `json:"is_leader,omitempty"`
+	}
+
+	type getClusterResponse struct {
+		Servers []server
+	}
+
+	response := getClusterResponse{}
+
+	config := h.r.GetConfiguration()
+	_, leaderId := h.r.LeaderWithID()
+	for _, s := range config.Configuration().Servers {
+		response.Servers = append(response.Servers, server{
+			Name:    string(s.ID),
+			Address: string(s.Address),
+			Leader:  leaderId == s.ID,
+		})
+	}
+
+	bytes, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "failed to get configuration", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes) //nolint:errcheck
 }
