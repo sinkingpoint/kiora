@@ -5,7 +5,7 @@ package raft
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -16,25 +16,32 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ raft.FSM = &alertTracker{}
+var _ raft.FSM = &kioraFSM{}
+var _ raft.FSMSnapshot = &kioraSnapshot{}
 
-// alertTracker is the raft interface that handles consensus for the state of
+type kioraSnapshot struct {
+	Alerts []model.Alert `json:"alerts"`
+}
+
+func (k *kioraSnapshot) Persist(sink raft.SnapshotSink) error {
+	bytes, err := json.Marshal(k)
+	if err != nil {
+		return err
+	}
+
+	_, err = sink.Write(bytes)
+	return err
+}
+
+func (k *kioraSnapshot) Release() {}
+
+// kioraFSM is the raft interface that handles consensus for the state of
 // alerts in the system.
-type alertTracker struct {
+type kioraFSM struct {
 	db kioradb.DB
 }
 
-func NewAlertTracker(db kioradb.DB) (*alertTracker, error) {
-	if db == nil {
-		return nil, errors.New("invalid db")
-	}
-
-	return &alertTracker{
-		db: db,
-	}, nil
-}
-
-func (a *alertTracker) Apply(l *raft.Log) any {
+func (a *kioraFSM) Apply(l *raft.Log) any {
 	msg, err := decodeLogMessage(l.Data)
 	if err != nil {
 		panic(fmt.Sprintf("BUG: failed to unmarshal raft message (%q). Stopping to avoid an inconsistency. This should never happen, please report.", err))
@@ -52,7 +59,7 @@ func (a *alertTracker) Apply(l *raft.Log) any {
 
 // processAlerts handles the Alerts raft message, decoding the alerts into the model
 // and passing them into the db for further processing.
-func (a *alertTracker) processAlerts(protoAlerts *kioraproto.PostAlertsMessage) {
+func (a *kioraFSM) processAlerts(protoAlerts *kioraproto.PostAlertsMessage) {
 	alerts := []model.Alert{}
 
 	for _, protoAlert := range protoAlerts.Alerts {
@@ -69,12 +76,26 @@ func (a *alertTracker) processAlerts(protoAlerts *kioraproto.PostAlertsMessage) 
 	}
 }
 
-func (a *alertTracker) Snapshot() (raft.FSMSnapshot, error) {
-	return nil, nil
+func (a *kioraFSM) Snapshot() (raft.FSMSnapshot, error) {
+	alerts, err := a.db.GetAlerts(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return &kioraSnapshot{
+		Alerts: alerts,
+	}, nil
 }
 
-func (a *alertTracker) Restore(snapshot io.ReadCloser) error {
-	return nil
+func (a *kioraFSM) Restore(input io.ReadCloser) error {
+	decoder := json.NewDecoder(input)
+	decoder.DisallowUnknownFields()
+	var snapshot kioraSnapshot
+	if err := decoder.Decode(&snapshot); err != nil {
+		return err
+	}
+
+	return a.db.ProcessAlerts(context.Background(), snapshot.Alerts...)
 }
 
 // decodeLogMessage decodes the raw bytes into a kioraproto.RaftLog

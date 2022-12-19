@@ -20,7 +20,7 @@ type RaftDB struct {
 }
 
 func NewRaftDB(ctx context.Context, config raftConfig, backingDB kioradb.DB) (*RaftDB, error) {
-	raft, transport, err := NewRaft(ctx, config, &alertTracker{db: backingDB})
+	raft, transport, err := NewRaft(ctx, config, &kioraFSM{db: backingDB})
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +48,8 @@ func (r *RaftDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 		return err
 	}
 
-	r.raft.Apply(bytes, 0)
-	return nil
+	f := r.raft.Apply(bytes, 0)
+	return f.Error()
 }
 
 // GetAlerts gets all the alerts currently in the database.
