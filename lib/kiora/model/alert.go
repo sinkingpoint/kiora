@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -74,10 +76,54 @@ type Alert struct {
 	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
 }
 
+func (a *Alert) UnmarshalJSON(b []byte) error {
+	rawAlert := struct {
+		Labels          Labels            `json:"labels"`
+		Annotations     map[string]string `json:"annotations"`
+		Status          AlertStatus       `json:"status"`
+		StartTime       time.Time         `json:"startTime"`
+		TimeOutDeadline time.Time         `json:"timeOutDeadline,omitempty"`
+	}{}
+
+	if err := json.Unmarshal(b, &rawAlert); err != nil {
+		return err
+	}
+
+	if rawAlert.Labels == nil {
+		return errors.New("missing labels in alert")
+	}
+
+	if rawAlert.Annotations == nil {
+		return errors.New("missing annotations in alert")
+	}
+
+	if rawAlert.StartTime.Unix() == 0 {
+		return errors.New("missing start time in alert")
+	}
+
+	a.Labels = rawAlert.Labels
+	a.Annotations = rawAlert.Annotations
+	a.Status = rawAlert.Status
+	a.StartTime = rawAlert.StartTime
+	a.TimeOutDeadline = rawAlert.TimeOutDeadline
+
+	return nil
+}
+
 // DeserializeFromProto creates a model.Alert from a proto alert
 func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
-	a.Labels = proto.Labels
-	a.Annotations = proto.Annotations
+	if proto.Labels == nil {
+		a.Labels = make(Labels)
+	} else {
+		a.Labels = proto.Labels
+	}
+
+	if a.Annotations == nil {
+		a.Annotations = make(map[string]string)
+	} else {
+		a.Annotations = proto.Annotations
+	}
+
 	a.Status = deserializeStatusFromProto(proto.Status)
 
 	if proto.StartTime != nil {

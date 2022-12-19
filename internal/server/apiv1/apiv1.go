@@ -48,7 +48,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(io.NopCloser(bytes.NewBuffer(body)))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&alerts); err != nil {
-			http.Error(w, "failed to decode body", http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
 		}
 	case "application/x-capnp":
