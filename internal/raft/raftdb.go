@@ -17,7 +17,7 @@ type RaftDB struct {
 }
 
 func NewRaftDB(ctx context.Context, config raftConfig, backingDB kioradb.DB) (*RaftDB, error) {
-	raft, err := NewRaft(ctx, config, &alertTracker{})
+	raft, err := NewRaft(ctx, config, &alertTracker{db: backingDB})
 	if err != nil {
 		return nil, err
 	}

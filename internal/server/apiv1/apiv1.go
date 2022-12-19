@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -19,6 +20,7 @@ func Register(router *mux.Router, db kioradb.DB) {
 		db,
 	}
 	router.Path("/api/v1/alerts").Methods(http.MethodPost).HandlerFunc(api.postAlerts)
+	router.Path("/api/v1/alerts").Methods(http.MethodGet).HandlerFunc(api.getAlerts)
 }
 
 // ReadBody reads the body from the request, decoding any Content-Encoding present.
@@ -77,4 +79,23 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
+	alerts, err := a.db.GetAlerts(r.Context())
+	if err != nil {
+		log.Err(err).Msg("failed to get alerts")
+		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
+		return
+	}
+
+	bytes, err := json.Marshal(alerts)
+	if err != nil {
+		log.Err(err).Msg("failed to get alerts")
+		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes) //nolint:errcheck
 }

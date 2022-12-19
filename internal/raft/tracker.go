@@ -5,6 +5,7 @@ package raft
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -23,10 +24,14 @@ type alertTracker struct {
 	db kioradb.DB
 }
 
-func NewAlertTracker(db kioradb.DB) *alertTracker {
+func NewAlertTracker(db kioradb.DB) (*alertTracker, error) {
+	if db == nil {
+		return nil, errors.New("invalid db")
+	}
+
 	return &alertTracker{
 		db: db,
-	}
+	}, nil
 }
 
 func (a *alertTracker) Apply(l *raft.Log) any {
