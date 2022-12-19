@@ -36,7 +36,7 @@ run-cluster:
 PROTO_TARGETS = $(wildcard internal/dto/kioraproto/schema/*.proto)
 PROTO_OUTPUTS = $(patsubst internal/dto/kioraproto/schema/%.proto,internal/dto/kioraproto/%.pb.go,$(PROTO_TARGETS))
 $(PROTO_OUTPUTS): $(PROTO_TARGETS)
-	cd internal/dto/kioraproto/schema && protoc --go_opt=paths=source_relative --go_out=../ $(patsubst internal/dto/kioraproto/schema/%,%,$^)
+	cd internal/dto/kioraproto/schema && protoc --go_opt=paths=source_relative --go_out=../ --go-grpc_out=../ --go-grpc_opt=paths=source_relative $(patsubst internal/dto/kioraproto/schema/%,%,$^)
 
 .PHONY: generate
 generate: $(PROTO_OUTPUTS)

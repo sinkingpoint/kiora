@@ -1,15 +1,20 @@
 package server
 
 import (
+	"context"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 // TLSPair is a pair of paths representing the path to a certificate and private key.
@@ -22,8 +27,10 @@ type TLSPair struct {
 }
 
 type serverConfig struct {
-	// ListenAddress is the address for the server to listen on. Defaults to localhost:4278.
-	ListenAddress string
+	// HTTPListenAddress is the address for the server to listen on. Defaults to localhost:4278.
+	HTTPListenAddress string
+
+	GRPCListenAddress string
 
 	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
 	ReadTimeout time.Duration
@@ -38,15 +45,16 @@ type serverConfig struct {
 // NewServerConfig constructs a serverConfig with all the defaults set.
 func NewServerConfig() serverConfig {
 	return serverConfig{
-		ListenAddress: "localhost:4278",
-		ReadTimeout:   5 * time.Second,
-		WriteTimeout:  60 * time.Second,
-		TLS:           nil,
+		HTTPListenAddress: "localhost:4278",
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		TLS:               nil,
 	}
 }
 
 // KioraServer is a server that serves the main Kiora API.
 type KioraServer struct {
+	kioraproto.UnimplementedRaftApplierServer
 	serverConfig
 	db kioradb.DB
 }
@@ -60,16 +68,46 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) *KioraServer {
 
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
 func (k *KioraServer) ListenAndServe() error {
+	errChan := make(chan error)
+
+	go func() {
+		errChan <- k.listenAndServeHTTP()
+	}()
+
+	go func() {
+		errChan <- k.listenAndServeGRPC()
+	}()
+
+	return <-errChan
+}
+
+func (k *KioraServer) listenAndServeGRPC() error {
+	listener, err := net.Listen("tcp", k.serverConfig.GRPCListenAddress)
+	if err != nil {
+		return err
+	}
+	server := grpc.NewServer()
+
+	if raft, ok := k.db.(*raft.RaftDB); ok {
+		raft.RegisterGRPC(server)
+	}
+
+	kioraproto.RegisterRaftApplierServer(server, k)
+	reflection.Register(server)
+	return server.Serve(listener)
+}
+
+func (k *KioraServer) listenAndServeHTTP() error {
 	r := mux.NewRouter()
 
 	apiv1.Register(r, k.db)
 
 	if raft, ok := k.db.(*raft.RaftDB); ok {
-		raftadmin.Register(r, raft.Raft)
+		raftadmin.Register(r, raft.Raft())
 	}
 
-	server := http.Server{
-		Addr:         k.ListenAddress,
+	httpServer := http.Server{
+		Addr:         k.HTTPListenAddress,
 		ReadTimeout:  k.ReadTimeout,
 		WriteTimeout: k.WriteTimeout,
 		Handler:      r,
@@ -78,9 +116,9 @@ func (k *KioraServer) ListenAndServe() error {
 	var err error
 
 	if k.TLS != nil {
-		err = server.ListenAndServeTLS(k.TLS.CertPath, k.TLS.KeyPath)
+		err = httpServer.ListenAndServeTLS(k.TLS.CertPath, k.TLS.KeyPath)
 	} else {
-		err = server.ListenAndServe()
+		err = httpServer.ListenAndServe()
 	}
 
 	// ListenAndServe always returns an error, which is ErrServerClosed if cleanly exitted. Here we map
@@ -90,4 +128,13 @@ func (k *KioraServer) ListenAndServe() error {
 	}
 
 	return err
+}
+
+func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessage) (*kioraproto.RaftLogReply, error) {
+	switch log.Log.(type) {
+	case *kioraproto.RaftLogMessage_Alerts:
+	case *kioraproto.RaftLogMessage_Silences:
+	}
+
+	return nil, nil
 }

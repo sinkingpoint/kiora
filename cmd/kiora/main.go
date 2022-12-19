@@ -38,7 +38,8 @@ func main() {
 	}
 
 	serverConfig := server.NewServerConfig()
-	serverConfig.ListenAddress = CLI.ListenAddress
+	serverConfig.HTTPListenAddress = CLI.ListenAddress
+	serverConfig.GRPCListenAddress = CLI.RaftListenURL
 
 	config := raft.NewRaftConfig(CLI.LocalID)
 	config.DataDir = CLI.RaftDataDir
@@ -51,6 +52,7 @@ func main() {
 	}
 
 	server := server.NewKioraServer(serverConfig, db)
+
 	if err := server.ListenAndServe(); err != nil {
 		log.Err(err).Msg("failed to listen and serve")
 	}

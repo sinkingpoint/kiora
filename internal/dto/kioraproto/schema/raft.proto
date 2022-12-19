@@ -12,3 +12,9 @@ message RaftLogMessage {
         PostSilencesRequest silences = 2;
     }
 }
+
+message RaftLogReply {}
+
+service RaftApplier {
+    rpc ApplyLog(RaftLogMessage) returns (RaftLogReply) {}
+}

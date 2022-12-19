@@ -35,29 +35,29 @@ func NewRaftConfig(localID string) raftConfig {
 	}
 }
 
-func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker) (*raft.Raft, error) {
+func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker) (*raft.Raft, *transport.Manager, error) {
 	c := raft.DefaultConfig()
 	c.LocalID = raft.ServerID(config.LocalID)
 	baseDir := filepath.Join(config.DataDir, config.LocalID)
 	if err := os.MkdirAll(baseDir, 0o700); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	logDBPath := filepath.Join(baseDir, LOGDB_FILE_NAME)
 	logDB, err := boltdb.NewBoltStore(logDBPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	stableDBStorePath := filepath.Join(baseDir, SNAPSHOTDB_FILE_NAME)
 	stableDB, err := boltdb.NewBoltStore(stableDBStorePath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	snapshotStore, err := raft.NewFileSnapshotStore(baseDir, config.SnapshotRetention, os.Stderr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// TODO(cdouch): Allow securing the transport with the config.
@@ -67,7 +67,7 @@ func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker)
 
 	r, err := raft.NewRaft(c, stateMachine, logDB, stableDB, snapshotStore, tm.Transport())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if config.Bootstrap {
@@ -83,9 +83,9 @@ func NewRaft(ctx context.Context, config raftConfig, stateMachine *alertTracker)
 
 		f := r.BootstrapCluster(cfg)
 		if err := f.Error(); err != nil {
-			return nil, fmt.Errorf("raft.Raft.BootstrapCluster: %v", err)
+			return nil, nil, fmt.Errorf("raft.Raft.BootstrapCluster: %v", err)
 		}
 	}
 
-	return r, nil
+	return r, tm, nil
 }
