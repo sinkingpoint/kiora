@@ -1,6 +1,8 @@
 syntax = "proto3";
 package kioraproto;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/sinkingpoint/internal/dto/kioraproto";
 
 message PostSilencesRequest {
@@ -8,5 +10,16 @@ message PostSilencesRequest {
 }
 
 message Silence {
-    
+    string Creator = 1;
+    string Comment = 2;
+    google.protobuf.Timestamp startTime = 4;
+    google.protobuf.Timestamp endTime = 5;
+    repeated Matcher matchers = 6;
+}
+
+message Matcher {
+    string Key = 1;
+    string Value = 2;
+    bool Regex = 3;
+    bool Negative = 4;
 }
