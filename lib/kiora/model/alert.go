@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,6 +33,15 @@ const (
 	// AlertStatusTimedOut marks alerts that we never got a resolved notification for, but hit their expiry times.
 	AlertStatusTimedOut AlertStatus = "timed out"
 )
+
+func (s AlertStatus) isValid() bool {
+	switch s {
+	case AlertStatusFiring, AlertStatusProcessing, AlertStatusAcked, AlertStatusResolved, AlertStatusTimedOut:
+		return true
+	default:
+		return false
+	}
+}
 
 // deserializeStatusFromProto takes the proto AlertStatus and turns it into a model.AlertStatus
 func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
@@ -85,7 +95,10 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		TimeOutDeadline time.Time         `json:"timeOutDeadline,omitempty"`
 	}{}
 
-	if err := json.Unmarshal(b, &rawAlert); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&rawAlert); err != nil {
 		return err
 	}
 
@@ -97,8 +110,17 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		return errors.New("missing annotations in alert")
 	}
 
-	if rawAlert.StartTime.Unix() == 0 {
+	if !rawAlert.Status.isValid() {
+		return fmt.Errorf("invalid alert status in alert: %q", rawAlert.Status)
+	}
+
+	defaultTime := time.Time{}
+	if rawAlert.StartTime == defaultTime {
 		return errors.New("missing start time in alert")
+	}
+
+	if rawAlert.TimeOutDeadline != defaultTime && !rawAlert.TimeOutDeadline.After(rawAlert.StartTime) {
+		return errors.New("timeout deadline is not after start time")
 	}
 
 	a.Labels = rawAlert.Labels
