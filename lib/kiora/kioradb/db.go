@@ -14,5 +14,6 @@ type DB interface {
 	// GetAlerts gets all the alerts currently in the database.
 	GetAlerts(ctx context.Context) ([]model.Alert, error)
 
-	// ProcessSilences(ctx context.Context, silences ...mod)
+	// ProcessSilences takes silences and processes them.
+	ProcessSilences(ctx context.Context, silences ...model.Silence) error
 }

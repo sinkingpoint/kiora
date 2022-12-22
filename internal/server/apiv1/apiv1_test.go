@@ -22,7 +22,8 @@ import (
 var _ kioradb.DB = &mockDB{}
 
 type mockDB struct {
-	alerts []model.Alert
+	alerts   []model.Alert
+	silences []model.Silence
 }
 
 func (m *mockDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error {
@@ -32,6 +33,11 @@ func (m *mockDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 
 func (m *mockDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 	return m.alerts, nil
+}
+
+func (m *mockDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
+	m.silences = append(m.silences, silences...)
+	return nil
 }
 
 func TestPostAlerts(t *testing.T) {

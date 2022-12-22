@@ -10,7 +10,8 @@ var _ DB = &inMemoryDB{}
 
 // inMemoryDB is a DB that does not persist anything, just storing all data in memory.
 type inMemoryDB struct {
-	alerts map[model.LabelsHash]model.Alert
+	alerts   map[model.LabelsHash]model.Alert
+	silences map[string]model.Silence
 }
 
 func NewInMemoryDB() *inMemoryDB {
@@ -38,4 +39,12 @@ func (m *inMemoryDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 		alerts = append(alerts, v)
 	}
 	return alerts, nil
+}
+
+func (m *inMemoryDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
+	for i := range silences {
+		silence := &silences[i]
+		m.silences[silence.ID] = *silence
+	}
+	return nil
 }

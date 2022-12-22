@@ -56,3 +56,7 @@ func (r *RaftDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 func (r *RaftDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 	return r.db.GetAlerts(ctx)
 }
+
+func (r *RaftDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
+	return nil
+}
