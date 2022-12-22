@@ -74,7 +74,7 @@ func TestPostAlerts(t *testing.T) {
 		{
 			name: "test proto unmarshal",
 			headers: map[string]string{
-				"content-type": "application/x-capnp",
+				"content-type": "application/vnd.google.protobuf",
 			},
 			body: alertBytes,
 		},

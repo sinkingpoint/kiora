@@ -15,6 +15,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const CONTENT_TYPE_JSON = "application/json"
+const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
+
 func Register(router *mux.Router, db kioradb.DB) {
 	api := apiv1{
 		db,
@@ -44,14 +47,14 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 	var alerts []model.Alert
 
 	switch r.Header.Get("Content-Type") {
-	case "application/json":
+	case CONTENT_TYPE_JSON:
 		decoder := json.NewDecoder(io.NopCloser(bytes.NewBuffer(body)))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&alerts); err != nil {
 			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
 		}
-	case "application/x-capnp":
+	case CONTENT_TYPE_PROTO:
 		// TODO(cdouch): Move this into a helper function so we're not having to manually decode
 		// every struct each time.
 		protoAlerts := kioraproto.PostAlertsMessage{}
