@@ -10,8 +10,9 @@ message PostSilencesRequest {
 }
 
 message Silence {
-    string Creator = 1;
-    string Comment = 2;
+    string ID = 1;
+    string Creator = 2;
+    string Comment = 3;
     google.protobuf.Timestamp startTime = 4;
     google.protobuf.Timestamp endTime = 5;
     repeated Matcher matchers = 6;

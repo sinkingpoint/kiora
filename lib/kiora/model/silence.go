@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Matcher struct {
@@ -15,6 +17,7 @@ type Matcher struct {
 }
 
 type Silence struct {
+	ID        string    `json:"id"`
 	Creator   string    `json:"creator"`
 	Comment   string    `json:"comment"`
 	StartTime time.Time `json:"startTime"`
@@ -24,6 +27,7 @@ type Silence struct {
 
 func (s *Silence) UnmarshalJSON(b []byte) error {
 	rawSilence := struct {
+		ID        string    `json:"id"`
 		Creator   string    `json:"creator"`
 		Comment   string    `json:"comment"`
 		StartTime time.Time `json:"startTime"`
@@ -55,6 +59,12 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 		return errors.New("silence must have matchers")
 	}
 
+	if rawSilence.ID != "" {
+		s.ID = rawSilence.ID
+	} else {
+		s.ID = newSilenceID()
+	}
+
 	s.Creator = rawSilence.Creator
 	s.Comment = rawSilence.Comment
 	s.StartTime = rawSilence.StartTime
@@ -62,4 +72,9 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 	s.Matchers = rawSilence.Matchers
 
 	return nil
+}
+
+func newSilenceID() string {
+	id := uuid.New()
+	return id.String()
 }
