@@ -57,9 +57,7 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 
 func (a *AlertStatus) MapToProto() kioraproto.AlertStatus {
 	switch *a {
-	case AlertStatusResolved:
-		fallthrough
-	case AlertStatusTimedOut:
+	case AlertStatusResolved, AlertStatusTimedOut:
 		return kioraproto.AlertStatus_resolved
 	default:
 		return kioraproto.AlertStatus_firing
