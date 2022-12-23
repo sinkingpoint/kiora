@@ -84,6 +84,31 @@ type Alert struct {
 	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
 }
 
+func (a *Alert) validate() error {
+	if a.Labels == nil {
+		return errors.New("missing labels in alert")
+	}
+
+	if a.Annotations == nil {
+		return errors.New("missing annotations in alert")
+	}
+
+	if !a.Status.isValid() {
+		return fmt.Errorf("invalid alert status in alert: %q", a.Status)
+	}
+
+	defaultTime := time.Time{}
+	if a.StartTime == defaultTime {
+		return errors.New("missing start time in alert")
+	}
+
+	if a.TimeOutDeadline != defaultTime && !a.TimeOutDeadline.After(a.StartTime) {
+		return errors.New("timeout deadline is not after start time")
+	}
+
+	return nil
+}
+
 func (a *Alert) UnmarshalJSON(b []byte) error {
 	rawAlert := struct {
 		Labels          Labels            `json:"labels"`
@@ -100,50 +125,19 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if rawAlert.Labels == nil {
-		return errors.New("missing labels in alert")
-	}
-
-	if rawAlert.Annotations == nil {
-		return errors.New("missing annotations in alert")
-	}
-
-	if !rawAlert.Status.isValid() {
-		return fmt.Errorf("invalid alert status in alert: %q", rawAlert.Status)
-	}
-
-	defaultTime := time.Time{}
-	if rawAlert.StartTime == defaultTime {
-		return errors.New("missing start time in alert")
-	}
-
-	if rawAlert.TimeOutDeadline != defaultTime && !rawAlert.TimeOutDeadline.After(rawAlert.StartTime) {
-		return errors.New("timeout deadline is not after start time")
-	}
-
 	a.Labels = rawAlert.Labels
 	a.Annotations = rawAlert.Annotations
 	a.Status = rawAlert.Status
 	a.StartTime = rawAlert.StartTime
 	a.TimeOutDeadline = rawAlert.TimeOutDeadline
 
-	return nil
+	return a.validate()
 }
 
 // DeserializeFromProto creates a model.Alert from a proto alert
 func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
-	if proto.Labels == nil {
-		a.Labels = make(Labels)
-	} else {
-		a.Labels = proto.Labels
-	}
-
-	if a.Annotations == nil {
-		a.Annotations = make(map[string]string)
-	} else {
-		a.Annotations = proto.Annotations
-	}
-
+	a.Labels = proto.Labels
+	a.Annotations = proto.Annotations
 	a.Status = deserializeStatusFromProto(proto.Status)
 
 	if proto.StartTime != nil {
@@ -156,5 +150,5 @@ func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
 		a.TimeOutDeadline = a.StartTime.Add(DEFAULT_TIMEOUT_INTERVAL)
 	}
 
-	return nil
+	return a.validate()
 }

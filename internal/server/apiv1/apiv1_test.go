@@ -49,6 +49,12 @@ func TestPostAlerts(t *testing.T) {
 	msg := kioraproto.PostAlertsMessage{
 		Alerts: []*kioraproto.Alert{
 			{
+				Labels: map[string]string{
+					"foo": "bar",
+				},
+				Annotations: map[string]string{
+					"foo": "bar",
+				},
 				Status: kioraproto.AlertStatus_firing,
 				StartTime: &timestamppb.Timestamp{
 					Seconds: referenceTime.Unix(),
@@ -113,5 +119,89 @@ func TestPostAlerts(t *testing.T) {
 			assert.Equal(t, model.AlertStatusFiring, alert.Status)
 		})
 	}
+}
 
+func TestPostSilences(t *testing.T) {
+	// Construct a referenceTime that is used for each alert, and is expected to be found in the db.
+	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
+	require.NoError(t, err)
+
+	// Construct, then Marshal a kioraproto.Alert.
+	msg := kioraproto.PostSilencesRequest{
+		Silences: []*kioraproto.Silence{
+			{
+				Creator: "colin",
+				Matchers: []*kioraproto.Matcher{
+					{
+						Key:   "foo",
+						Value: "bar",
+					},
+				},
+				StartTime: &timestamppb.Timestamp{
+					Seconds: referenceTime.Unix(),
+				},
+				EndTime: &timestamppb.Timestamp{
+					Seconds: referenceTime.Unix() + 10,
+				},
+			},
+		},
+	}
+
+	silenceBytes, err := proto.Marshal(&msg)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		headers map[string]string
+		body    []byte
+	}{
+		{
+			name: "test json unmarshal",
+			headers: map[string]string{
+				"content-type": "application/json",
+			},
+			body: []byte(fmt.Sprintf(`[{
+"matchers": [{
+	"label": "foo",
+	"value": "bar"
+}],
+"startTime": "%s",
+"endTime": "%s"
+}]`, referenceTime.Format(time.RFC3339), referenceTime.Add(10*time.Minute).Format(time.RFC3339))),
+		},
+		{
+			name: "test proto unmarshal",
+			headers: map[string]string{
+				"content-type": "application/vnd.google.protobuf",
+			},
+			body: silenceBytes,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := &mockDB{}
+			api := apiv1{db}
+
+			request, err := http.NewRequest(http.MethodPost, "localhost/api/v1/silences", bytes.NewReader(tt.body))
+			require.NoError(t, err)
+
+			for k, v := range tt.headers {
+				request.Header.Add(k, v)
+			}
+
+			recorder := httptest.NewRecorder()
+
+			api.postSilences(recorder, request)
+
+			response := recorder.Result()
+			responseBody, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusAccepted, response.StatusCode, string(responseBody))
+
+			require.Equal(t, 1, len(db.silences), "expected one silence")
+			silence := db.silences[0]
+			assert.Equal(t, referenceTime, silence.StartTime)
+		})
+	}
 }

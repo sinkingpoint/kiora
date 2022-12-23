@@ -24,6 +24,8 @@ func Register(router *mux.Router, db kioradb.DB) {
 	}
 	router.Path("/api/v1/alerts").Methods(http.MethodPost).HandlerFunc(api.postAlerts)
 	router.Path("/api/v1/alerts").Methods(http.MethodGet).HandlerFunc(api.getAlerts)
+
+	router.Path("/api/v1/silences").Methods(http.MethodPost).HandlerFunc(api.postSilences)
 }
 
 // ReadBody reads the body from the request, decoding any Content-Encoding present.
@@ -59,14 +61,14 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		// every struct each time.
 		protoAlerts := kioraproto.PostAlertsMessage{}
 		if err := proto.Unmarshal(body, &protoAlerts); err != nil {
-			http.Error(w, "failed to decode body", http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
 		}
 
 		for _, protoAlert := range protoAlerts.Alerts {
 			var alert model.Alert
 			if err := alert.DeserializeFromProto(protoAlert); err != nil {
-				http.Error(w, "failed to decode body", http.StatusBadRequest)
+				http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 				return
 			}
 			alerts = append(alerts, alert)
@@ -101,4 +103,51 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytes) //nolint:errcheck
+}
+
+func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r)
+	if err != nil {
+		http.Error(w, "failed to read body", http.StatusBadRequest)
+		return
+	}
+
+	var silences []model.Silence
+
+	switch r.Header.Get("Content-Type") {
+	case CONTENT_TYPE_JSON:
+		decoder := json.NewDecoder(io.NopCloser(bytes.NewBuffer(body)))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&silences); err != nil {
+			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
+			return
+		}
+	case CONTENT_TYPE_PROTO:
+		// TODO(cdouch): Move this into a helper function so we're not having to manually decode
+		// every struct each time.
+		protoSilences := kioraproto.PostSilencesRequest{}
+		if err := proto.Unmarshal(body, &protoSilences); err != nil {
+			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
+			return
+		}
+
+		for _, protoSilence := range protoSilences.Silences {
+			var silence model.Silence
+			if err := silence.DeserializeFromProto(protoSilence); err != nil {
+				http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
+				return
+			}
+			silences = append(silences, silence)
+		}
+	default:
+		http.Error(w, fmt.Sprintf("invalid content-type %q", r.Header.Get("Content-Type")), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	if err := a.db.ProcessSilences(r.Context(), silences...); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
