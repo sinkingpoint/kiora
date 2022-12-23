@@ -136,8 +136,19 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 
 // DeserializeFromProto creates a model.Alert from a proto alert
 func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
-	a.Labels = proto.Labels
-	a.Annotations = proto.Annotations
+	// Protobuf encodes empty maps as nils, so we have to be a bit more lenient here and default the maps
+	// if they don't exist, which we don't do in JSON.
+	if proto.Labels != nil {
+		a.Labels = proto.Labels
+	} else {
+		a.Labels = make(Labels)
+	}
+
+	if proto.Annotations != nil {
+		a.Annotations = proto.Annotations
+	} else {
+		a.Annotations = make(map[string]string)
+	}
 	a.Status = deserializeStatusFromProto(proto.Status)
 
 	if proto.StartTime != nil {
