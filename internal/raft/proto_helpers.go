@@ -6,9 +6,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// NewPostAlertsRaftLogMessage construcsta a RaftLogMessage that calls the PostAlerts
+// newPostAlertsRaftLogMessage construcsta a RaftLogMessage that calls the PostAlerts
 // method with the given alerts
-func NewPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessage {
+func newPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessage {
 	protoAlerts := []*kioraproto.Alert{}
 	for _, a := range alerts {
 		protoAlerts = append(protoAlerts, &kioraproto.Alert{
@@ -24,6 +24,40 @@ func NewPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessa
 		Log: &kioraproto.RaftLogMessage_Alerts{
 			Alerts: &kioraproto.PostAlertsMessage{
 				Alerts: protoAlerts,
+			},
+		},
+	}
+}
+
+// newPostSilencesRaftLogMessage takes a slice of model.Silences and packages
+// them into a protobuf message that can be put into the raft log.
+func newPostSilencesRaftLogMessage(silences ...model.Silence) *kioraproto.RaftLogMessage {
+	protoSilences := []*kioraproto.Silence{}
+	for _, silence := range silences {
+		matchers := make([]*kioraproto.Matcher, 0, len(silence.Matchers))
+		for _, matcher := range silence.Matchers {
+			matchers = append(matchers, &kioraproto.Matcher{
+				Key:      matcher.Label,
+				Value:    matcher.Value,
+				Regex:    matcher.Regex,
+				Negative: matcher.Negative,
+			})
+		}
+
+		protoSilences = append(protoSilences, &kioraproto.Silence{
+			ID:        silence.ID,
+			Creator:   silence.Creator,
+			Comment:   silence.Comment,
+			StartTime: timestamppb.New(silence.StartTime),
+			EndTime:   timestamppb.New(silence.EndTime),
+			Matchers:  matchers,
+		})
+	}
+
+	return &kioraproto.RaftLogMessage{
+		Log: &kioraproto.RaftLogMessage_Silences{
+			Silences: &kioraproto.PostSilencesRequest{
+				Silences: protoSilences,
 			},
 		},
 	}
