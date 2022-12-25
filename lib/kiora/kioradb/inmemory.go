@@ -8,6 +8,8 @@ import (
 
 var _ DB = &inMemoryDB{}
 
+type AlertIngestor = func(db DB, existingAlert, newAlert *model.Alert)
+
 // inMemoryDB is a DB that does not persist anything, just storing all data in memory.
 type inMemoryDB struct {
 	alerts   map[model.LabelsHash]model.Alert

@@ -11,13 +11,6 @@ import (
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 )
 
-type Matcher struct {
-	Label    string `json:"label"`
-	Value    string `json:"value"`
-	Negative bool   `json:"negative"`
-	Regex    bool   `json:"regex"`
-}
-
 type Silence struct {
 	ID        string    `json:"id"`
 	Creator   string    `json:"creator"`
@@ -52,12 +45,12 @@ func (s *Silence) validate() error {
 
 func (s *Silence) UnmarshalJSON(b []byte) error {
 	rawSilence := struct {
-		ID        string    `json:"id"`
-		Creator   string    `json:"creator"`
-		Comment   string    `json:"comment"`
-		StartTime time.Time `json:"startTime"`
-		EndTime   time.Time `json:"endTime"`
-		Matchers  []Matcher `json:"matchers"`
+		ID        string       `json:"id"`
+		Creator   string       `json:"creator"`
+		Comment   string       `json:"comment"`
+		StartTime time.Time    `json:"startTime"`
+		EndTime   time.Time    `json:"endTime"`
+		Matchers  []rawMatcher `json:"matchers"`
 	}{}
 
 	decoder := json.NewDecoder(bytes.NewReader(b))
@@ -77,7 +70,17 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 	s.Comment = rawSilence.Comment
 	s.StartTime = rawSilence.StartTime
 	s.EndTime = rawSilence.EndTime
-	s.Matchers = rawSilence.Matchers
+
+	matchers := []Matcher{}
+	for _, m := range rawSilence.Matchers {
+		matcher, err := m.toMatcher()
+		if err != nil {
+			return err
+		}
+
+		matchers = append(matchers, matcher)
+	}
+	s.Matchers = matchers
 
 	return s.validate()
 }
@@ -104,13 +107,39 @@ func (s *Silence) DeserializeFromProto(proto *kioraproto.Silence) error {
 	s.Matchers = make([]Matcher, 0, len(proto.Matchers))
 
 	for _, matcher := range proto.Matchers {
-		s.Matchers = append(s.Matchers, Matcher{
-			Label:    matcher.Key,
-			Value:    matcher.Value,
-			Regex:    matcher.Regex,
-			Negative: matcher.Negative,
-		})
+		m, err := MatcherFromProto(matcher)
+		if err != nil {
+			return err
+		}
+
+		s.Matchers = append(s.Matchers, m)
 	}
 
 	return s.validate()
+}
+
+type rawMatcher struct {
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	Regex    bool   `json:"regex"`
+	Negative bool   `json:"negative"`
+}
+
+func (r rawMatcher) toMatcher() (Matcher, error) {
+	var err error
+	var matcher Matcher
+	if r.Regex {
+		matcher, err = LabelValueRegexMatcher(r.Label, r.Value)
+	} else {
+		matcher = &LabelValueEqualMatcher{
+			Label: r.Label,
+			Value: r.Value,
+		}
+	}
+
+	if r.Negative {
+		matcher = NegativeMatcher(matcher)
+	}
+
+	return matcher, err
 }

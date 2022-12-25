@@ -35,13 +35,11 @@ func newPostSilencesRaftLogMessage(silences ...model.Silence) *kioraproto.RaftLo
 	protoSilences := []*kioraproto.Silence{}
 	for _, silence := range silences {
 		matchers := make([]*kioraproto.Matcher, 0, len(silence.Matchers))
-		for _, matcher := range silence.Matchers {
-			matchers = append(matchers, &kioraproto.Matcher{
-				Key:      matcher.Label,
-				Value:    matcher.Value,
-				Regex:    matcher.Regex,
-				Negative: matcher.Negative,
-			})
+		for _, m := range silence.Matchers {
+			proto := m.MarshalProto()
+			if proto != nil {
+				matchers = append(matchers, proto)
+			}
 		}
 
 		protoSilences = append(protoSilences, &kioraproto.Silence{
