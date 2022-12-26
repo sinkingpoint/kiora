@@ -95,12 +95,15 @@ func (k *KioraProcessor) processAlert(m model.Alert) {
 	ctx := context.Background()
 	existingAlert, err := k.GetExistingAlert(ctx, m.Labels)
 	if err != nil {
-		log.Err(err).Msg("failed to get existing alerts from backend. Dropping alert.")
+		log.Err(err).Str("alert", fmt.Sprint(m)).Msg("failed to get existing alerts from backend. Dropping alert.")
 		return
 	}
 
 	for _, processor := range k.alertProcessors {
-		processor.Exec(ctx, k.db, existingAlert, &m)
+		if err := processor.Exec(ctx, k.db, existingAlert, &m); err != nil {
+			log.Err(err).Str("alert", fmt.Sprint(m)).Msg("failed to get process alert. Dropping alert.")
+			return
+		}
 	}
 }
 
