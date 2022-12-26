@@ -78,6 +78,13 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// For all incoming alerts, mark them as processing so later stages know that these are new alerts, not replayed old ones.
+	for i := range alerts {
+		if alerts[i].Status == model.AlertStatusFiring {
+			alerts[i].Status = model.AlertStatusProcessing
+		}
+	}
+
 	if err := a.db.ProcessAlerts(r.Context(), alerts...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
