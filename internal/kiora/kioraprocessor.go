@@ -29,7 +29,7 @@ type SilenceProcessor interface {
 type KioraProcessor struct {
 	alertProcessors   []AlertProcessor
 	silenceProcessors []SilenceProcessor
-	backingDB         kioradb.DB
+	db                kioradb.DB
 
 	killChannel        chan struct{}
 	killed             bool
@@ -42,7 +42,7 @@ func NewKioraProcessor(db kioradb.DB) *KioraProcessor {
 		killChannel:        make(chan struct{}),
 		killed:             false,
 		processingPipeline: make(chan any, 100), // TODO(cdouch): make the queue length configurable.
-		backingDB:          db,
+		db:                 db,
 	}
 
 	go func() {
@@ -100,7 +100,7 @@ func (k *KioraProcessor) processAlert(m model.Alert) {
 	}
 
 	for _, processor := range k.alertProcessors {
-		processor.Exec(ctx, k.backingDB, existingAlert, &m)
+		processor.Exec(ctx, k.db, existingAlert, &m)
 	}
 }
 
@@ -108,7 +108,7 @@ func (k *KioraProcessor) processSilence(m model.Silence) {
 	ctx := context.Background()
 
 	for _, processor := range k.silenceProcessors {
-		processor.Exec(ctx, k.backingDB, &m)
+		processor.Exec(ctx, k.db, &m)
 	}
 }
 
@@ -117,7 +117,7 @@ func (k *KioraProcessor) ProcessAlerts(ctx context.Context, alerts ...model.Aler
 		return ErrProcessorClosed
 	}
 	k.processingPipeline <- alerts
-	return k.backingDB.ProcessAlerts(ctx, alerts...)
+	return k.db.ProcessAlerts(ctx, alerts...)
 }
 
 func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
@@ -125,13 +125,17 @@ func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.
 		return ErrProcessorClosed
 	}
 	k.processingPipeline <- silences
-	return k.backingDB.ProcessSilences(ctx, silences...)
+	return k.db.ProcessSilences(ctx, silences...)
 }
 
 func (k *KioraProcessor) GetAlerts(ctx context.Context) ([]model.Alert, error) {
-	return k.backingDB.GetAlerts(ctx)
+	return k.db.GetAlerts(ctx)
 }
 
 func (k *KioraProcessor) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	return k.backingDB.GetExistingAlert(ctx, labels)
+	return k.db.GetExistingAlert(ctx, labels)
+}
+
+func (r *KioraProcessor) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
+	return r.db.GetSilences(ctx, labels)
 }

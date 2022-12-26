@@ -118,6 +118,17 @@ func (s *Silence) DeserializeFromProto(proto *kioraproto.Silence) error {
 	return s.validate()
 }
 
+// Matches returns true if all the matchers in the silence match the given labelset.
+func (s *Silence) Matches(labels Labels) bool {
+	for i := range s.Matchers {
+		if !s.Matchers[i].Match(labels) {
+			return false
+		}
+	}
+
+	return true
+}
+
 type rawMatcher struct {
 	Label    string `json:"label"`
 	Value    string `json:"value"`

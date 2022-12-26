@@ -13,6 +13,9 @@ type ModelReader interface {
 
 	// GetExistingAlert returns the existing data for a given labelset, if it exists.
 	GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error)
+
+	// GetSilence returns all the silences that would match a given label set
+	GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error)
 }
 
 type AlertProcessor interface {

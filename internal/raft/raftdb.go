@@ -59,6 +59,10 @@ func (r *RaftDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*mo
 	return r.db.GetExistingAlert(ctx, labels)
 }
 
+func (r *RaftDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
+	return r.db.GetSilences(ctx, labels)
+}
+
 // applyLog takes the given protobuf message, marshals it, and adds it as a log into the raft log.
 func (r *RaftDB) applyLog(msg protoreflect.ProtoMessage) error {
 	bytes, err := proto.Marshal(msg)

@@ -59,3 +59,14 @@ func (m *inMemoryDB) GetExistingAlert(ctx context.Context, labels model.Labels) 
 
 	return nil, nil
 }
+
+func (m *inMemoryDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
+	silences := []model.Silence{}
+	for _, silence := range m.silences {
+		if silence.Matches(labels) {
+			silences = append(silences, silence)
+		}
+	}
+
+	return silences, nil
+}

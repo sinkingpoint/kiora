@@ -44,6 +44,10 @@ func (m *mockDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*mo
 	return nil, nil
 }
 
+func (r *mockDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
+	return nil, nil
+}
+
 func TestPostAlerts(t *testing.T) {
 	// Construct a referenceTime that is used for each alert, and is expected to be found in the db.
 	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
