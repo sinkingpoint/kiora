@@ -32,6 +32,9 @@ const (
 
 	// AlertStatusTimedOut marks alerts that we never got a resolved notification for, but hit their expiry times.
 	AlertStatusTimedOut AlertStatus = "timed out"
+
+	// AlertStatusSilenced marks alerts that have been silenced by one or more silences.
+	AlertStatusSilenced AlertStatus = "silenced"
 )
 
 func (s AlertStatus) isValid() bool {

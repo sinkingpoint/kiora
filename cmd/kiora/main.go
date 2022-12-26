@@ -41,6 +41,8 @@ func main() {
 	processor := kiora.NewKioraProcessor(kioradb.NewInMemoryDB())
 	defer processor.Kill()
 
+	processor.AddAlertProcessor(kiora.NewSilenceApplier())
+
 	serverConfig := server.NewServerConfig()
 	serverConfig.HTTPListenAddress = CLI.ListenAddress
 	serverConfig.GRPCListenAddress = CLI.RaftListenURL

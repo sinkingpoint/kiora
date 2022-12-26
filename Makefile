@@ -39,7 +39,8 @@ $(PROTO_OUTPUTS): $(PROTO_TARGETS)
 	cd internal/dto/kioraproto/schema && protoc --go_opt=paths=source_relative --go_out=../ --go-grpc_out=../ --go-grpc_opt=paths=source_relative $(patsubst internal/dto/kioraproto/schema/%,%,$^)
 
 .PHONY: generate
-generate: $(PROTO_OUTPUTS)
+generate: $(PROTO_OUTPUTS) ./lib/kiora/kioradb/db.go
+	mockgen -source ./lib/kiora/kioradb/db.go > mocks/mock_kioradb/db.go
 
 .PHONY: generate-clean
 generate-clean:
