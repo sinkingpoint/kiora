@@ -46,13 +46,17 @@ func (r *RaftDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 	return r.applyLog(newPostAlertsRaftLogMessage(alerts...))
 }
 
+func (r *RaftDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
+	return r.applyLog(newPostSilencesRaftLogMessage(silences...))
+}
+
 // GetAlerts gets all the alerts currently in the database.
 func (r *RaftDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 	return r.db.GetAlerts(ctx)
 }
 
-func (r *RaftDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
-	return r.applyLog(newPostSilencesRaftLogMessage(silences...))
+func (r *RaftDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
+	return r.db.GetExistingAlert(ctx, labels)
 }
 
 // applyLog takes the given protobuf message, marshals it, and adds it as a log into the raft log.

@@ -10,6 +10,9 @@ import (
 type ModelReader interface {
 	// GetAlerts gets all the alerts currently in the database.
 	GetAlerts(ctx context.Context) ([]model.Alert, error)
+
+	// GetExistingAlert returns the existing data for a given labelset, if it exists.
+	GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error)
 }
 
 type AlertProcessor interface {

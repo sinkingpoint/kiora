@@ -35,6 +35,14 @@ func (m *inMemoryDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) e
 	return nil
 }
 
+func (m *inMemoryDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
+	for i := range silences {
+		silence := &silences[i]
+		m.silences[silence.ID] = *silence
+	}
+	return nil
+}
+
 func (m *inMemoryDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 	alerts := make([]model.Alert, 0, len(m.alerts))
 	for _, v := range m.alerts {
@@ -43,10 +51,11 @@ func (m *inMemoryDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 	return alerts, nil
 }
 
-func (m *inMemoryDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
-	for i := range silences {
-		silence := &silences[i]
-		m.silences[silence.ID] = *silence
+func (m *inMemoryDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
+	hash := labels.Hash()
+	if existingAlert, ok := m.alerts[hash]; ok {
+		return &existingAlert, nil
 	}
-	return nil
+
+	return nil, nil
 }
