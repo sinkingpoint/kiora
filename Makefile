@@ -1,7 +1,7 @@
 .PHONY: test
 test:
 	mkdir -p artifacts/
-	go test -race -cover -coverprofile=artifacts/cover.out ./...
+	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
 
 .PHONY: coverage
 coverage: test
