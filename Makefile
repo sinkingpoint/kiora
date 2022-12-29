@@ -3,6 +3,10 @@ test:
 	mkdir -p artifacts/
 	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
 
+.PHONY: integration
+integration:
+	go test -count=1 ./integration
+
 .PHONY: coverage
 coverage: test
 	go tool cover -html=artifacts/cover.out
@@ -16,7 +20,7 @@ fmt:
 	go fmt ./...
 
 .PHONY: ci
-ci: generate fmt lint test
+ci: generate fmt lint test integration
 
 .PHONY: build
 build: generate ci build-unchecked
