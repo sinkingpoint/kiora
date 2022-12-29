@@ -1,7 +1,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/awalterschulze/gographviz"
 )
@@ -10,7 +10,7 @@ type ConfigFile struct {
 }
 
 func LoadConfigFile(path string) (ConfigFile, error) {
-	body, err := ioutil.ReadFile(path)
+	body, err := os.ReadFile(path)
 	if err != nil {
 		return ConfigFile{}, err
 	}
