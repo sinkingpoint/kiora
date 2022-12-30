@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -131,6 +132,8 @@ func (k *KioraServer) listenAndServeHTTP() error {
 	return err
 }
 
+// ApplyLog is the handler that processes forwarded RaftLogs from follower nodes to the leader. When this function is called,
+// it can be assumed that the current node is the leader of the raft cluster.
 func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessage) (*kioraproto.RaftLogReply, error) {
 	switch msg := log.Log.(type) {
 	case *kioraproto.RaftLogMessage_Alerts:
@@ -139,12 +142,15 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessa
 			alert := model.Alert{
 				AuthNode: log.From,
 			}
+
 			if err := alert.DeserializeFromProto(protoAlert); err != nil {
 				return nil, err
 			}
 
 			modelAlerts = append(modelAlerts, alert)
 		}
+
+		fmt.Printf("APPLYING: %+v\n", modelAlerts)
 
 		return &kioraproto.RaftLogReply{}, k.db.ProcessAlerts(ctx, modelAlerts...)
 	case *kioraproto.RaftLogMessage_Silences:

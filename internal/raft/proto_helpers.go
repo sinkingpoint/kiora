@@ -9,6 +9,7 @@ import (
 // newPostAlertsRaftLogMessage construcsta a RaftLogMessage that calls the PostAlerts
 // method with the given alerts
 func newPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessage {
+	var from string
 	protoAlerts := []*kioraproto.Alert{}
 	for _, a := range alerts {
 		protoAlerts = append(protoAlerts, &kioraproto.Alert{
@@ -18,6 +19,8 @@ func newPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessa
 			StartTime:   timestamppb.New(a.StartTime),
 			EndTime:     timestamppb.New(a.TimeOutDeadline),
 		})
+
+		from = a.AuthNode
 	}
 
 	return &kioraproto.RaftLogMessage{
@@ -26,6 +29,7 @@ func newPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessa
 				Alerts: protoAlerts,
 			},
 		},
+		From: from,
 	}
 }
 

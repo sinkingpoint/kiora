@@ -53,6 +53,8 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 		return AlertStatusFiring
 	case kioraproto.AlertStatus_resolved:
 		return AlertStatusResolved
+	case kioraproto.AlertStatus_processing:
+		return AlertStatusProcessing
 	default:
 		panic(fmt.Sprintf("BUG: unhandled alert status received from proto: %q", status.String()))
 	}
@@ -62,6 +64,8 @@ func (a *AlertStatus) MapToProto() kioraproto.AlertStatus {
 	switch *a {
 	case AlertStatusResolved, AlertStatusTimedOut:
 		return kioraproto.AlertStatus_resolved
+	case AlertStatusProcessing:
+		return kioraproto.AlertStatus_processing
 	default:
 		return kioraproto.AlertStatus_firing
 	}
@@ -85,6 +89,9 @@ type Alert struct {
 
 	// TimeOutDeadline is when the alert should be marked as timed out, assuming no further messages come in.
 	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
+
+	// AuthNode is the node that last sent a notification for this alert.
+	AuthNode string `json:"-"`
 }
 
 func (a *Alert) validate() error {

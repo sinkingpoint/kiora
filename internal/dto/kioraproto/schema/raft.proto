@@ -7,9 +7,10 @@ import "silence.proto";
 option go_package = "github.com/sinkingpoint/internal/dto/kioraproto";
 
 message RaftLogMessage {
+    string from = 1;
     oneof log {
-        PostAlertsMessage alerts = 1;
-        PostSilencesRequest silences = 2;
+        PostAlertsMessage alerts = 2;
+        PostSilencesRequest silences = 3;
     }
 }
 

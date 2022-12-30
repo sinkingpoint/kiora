@@ -21,4 +21,5 @@ message Alert {
 enum AlertStatus {
     firing = 0;
     resolved = 1;
+    processing = 2;
 }

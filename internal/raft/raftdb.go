@@ -2,7 +2,6 @@ package raft
 
 import (
 	"context"
-	"fmt"
 
 	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
@@ -70,14 +69,13 @@ func (r *RaftDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.
 
 // applyLog takes the given protobuf message, marshals it, and adds it as a log into the raft log.
 func (r *RaftDB) applyLog(ctx context.Context, msg *kioraproto.RaftLogMessage) error {
-	bytes, err := proto.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
 	leaderAddress, leaderID := r.raft.LeaderWithID()
 
 	if leaderID == r.myID {
+		bytes, err := proto.Marshal(msg)
+		if err != nil {
+			return err
+		}
 		f := r.raft.Apply(bytes, 0)
 		return f.Error()
 	}
@@ -88,12 +86,9 @@ func (r *RaftDB) applyLog(ctx context.Context, msg *kioraproto.RaftLogMessage) e
 	}
 	defer conn.Close()
 
+	msg.From = string(r.myID)
 	client := kioraproto.NewRaftApplierClient(conn)
 	_, err = client.ApplyLog(ctx, msg)
 
-	if err != nil {
-		panic(fmt.Sprintf("FINDME: %q %q\n", ctx, msg))
-	}
-
-	return nil
+	return err
 }
