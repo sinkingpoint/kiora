@@ -82,6 +82,8 @@ func (k *KioraInstance) Start(t *testing.T) error {
 
 	// Setup a cleanup job that stops the instance, and removes the data directory.
 	t.Cleanup(func() {
+		t.Log("Stderr: ", k.Stderr())
+		t.Log("Stdout: ", k.Stdout())
 		require.NoError(t, k.Stop())
 		require.NoError(t, os.RemoveAll("../artifacts/test/"+name))
 	})
@@ -222,13 +224,13 @@ func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	// Start n-1 instances.
 	nodes := []*KioraInstance{}
 	for i := 0; i < numNodes-1; i++ {
-		node := NewKioraInstance()
+		node := NewKioraInstance("--raft.local-id", fmt.Sprintf("node-%d", i))
 		require.NoError(t, node.Start(t))
 		nodes = append(nodes, node)
 	}
 
 	// Start a leader node, telling it to bootstrap the cluster.
-	leader := NewKioraInstance("--raft.bootstrap")
+	leader := NewKioraInstance("--raft.bootstrap", "--raft.local-id", fmt.Sprintf("node-%d", numNodes-1))
 	require.NoError(t, leader.Start(t))
 
 	// Wait until the cluster it up, and then add every node to the leader.

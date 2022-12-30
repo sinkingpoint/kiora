@@ -53,7 +53,7 @@ func TestKioraAlertPost(t *testing.T) {
 	"status": "firing",
 	"startTime": "%s"
 }]`, referenceTime.Format(time.RFC3339))))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	body, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
@@ -87,7 +87,7 @@ func TestKioraClusterAlerts(t *testing.T) {
 	t.Parallel()
 
 	nodes := StartKioraCluster(t, 3)
-	requestURL := nodes[len(nodes)-1].GetURL("/api/v1/alerts")
+	requestURL := nodes[0].GetURL("/api/v1/alerts")
 
 	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
 	require.NoError(t, err)
@@ -102,7 +102,13 @@ func TestKioraClusterAlerts(t *testing.T) {
 }]`, referenceTime.Format(time.RFC3339))))
 
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	t.Logf("Response: %q", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	// Wait for raft to apply the log.
 	time.Sleep(1 * time.Second)

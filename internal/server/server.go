@@ -13,6 +13,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -131,10 +132,23 @@ func (k *KioraServer) listenAndServeHTTP() error {
 }
 
 func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessage) (*kioraproto.RaftLogReply, error) {
-	switch log.Log.(type) {
+	switch msg := log.Log.(type) {
 	case *kioraproto.RaftLogMessage_Alerts:
+		modelAlerts := make([]model.Alert, 0, len(msg.Alerts.Alerts))
+		for _, protoAlert := range msg.Alerts.Alerts {
+			alert := model.Alert{
+				AuthNode: log.From,
+			}
+			if err := alert.DeserializeFromProto(protoAlert); err != nil {
+				return nil, err
+			}
+
+			modelAlerts = append(modelAlerts, alert)
+		}
+
+		return &kioraproto.RaftLogReply{}, k.db.ProcessAlerts(ctx, modelAlerts...)
 	case *kioraproto.RaftLogMessage_Silences:
 	}
 
-	return nil, nil
+	return &kioraproto.RaftLogReply{}, nil
 }
