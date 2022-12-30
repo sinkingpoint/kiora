@@ -72,14 +72,14 @@ func (r *RaftDB) applyLog(ctx context.Context, msg *kioraproto.RaftLogMessage) e
 	leaderAddress, leaderID := r.raft.LeaderWithID()
 
 	if leaderID == r.myID {
-		bytes, err := proto.Marshal(msg)
-		if err != nil {
-			return err
-		}
-		f := r.raft.Apply(bytes, 0)
-		return f.Error()
+		return r.applyAsLeader(ctx, msg)
 	}
 
+	return r.forwardLog(ctx, string(leaderAddress), msg)
+}
+
+// forwardLog is responsible for forwarding a log to the leader node, in the case that the node that received the log is not the leader.
+func (r *RaftDB) forwardLog(ctx context.Context, leaderAddress string, msg *kioraproto.RaftLogMessage) error {
 	conn, err := grpc.Dial(string(leaderAddress), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
@@ -91,4 +91,16 @@ func (r *RaftDB) applyLog(ctx context.Context, msg *kioraproto.RaftLogMessage) e
 	_, err = client.ApplyLog(ctx, msg)
 
 	return err
+}
+
+// applyAsLeader gets called to apply a log when this node is the leader of the cluster. When inside this method
+// it can be assumed that this node is the leader, and thus methods that must be called on the raft leader are safe.
+func (r *RaftDB) applyAsLeader(ctx context.Context, msg *kioraproto.RaftLogMessage) error {
+	bytes, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	f := r.raft.Apply(bytes, 0)
+	return f.Error()
 }
