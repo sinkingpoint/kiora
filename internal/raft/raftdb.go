@@ -16,9 +16,9 @@ import (
 var _ kioradb.DB = &RaftDB{}
 
 type RaftDB struct {
+	kioradb.FallthroughDB
 	myID      raft.ServerID
 	raft      *raft.Raft
-	db        kioradb.DB
 	transport *transport.Manager
 }
 
@@ -30,10 +30,10 @@ func NewRaftDB(ctx context.Context, config raftConfig, backingDB kioradb.DB) (*R
 	}
 
 	return &RaftDB{
-		myID:      localID,
-		raft:      raft,
-		transport: transport,
-		db:        backingDB,
+		FallthroughDB: kioradb.NewFallthroughDB(backingDB),
+		myID:          localID,
+		raft:          raft,
+		transport:     transport,
 	}, nil
 }
 
@@ -52,19 +52,6 @@ func (r *RaftDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error
 
 func (r *RaftDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
 	return r.applyLog(ctx, newPostSilencesRaftLogMessage(silences...))
-}
-
-// GetAlerts gets all the alerts currently in the database.
-func (r *RaftDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
-	return r.db.GetAlerts(ctx)
-}
-
-func (r *RaftDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	return r.db.GetExistingAlert(ctx, labels)
-}
-
-func (r *RaftDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
-	return r.db.GetSilences(ctx, labels)
 }
 
 // applyLog takes the given protobuf message, marshals it, and adds it as a log into the raft log.
