@@ -7,7 +7,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
-	"github.com/sinkingpoint/kiora/internal/kiora"
 	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
@@ -38,11 +37,6 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	processor := kiora.NewKioraProcessor(kioradb.NewInMemoryDB())
-	defer processor.Kill()
-
-	processor.AddAlertProcessor(kiora.NewSilenceApplier())
-
 	serverConfig := server.NewServerConfig()
 	serverConfig.HTTPListenAddress = CLI.ListenAddress
 	serverConfig.GRPCListenAddress = CLI.RaftListenURL
@@ -51,7 +45,7 @@ func main() {
 	config.DataDir = CLI.RaftDataDir
 	config.LocalAddress = CLI.RaftListenURL
 	config.Bootstrap = CLI.RaftBootstrap
-	db, err := raft.NewRaftDB(context.Background(), config, processor)
+	db, err := raft.NewRaftDB(context.Background(), config, kioradb.NewInMemoryDB())
 	if err != nil {
 		log.Err(err).Msg("failed to initialize raft")
 		return

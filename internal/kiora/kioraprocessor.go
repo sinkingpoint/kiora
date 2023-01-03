@@ -41,23 +41,27 @@ func NewKioraProcessor(db kioradb.DB) *KioraProcessor {
 	processor := &KioraProcessor{
 		FallthroughDB:      kioradb.NewFallthroughDB(db),
 		killChannel:        make(chan struct{}),
-		killed:             false,
+		killed:             true,
 		processingPipeline: make(chan any, 100), // TODO(cdouch): make the queue length configurable.
 	}
 
+	return processor
+}
+
+// Start starts the underlying go routine that dispatches things from the processing pipeline to the processors.
+func (k *KioraProcessor) Start() {
+	k.killed = false
 	go func() {
 	outer:
 		for {
 			select {
-			case <-processor.killChannel:
+			case <-k.killChannel:
 				break outer
-			case m := <-processor.processingPipeline:
-				processor.process(m)
+			case m := <-k.processingPipeline:
+				k.process(m)
 			}
 		}
 	}()
-
-	return processor
 }
 
 // AddAlertProcessor adds a processor to the stack of processors that get called when new alerts come in.
@@ -70,8 +74,8 @@ func (k *KioraProcessor) AddSilenceProccessor(processor SilenceProcessor) {
 	k.silenceProcessors = append(k.silenceProcessors, processor)
 }
 
-// Kill closes the Processor, which will cause any incoming alerts to fail.
-func (k *KioraProcessor) Kill() {
+// Stop closes the Processor, which will cause any incoming alerts to fail.
+func (k *KioraProcessor) Stop() {
 	k.killed = true
 	close(k.killChannel)
 }

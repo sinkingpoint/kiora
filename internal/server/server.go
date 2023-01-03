@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
+	"github.com/sinkingpoint/kiora/internal/kiora"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -51,22 +52,33 @@ func NewServerConfig() serverConfig {
 	}
 }
 
+// assembleProcessor is responsible for constructing a processor that handles the main Kiora flow.
+func assembleProcessor(db kioradb.DB) *kiora.KioraProcessor {
+	processor := kiora.NewKioraProcessor(db)
+	processor.AddAlertProcessor(kiora.NewSilenceApplier())
+
+	return processor
+}
+
 // KioraServer is a server that serves the main Kiora API.
 type KioraServer struct {
 	kioraproto.UnimplementedRaftApplierServer
 	serverConfig
-	db kioradb.DB
+	db *kiora.KioraProcessor
 }
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) *KioraServer {
 	return &KioraServer{
 		serverConfig: conf,
-		db:           db,
+		db:           assembleProcessor(db),
 	}
 }
 
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
 func (k *KioraServer) ListenAndServe() error {
+	k.db.Start()
+	defer k.db.Stop()
+
 	errChan := make(chan error)
 
 	grpcServer := grpc.NewServer()
