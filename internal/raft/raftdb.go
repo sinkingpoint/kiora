@@ -4,8 +4,10 @@ import (
 	"context"
 
 	transport "github.com/Jille/raft-grpc-transport"
+	"github.com/gorilla/mux"
 	"github.com/hashicorp/raft"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
+	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"google.golang.org/grpc"
@@ -16,7 +18,7 @@ import (
 var _ kioradb.DB = &RaftDB{}
 
 type RaftDB struct {
-	kioradb.FallthroughDB
+	*kioradb.FallthroughDB
 	myID      raft.ServerID
 	raft      *raft.Raft
 	transport *transport.Manager
@@ -35,10 +37,6 @@ func NewRaftDB(ctx context.Context, config raftConfig, backingDB kioradb.DB) (*R
 		raft:          raft,
 		transport:     transport,
 	}, nil
-}
-
-func (r *RaftDB) RegisterGRPC(s *grpc.Server) {
-	r.transport.Register(s)
 }
 
 func (r *RaftDB) Raft() *raft.Raft {
@@ -90,4 +88,10 @@ func (r *RaftDB) applyAsLeader(ctx context.Context, msg *kioraproto.RaftLogMessa
 
 	f := r.raft.Apply(bytes, 0)
 	return f.Error()
+}
+
+func (r *RaftDB) RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error {
+	r.transport.Register(grpcServer)
+	raftadmin.Register(httpRouter, r.raft)
+	return nil
 }

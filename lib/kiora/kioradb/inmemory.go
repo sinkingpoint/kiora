@@ -3,7 +3,9 @@ package kioradb
 import (
 	"context"
 
+	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"google.golang.org/grpc"
 )
 
 var _ DB = &inMemoryDB{}
@@ -69,4 +71,8 @@ func (m *inMemoryDB) GetSilences(ctx context.Context, labels model.Labels) ([]mo
 	}
 
 	return silences, nil
+}
+
+func (f *inMemoryDB) RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error {
+	return nil
 }

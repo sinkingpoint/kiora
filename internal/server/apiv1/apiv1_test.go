@@ -10,11 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -46,6 +48,10 @@ func (m *mockDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*mo
 
 func (r *mockDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
 	return nil, nil
+}
+
+func (r *mockDB) RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error {
+	return nil
 }
 
 func TestPostAlerts(t *testing.T) {

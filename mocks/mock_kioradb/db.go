@@ -9,7 +9,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	mux "github.com/gorilla/mux"
 	model "github.com/sinkingpoint/kiora/lib/kiora/model"
+	grpc "google.golang.org/grpc"
 )
 
 // MockModelReader is a mock of ModelReader interface.
@@ -245,4 +247,18 @@ func (mr *MockDBMockRecorder) ProcessSilences(ctx interface{}, silences ...inter
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, silences...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessSilences", reflect.TypeOf((*MockDB)(nil).ProcessSilences), varargs...)
+}
+
+// RegisterEndpoints mocks base method.
+func (m *MockDB) RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterEndpoints", ctx, httpRouter, grpcServer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterEndpoints indicates an expected call of RegisterEndpoints.
+func (mr *MockDBMockRecorder) RegisterEndpoints(ctx, httpRouter, grpcServer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterEndpoints", reflect.TypeOf((*MockDB)(nil).RegisterEndpoints), ctx, httpRouter, grpcServer)
 }

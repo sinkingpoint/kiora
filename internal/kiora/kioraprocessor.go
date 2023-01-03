@@ -27,9 +27,9 @@ type SilenceProcessor interface {
 
 // KioraProcessor is the main logic piece of Kiora that is responsible for actually acting on alerts, silences etc.
 type KioraProcessor struct {
+	*kioradb.FallthroughDB
 	alertProcessors   []AlertProcessor
 	silenceProcessors []SilenceProcessor
-	db                kioradb.DB
 
 	killChannel        chan struct{}
 	killed             bool
@@ -39,10 +39,10 @@ type KioraProcessor struct {
 // NewKioraProcessor creater a new KioraProcessor, starting the backing go routine that asynchronously processes incoming messages.
 func NewKioraProcessor(db kioradb.DB) *KioraProcessor {
 	processor := &KioraProcessor{
+		FallthroughDB:      kioradb.NewFallthroughDB(db),
 		killChannel:        make(chan struct{}),
 		killed:             false,
 		processingPipeline: make(chan any, 100), // TODO(cdouch): make the queue length configurable.
-		db:                 db,
 	}
 
 	go func() {
@@ -100,7 +100,7 @@ func (k *KioraProcessor) processAlert(m model.Alert) {
 	}
 
 	for _, processor := range k.alertProcessors {
-		if err := processor.Exec(ctx, k.db, existingAlert, &m); err != nil {
+		if err := processor.Exec(ctx, k.FallthroughDB, existingAlert, &m); err != nil {
 			log.Err(err).Str("alert", fmt.Sprint(m)).Msg("failed to get process alert. Dropping alert.")
 			return
 		}
@@ -111,7 +111,7 @@ func (k *KioraProcessor) processSilence(m model.Silence) {
 	ctx := context.Background()
 
 	for _, processor := range k.silenceProcessors {
-		processor.Exec(ctx, k.db, &m)
+		processor.Exec(ctx, k.FallthroughDB, &m)
 	}
 }
 
@@ -120,7 +120,7 @@ func (k *KioraProcessor) ProcessAlerts(ctx context.Context, alerts ...model.Aler
 		return ErrProcessorClosed
 	}
 	k.processingPipeline <- alerts
-	return k.db.ProcessAlerts(ctx, alerts...)
+	return k.FallthroughDB.ProcessAlerts(ctx, alerts...)
 }
 
 func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
@@ -128,17 +128,5 @@ func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.
 		return ErrProcessorClosed
 	}
 	k.processingPipeline <- silences
-	return k.db.ProcessSilences(ctx, silences...)
-}
-
-func (k *KioraProcessor) GetAlerts(ctx context.Context) ([]model.Alert, error) {
-	return k.db.GetAlerts(ctx)
-}
-
-func (k *KioraProcessor) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	return k.db.GetExistingAlert(ctx, labels)
-}
-
-func (r *KioraProcessor) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
-	return r.db.GetSilences(ctx, labels)
+	return k.FallthroughDB.ProcessSilences(ctx, silences...)
 }

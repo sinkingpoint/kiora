@@ -3,7 +3,9 @@ package kioradb
 import (
 	"context"
 
+	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"google.golang.org/grpc"
 )
 
 // ModelReader defines an interface that can be used to get various models out of an underlying system.
@@ -30,14 +32,16 @@ type ModelWriter interface {
 type DB interface {
 	ModelReader
 	ModelWriter
+
+	RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error
 }
 
 type FallthroughDB struct {
 	db DB
 }
 
-func NewFallthroughDB(db DB) FallthroughDB {
-	return FallthroughDB{
+func NewFallthroughDB(db DB) *FallthroughDB {
+	return &FallthroughDB{
 		db: db,
 	}
 }
@@ -65,4 +69,8 @@ func (f *FallthroughDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert
 // ProcessSilences takes silences and processes them.
 func (f *FallthroughDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
 	return f.db.ProcessSilences(ctx, silences...)
+}
+
+func (f *FallthroughDB) RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error {
+	return f.db.RegisterEndpoints(ctx, httpRouter, grpcServer)
 }

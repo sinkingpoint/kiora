@@ -3,16 +3,13 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
-	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
-	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"google.golang.org/grpc"
@@ -72,26 +69,28 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) *KioraServer {
 func (k *KioraServer) ListenAndServe() error {
 	errChan := make(chan error)
 
+	grpcServer := grpc.NewServer()
+	httpRouter := mux.NewRouter()
+
+	if err := k.db.RegisterEndpoints(context.Background(), httpRouter, grpcServer); err != nil {
+		return err
+	}
+
 	go func() {
-		errChan <- k.listenAndServeHTTP()
+		errChan <- k.listenAndServeHTTP(httpRouter)
 	}()
 
 	go func() {
-		errChan <- k.listenAndServeGRPC()
+		errChan <- k.listenAndServeGRPC(grpcServer)
 	}()
 
 	return <-errChan
 }
 
-func (k *KioraServer) listenAndServeGRPC() error {
+func (k *KioraServer) listenAndServeGRPC(server *grpc.Server) error {
 	listener, err := net.Listen("tcp", k.serverConfig.GRPCListenAddress)
 	if err != nil {
 		return err
-	}
-	server := grpc.NewServer()
-
-	if raft, ok := k.db.(*raft.RaftDB); ok {
-		raft.RegisterGRPC(server)
 	}
 
 	kioraproto.RegisterRaftApplierServer(server, k)
@@ -99,14 +98,8 @@ func (k *KioraServer) listenAndServeGRPC() error {
 	return server.Serve(listener)
 }
 
-func (k *KioraServer) listenAndServeHTTP() error {
-	r := mux.NewRouter()
-
+func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	apiv1.Register(r, k.db)
-
-	if raft, ok := k.db.(*raft.RaftDB); ok {
-		raftadmin.Register(r, raft.Raft())
-	}
 
 	httpServer := http.Server{
 		Addr:         k.HTTPListenAddress,
@@ -149,8 +142,6 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessa
 
 			modelAlerts = append(modelAlerts, alert)
 		}
-
-		fmt.Printf("APPLYING: %+v\n", modelAlerts)
 
 		return &kioraproto.RaftLogReply{}, k.db.ProcessAlerts(ctx, modelAlerts...)
 	case *kioraproto.RaftLogMessage_Silences:
