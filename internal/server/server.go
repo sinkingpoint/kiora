@@ -76,9 +76,6 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) *KioraServer {
 
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
 func (k *KioraServer) ListenAndServe() error {
-	k.db.Start()
-	defer k.db.Stop()
-
 	errChan := make(chan error)
 
 	grpcServer := grpc.NewServer()

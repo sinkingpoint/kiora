@@ -27,7 +27,8 @@ func (s *SilenceApplier) Exec(ctx context.Context, db kioradb.DB, existingAlert,
 
 	if len(silences) > 0 {
 		newAlert.Status = model.AlertStatusSilenced
+		return db.ProcessAlerts(ctx, *newAlert)
 	}
 
-	return db.ProcessAlerts(ctx, *newAlert)
+	return nil
 }
