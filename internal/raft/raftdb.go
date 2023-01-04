@@ -24,7 +24,7 @@ type RaftDB struct {
 	transport *transport.Manager
 }
 
-func NewRaftDB(ctx context.Context, config raftConfig, backingDB kioradb.DB) (*RaftDB, error) {
+func NewRaftDB(ctx context.Context, config RaftConfig, backingDB kioradb.DB) (*RaftDB, error) {
 	localID := raft.ServerID(config.LocalID)
 	raft, transport, err := NewRaft(ctx, config, &kioraFSM{db: backingDB})
 	if err != nil {

@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
-	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
@@ -41,17 +39,16 @@ func main() {
 	serverConfig.HTTPListenAddress = CLI.ListenAddress
 	serverConfig.GRPCListenAddress = CLI.RaftListenURL
 
-	config := raft.NewRaftConfig(CLI.LocalID)
-	config.DataDir = CLI.RaftDataDir
-	config.LocalAddress = CLI.RaftListenURL
-	config.Bootstrap = CLI.RaftBootstrap
-	db, err := raft.NewRaftDB(context.Background(), config, kioradb.NewInMemoryDB())
+	serverConfig.RaftConfig.LocalID = CLI.LocalID
+	serverConfig.RaftConfig.DataDir = CLI.RaftDataDir
+	serverConfig.RaftConfig.LocalAddress = CLI.RaftListenURL
+	serverConfig.RaftConfig.Bootstrap = CLI.RaftBootstrap
+
+	server, err := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
 	if err != nil {
-		log.Err(err).Msg("failed to initialize raft")
+		log.Err(err).Msg("failed to create server")
 		return
 	}
-
-	server := server.NewKioraServer(serverConfig, db)
 
 	if err := server.ListenAndServe(); err != nil {
 		log.Err(err).Msg("failed to listen and serve")

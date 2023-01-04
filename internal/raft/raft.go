@@ -17,7 +17,7 @@ const LOGDB_FILE_NAME = "log.dat"
 const STABLEDB_PATH = "stable.dat"
 const SNAPSHOTDB_FILE_NAME = "snapshot.dat"
 
-type raftConfig struct {
+type RaftConfig struct {
 	LocalID           string
 	LocalAddress      string
 	DataDir           string
@@ -25,9 +25,8 @@ type raftConfig struct {
 	Bootstrap         bool
 }
 
-func NewRaftConfig(localID string) raftConfig {
-	return raftConfig{
-		LocalID:           localID,
+func DefaultRaftConfig() RaftConfig {
+	return RaftConfig{
 		LocalAddress:      "localhost:4279",
 		DataDir:           "./kiora/data",
 		SnapshotRetention: 3,
@@ -35,7 +34,7 @@ func NewRaftConfig(localID string) raftConfig {
 	}
 }
 
-func NewRaft(ctx context.Context, config raftConfig, stateMachine *kioraFSM) (*raft.Raft, *transport.Manager, error) {
+func NewRaft(ctx context.Context, config RaftConfig, stateMachine *kioraFSM) (*raft.Raft, *transport.Manager, error) {
 	c := raft.DefaultConfig()
 	c.LocalID = raft.ServerID(config.LocalID)
 	baseDir := filepath.Join(config.DataDir, config.LocalID)

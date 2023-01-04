@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/kiora"
+	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -40,6 +41,8 @@ type serverConfig struct {
 
 	// TLS is an optional pair of cert and key files that will be used to serve TLS connections.
 	TLS *TLSPair
+
+	RaftConfig raft.RaftConfig
 }
 
 // NewServerConfig constructs a serverConfig with all the defaults set.
@@ -49,11 +52,12 @@ func NewServerConfig() serverConfig {
 		ReadTimeout:       5 * time.Second,
 		WriteTimeout:      60 * time.Second,
 		TLS:               nil,
+		RaftConfig:        raft.DefaultRaftConfig(),
 	}
 }
 
 // assembleProcessor is responsible for constructing a processor that handles the main Kiora flow.
-func assembleProcessor(db kioradb.DB) *kiora.KioraProcessor {
+func assembleProcessor(conf *serverConfig, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db)
 	processor.AddAlertProcessor(kiora.NewSilenceApplier())
 
@@ -67,11 +71,16 @@ type KioraServer struct {
 	db *kiora.KioraProcessor
 }
 
-func NewKioraServer(conf serverConfig, db kioradb.DB) *KioraServer {
+func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
+	db, err := raft.NewRaftDB(context.Background(), conf.RaftConfig, db)
+	if err != nil {
+		return nil, err
+	}
+
 	return &KioraServer{
 		serverConfig: conf,
-		db:           assembleProcessor(db),
-	}
+		db:           assembleProcessor(&conf, db),
+	}, nil
 }
 
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
