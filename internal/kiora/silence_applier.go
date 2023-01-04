@@ -16,6 +16,10 @@ func NewSilenceApplier() AlertProcessor {
 }
 
 func (s *SilenceApplier) Exec(ctx context.Context, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	if newAlert.Status == model.AlertStatusSilenced {
+		return nil
+	}
+
 	if alreadySilenced := existingAlert != nil && existingAlert.Status == model.AlertStatusSilenced; alreadySilenced {
 		return nil
 	}
