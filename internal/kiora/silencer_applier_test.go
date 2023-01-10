@@ -24,7 +24,7 @@ func TestSilencer_AlreadySilenced(t *testing.T) {
 	}
 
 	applier := kiora.NewSilenceApplier()
-	assert.NoError(t, applier.Exec(context.Background(), db, &alert, &alert))
+	assert.NoError(t, applier.ProcessAlert(context.Background(), nil, db, &alert, &alert))
 }
 
 // Test that an alert that matches a silenced gets pushed down the pipeline with the Status set to Silenced.
@@ -52,13 +52,8 @@ func TestSilencer_Silences(t *testing.T) {
 		"foo": "bar",
 	}).Times(1).Return([]model.Silence{silence}, nil)
 
-	db.EXPECT().ProcessAlerts(gomock.Any(), model.Alert{
-		Labels: map[string]string{
-			"foo": "bar",
-		},
-		Status: model.AlertStatusSilenced,
-	})
-
 	applier := kiora.NewSilenceApplier()
-	assert.NoError(t, applier.Exec(context.Background(), db, nil, &alert))
+	assert.NoError(t, applier.ProcessAlert(context.Background(), nil, db, nil, &alert))
+
+	assert.Equal(t, model.AlertStatusSilenced, alert.Status)
 }

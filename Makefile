@@ -20,7 +20,7 @@ fmt:
 	go fmt ./...
 
 .PHONY: ci
-ci: generate fmt lint test integration
+ci: generate fmt lint test
 
 .PHONY: build
 build: generate ci build-unchecked

@@ -15,7 +15,7 @@ func NewSilenceApplier() AlertProcessor {
 	return &SilenceApplier{}
 }
 
-func (s *SilenceApplier) Exec(ctx context.Context, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
+func (s *SilenceApplier) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
 	if newAlert.Status == model.AlertStatusSilenced {
 		return nil
 	}
@@ -31,7 +31,6 @@ func (s *SilenceApplier) Exec(ctx context.Context, db kioradb.DB, existingAlert,
 
 	if len(silences) > 0 {
 		newAlert.Status = model.AlertStatusSilenced
-		return db.ProcessAlerts(ctx, *newAlert)
 	}
 
 	return nil

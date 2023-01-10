@@ -56,10 +56,26 @@ func NewServerConfig() serverConfig {
 	}
 }
 
-// assembleProcessor is responsible for constructing a processor that handles the main Kiora flow.
-func assembleProcessor(conf *serverConfig, db kioradb.DB) *kiora.KioraProcessor {
-	processor := kiora.NewKioraProcessor(db)
+// assembleProcessor is responsible for constructing the KioraProcessor that pre-processes models before they enter the main flow.
+func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, db kioradb.DB) *kiora.KioraProcessor {
+	processor := kiora.NewKioraProcessor(db, broadcaster)
+
+	// For now, just broadcast everything that comes in.
+	broadcastProcessor := kiora.BroadcastProcessor{}
+	processor.AddAlertProcessor(&broadcastProcessor)
+	processor.AddSilenceProccessor(&broadcastProcessor)
+
+	return processor
+}
+
+// assemblePostProcessor is responsible for constructing the KioraProcessor that processes models _after_ they have been broadcasted.
+func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, db kioradb.DB) *kiora.KioraProcessor {
+	processor := kiora.NewKioraProcessor(db, broadcaster)
+
+	localForwarder := kiora.LocalForwarderProcessor{}
 	processor.AddAlertProcessor(kiora.NewSilenceApplier())
+	processor.AddAlertProcessor(&localForwarder)
+	processor.AddSilenceProccessor(&localForwarder)
 
 	return processor
 }
@@ -68,18 +84,25 @@ func assembleProcessor(conf *serverConfig, db kioradb.DB) *kiora.KioraProcessor 
 type KioraServer struct {
 	kioraproto.UnimplementedRaftApplierServer
 	serverConfig
-	db *kiora.KioraProcessor
+	broadcaster *raft.RaftDB
+	db          *kiora.KioraProcessor
 }
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
-	db, err := raft.NewRaftDB(context.Background(), conf.RaftConfig, db)
+	postProcessor := assemblePostProcessor(&conf, nil, db)
+	broadcaster, err := raft.NewRaftDB(context.Background(), conf.RaftConfig, postProcessor)
 	if err != nil {
 		return nil, err
 	}
 
+	// this makes a weird loop where we could go broadcast -> postprocessor -> broadcast infinitely.
+	// TODO(cdouch): detangle this if the circular dependency proves unweildy.
+	postProcessor.Broadcast = broadcaster
+
 	return &KioraServer{
 		serverConfig: conf,
-		db:           assembleProcessor(&conf, db),
+		db:           assemblePreProcessor(&conf, broadcaster, db),
+		broadcaster:  broadcaster,
 	}, nil
 }
 
@@ -91,6 +114,10 @@ func (k *KioraServer) ListenAndServe() error {
 	httpRouter := mux.NewRouter()
 
 	if err := k.db.RegisterEndpoints(context.Background(), httpRouter, grpcServer); err != nil {
+		return err
+	}
+
+	if err := k.broadcaster.RegisterEndpoints(context.Background(), httpRouter, grpcServer); err != nil {
 		return err
 	}
 

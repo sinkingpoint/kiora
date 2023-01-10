@@ -12,25 +12,27 @@ var _ kioradb.DB = &KioraProcessor{}
 
 // AlertProcessor is a type that can be used to process an alert as it goes through the pipeline.
 type AlertProcessor interface {
-	Exec(ctx context.Context, db kioradb.DB, existingAlert, newAlert *model.Alert) error
+	ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
 }
 
 // SilenceProcessor is a type that can be used to process a silence as it goes through the pipeline.
 type SilenceProcessor interface {
-	Exec(ctx context.Context, db kioradb.DB, silence *model.Silence) error
+	ProcessSilence(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, silence *model.Silence) error
 }
 
 // KioraProcessor is the main logic piece of Kiora that is responsible for actually acting on alerts, silences etc.
 type KioraProcessor struct {
 	*kioradb.FallthroughDB
+	Broadcast         kioradb.ModelWriter
 	alertProcessors   []AlertProcessor
 	silenceProcessors []SilenceProcessor
 }
 
 // NewKioraProcessor creater a new KioraProcessor, starting the backing go routine that asynchronously processes incoming messages.
-func NewKioraProcessor(db kioradb.DB) *KioraProcessor {
+func NewKioraProcessor(db kioradb.DB, broadcaster kioradb.ModelWriter) *KioraProcessor {
 	processor := &KioraProcessor{
 		FallthroughDB: kioradb.NewFallthroughDB(db),
+		Broadcast:     broadcaster,
 	}
 
 	return processor
@@ -53,7 +55,7 @@ func (k *KioraProcessor) processAlert(ctx context.Context, m model.Alert) error 
 	}
 
 	for _, processor := range k.alertProcessors {
-		if err := processor.Exec(ctx, k.FallthroughDB, existingAlert, &m); err != nil {
+		if err := processor.ProcessAlert(ctx, k.Broadcast, k.FallthroughDB, existingAlert, &m); err != nil {
 			return err
 		}
 	}
@@ -63,7 +65,7 @@ func (k *KioraProcessor) processAlert(ctx context.Context, m model.Alert) error 
 
 func (k *KioraProcessor) processSilence(ctx context.Context, m model.Silence) error {
 	for _, processor := range k.silenceProcessors {
-		if err := processor.Exec(ctx, k.FallthroughDB, &m); err != nil {
+		if err := processor.ProcessSilence(ctx, k.Broadcast, k.FallthroughDB, &m); err != nil {
 			return err
 		}
 	}

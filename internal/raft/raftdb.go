@@ -15,10 +15,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ kioradb.DB = &RaftDB{}
+var _ kioradb.ModelWriter = &RaftDB{}
 
 type RaftDB struct {
-	*kioradb.FallthroughDB
 	myID      raft.ServerID
 	raft      *raft.Raft
 	transport *transport.Manager
@@ -32,10 +31,9 @@ func NewRaftDB(ctx context.Context, config RaftConfig, backingDB kioradb.DB) (*R
 	}
 
 	return &RaftDB{
-		FallthroughDB: kioradb.NewFallthroughDB(backingDB),
-		myID:          localID,
-		raft:          raft,
-		transport:     transport,
+		myID:      localID,
+		raft:      raft,
+		transport: transport,
 	}, nil
 }
 
