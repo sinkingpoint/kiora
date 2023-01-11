@@ -59,6 +59,7 @@ func NewKioraInstance(args ...string) *KioraInstance {
 
 // Start actually executes the Kiora command, running it in a background go routine.
 func (k *KioraInstance) Start(t *testing.T) error {
+	t.Helper()
 	name := kioraInstanceName()
 	httpPort, err := getRandomPort()
 	require.NoError(t, err)
@@ -176,6 +177,7 @@ func (k *KioraInstance) WaitForExit(ctx context.Context) error {
 
 // ClusterStatus is a convenience method that returns the output of the raft cluster status endpoint.
 func (k *KioraInstance) ClusterStatus(t *testing.T) string {
+	t.Helper()
 	statusResp, err := http.Get(k.GetURL("/admin/raft/status"))
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, statusResp.StatusCode)
@@ -221,6 +223,7 @@ func getRandomPort() (string, error) {
 
 // StartKioraCluster starts n KioraInstance's, binding them into a raft cluster.
 func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
+	t.Helper()
 	// Start n-1 instances.
 	nodes := []*KioraInstance{}
 	for i := 0; i < numNodes-1; i++ {
