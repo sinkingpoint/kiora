@@ -1,25 +1,12 @@
 package config
 
-// Defines a custom Graph for gographviz that accepts all extra attributes
+// Defines a custom Graph for gographviz that accepts all extra attributes.
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
-
-type invalidConfig struct {
-	reason string
-}
-
-func (i invalidConfig) Error() string {
-	return fmt.Sprintf("Invalid Config: %s", i.reason)
-}
-
-func InvalidConfig(reason string) invalidConfig {
-	return invalidConfig{
-		reason,
-	}
-}
 
 // node is a node in the config graph that defines a filter, or a receiver.
 type node struct {
@@ -73,7 +60,7 @@ func (c *configGraph) AddPortEdge(src, srcPort, dst, dstPort string, directed bo
 
 func (c *configGraph) AddEdge(src, dst string, directed bool, attrs map[string]string) error {
 	if !directed {
-		return InvalidConfig("edges in the Config Graph must be directed")
+		return errors.New("edges in the Config Graph must be directed")
 	}
 
 	c.edges = append(c.edges, edge{
@@ -88,7 +75,7 @@ func (c *configGraph) AddEdge(src, dst string, directed bool, attrs map[string]s
 func (c *configGraph) AddNode(parentGraph string, name string, attrs map[string]string) error {
 	if parentGraph == c.name {
 		if _, ok := c.nodes[name]; ok {
-			return InvalidConfig(fmt.Sprintf("config graph already contains a node called %q", name))
+			return fmt.Errorf("config graph already contains a node called %q", name)
 		}
 
 		for i := range attrs {
@@ -105,7 +92,7 @@ func (c *configGraph) AddNode(parentGraph string, name string, attrs map[string]
 		if sub, ok := c.subGraphs[parentGraph]; ok {
 			return sub.AddNode(parentGraph, name, attrs)
 		} else {
-			return InvalidConfig(fmt.Sprintf("failed to find subgraph %q to add node", parentGraph))
+			return fmt.Errorf("failed to find subgraph %q to add node", parentGraph)
 		}
 	}
 }
@@ -113,7 +100,7 @@ func (c *configGraph) AddNode(parentGraph string, name string, attrs map[string]
 func (c *configGraph) AddAttr(parentGraph string, field, value string) error {
 	if parentGraph == c.name {
 		if _, ok := c.attrs[field]; ok {
-			return InvalidConfig(fmt.Sprintf("graph already has an attribute %q", field))
+			return fmt.Errorf("graph already has an attribute %q", field)
 		}
 
 		value := strings.Trim(value, "\"")
@@ -124,7 +111,7 @@ func (c *configGraph) AddAttr(parentGraph string, field, value string) error {
 		if sub, ok := c.subGraphs[parentGraph]; ok {
 			return sub.AddAttr(parentGraph, field, value)
 		} else {
-			return InvalidConfig(fmt.Sprintf("failed to find subgraph %q to add node", parentGraph))
+			return fmt.Errorf("failed to find subgraph %q to add node", parentGraph)
 		}
 	}
 }
@@ -132,7 +119,7 @@ func (c *configGraph) AddAttr(parentGraph string, field, value string) error {
 func (c *configGraph) AddSubGraph(parentGraph string, name string, attrs map[string]string) error {
 	if parentGraph == c.name {
 		if _, ok := c.attrs[name]; ok {
-			return InvalidConfig(fmt.Sprintf("graph already has an subgraph %q", name))
+			return fmt.Errorf("graph already has an subgraph %q", name)
 		}
 
 		graph := newConfigGraph()
@@ -143,7 +130,7 @@ func (c *configGraph) AddSubGraph(parentGraph string, name string, attrs map[str
 		return nil
 	} else {
 		// We only support one level of nesting for now, error if we're trying to add a subgraph to a subgraph.
-		return InvalidConfig("config only supports one layer of nesting")
+		return errors.New("config only supports one layer of nesting")
 	}
 }
 

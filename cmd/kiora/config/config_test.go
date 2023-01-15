@@ -18,9 +18,8 @@ func TestConfigLoad(t *testing.T) {
 		{
 			name: "standard config",
 			config: `digraph Config {
-				prometheus;
-				
-				core_observability{type="filter" regex=".+"};
+				console_debug;
+				alerts -> console_debug;
 			}`,
 			expectSuccess: true,
 		},
