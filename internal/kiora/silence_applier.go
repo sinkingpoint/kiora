@@ -21,6 +21,7 @@ func (s *SilenceApplier) ProcessAlert(ctx context.Context, broadcast kioradb.Mod
 	}
 
 	if alreadySilenced := existingAlert != nil && existingAlert.Status == model.AlertStatusSilenced; alreadySilenced {
+		newAlert.Status = model.AlertStatusSilenced
 		return nil
 	}
 
@@ -31,6 +32,10 @@ func (s *SilenceApplier) ProcessAlert(ctx context.Context, broadcast kioradb.Mod
 
 	if len(silences) > 0 {
 		newAlert.Status = model.AlertStatusSilenced
+
+		if err := db.ProcessAlerts(ctx, *newAlert); err != nil {
+			return err
+		}
 	}
 
 	return nil

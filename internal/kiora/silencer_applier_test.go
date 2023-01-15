@@ -52,6 +52,10 @@ func TestSilencer_Silences(t *testing.T) {
 		"foo": "bar",
 	}).Times(1).Return([]model.Silence{silence}, nil)
 
+	expectedAlert := alert
+	expectedAlert.Status = model.AlertStatusSilenced
+	db.EXPECT().ProcessAlerts(gomock.Any(), []model.Alert{expectedAlert}).Times(1).Return(nil)
+
 	applier := kiora.NewSilenceApplier()
 	assert.NoError(t, applier.ProcessAlert(context.Background(), nil, db, nil, &alert))
 
