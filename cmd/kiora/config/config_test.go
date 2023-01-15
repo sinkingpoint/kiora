@@ -18,7 +18,7 @@ func TestConfigLoad(t *testing.T) {
 		{
 			name: "standard config",
 			config: `digraph Config {
-				console_debug;
+				console_debug [type="stdout"];
 				alerts -> console_debug;
 			}`,
 			expectSuccess: true,
