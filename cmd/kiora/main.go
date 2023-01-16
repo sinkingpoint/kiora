@@ -30,7 +30,7 @@ func main() {
 		}
 	}
 
-	_, err := config.LoadConfigFile(CLI.ConfigFile)
+	conf, err := config.LoadConfigFile(CLI.ConfigFile)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
@@ -43,6 +43,7 @@ func main() {
 	serverConfig.RaftConfig.DataDir = CLI.RaftDataDir
 	serverConfig.RaftConfig.LocalAddress = CLI.RaftListenURL
 	serverConfig.RaftConfig.Bootstrap = CLI.RaftBootstrap
+	serverConfig.NotifyConfig = conf
 
 	server, err := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
 	if err != nil {

@@ -1,3 +1,4 @@
 digraph config {
-    
+    console [type="stdout"];
+    alerts -> console;
 }

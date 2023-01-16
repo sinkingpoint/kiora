@@ -23,6 +23,14 @@ func TestConfigLoad(t *testing.T) {
 			}`,
 			expectSuccess: true,
 		},
+		{
+			name: "cycle config",
+			config: `digraph Config {
+				console_debug [type="stdout"];
+				alerts -> console_debug -> alerts;
+			}`,
+			expectSuccess: false,
+		},
 	}
 
 	for _, tt := range tests {

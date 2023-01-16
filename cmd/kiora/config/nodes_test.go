@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,9 @@ func TestFileNotifyNode(t *testing.T) {
 
 	require.NoError(t, err)
 
-	assert.NoError(t, node.ProcessAlerts(context.Background(), model.Alert{
+	processor := node.(kioradb.ModelWriter)
+
+	assert.NoError(t, processor.ProcessAlerts(context.Background(), model.Alert{
 		Labels: model.Labels{
 			"alertname": "foo",
 		},

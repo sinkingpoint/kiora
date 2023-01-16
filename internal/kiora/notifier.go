@@ -2,25 +2,33 @@ package kiora
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
-// NotifierProcessor is responsible for
-type NotifierProcessor struct {
-	me string
+// NotifierConfig is an interface that defines a Configuration for the NotifierProcessor.
+type NotifierConfig interface {
+	// GetNotifiersForAlert takes an Alert and returns all the notifiers that should be notified about the alert.
+	GetNotifiersForAlert(a *model.Alert) []kioradb.ModelWriter
 }
 
-func NewNotifierProcessor(myName string) *NotifierProcessor {
+// NotifierProcessor is an Alert Processor responsible for actually notifying for alerts.
+type NotifierProcessor struct {
+	me     string
+	config NotifierConfig
+}
+
+func NewNotifierProcessor(myName string, config NotifierConfig) *NotifierProcessor {
 	return &NotifierProcessor{
-		me: myName,
+		me:     myName,
+		config: config,
 	}
 }
 
-func (s *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
-	if newAlert.AuthNode != s.me && (existingAlert == nil || existingAlert.AuthNode != s.me) {
+func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	if newAlert.AuthNode != n.me && (existingAlert == nil || existingAlert.AuthNode != n.me) {
 		return nil
 	}
 
@@ -28,11 +36,22 @@ func (s *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 		return nil
 	}
 
-	fmt.Printf("%s notifying for %q\n", s.me, newAlert)
-
 	newAlert.Status = model.AlertStatusFiring
+	var notifyError error
+	notifiers := n.config.GetNotifiersForAlert(newAlert)
+	for _, notify := range notifiers {
+		if err := notify.ProcessAlerts(ctx, *newAlert); err != nil {
+			notifyError = multierror.Append(notifyError, err)
+		}
+	}
 
-	// TODO(cdouch): Actually fire the alert.
+	if err := db.ProcessAlerts(ctx, *newAlert); err != nil {
+		notifyError = multierror.Append(notifyError, err)
+	}
 
-	return broadcast.ProcessAlerts(ctx, *newAlert)
+	if err := broadcast.ProcessAlerts(ctx, *newAlert); err != nil {
+		notifyError = multierror.Append(notifyError, err)
+	}
+
+	return notifyError
 }

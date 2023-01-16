@@ -1,7 +1,10 @@
 package config
 
+import "github.com/sinkingpoint/kiora/lib/kiora/model"
+
 type Filter interface {
 	Type() string
+	FilterAlert(a *model.Alert) bool
 }
 
 type Link struct {

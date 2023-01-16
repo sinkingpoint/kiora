@@ -9,15 +9,12 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/internal/encoding"
-	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
 const DEFAULT_ENCODING = "json"
 
 type Node interface {
-	kioradb.ModelWriter
-
 	// Type returns a static name of the type of the node for debugging purposes.
 	Type() string
 }
