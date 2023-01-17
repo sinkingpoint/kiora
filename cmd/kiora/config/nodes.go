@@ -19,14 +19,6 @@ type Node interface {
 	Type() string
 }
 
-// DefaultNode is a node that does nothing, but provides a base for other nodes to compose on top of.
-type DefaultNode struct{}
-
-func (d *DefaultNode) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error { return nil }
-func (d *DefaultNode) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
-	return nil
-}
-
 // NodeConstructor is a function that takes a raw graph node and turns it into a node that can actually process things.
 type NodeConstructor = func(n node) (Node, error)
 
@@ -45,7 +37,6 @@ func LookupNode(name string) NodeConstructor {
 // AnchorNode is the default node type, if nothing else is specified. They do nothing except
 // act as anchor points for Links to allow splitting one or more incoming links into one or more outgoing ones.
 type AnchorNode struct {
-	*DefaultNode
 }
 
 func (a *AnchorNode) Type() string {
@@ -54,7 +45,6 @@ func (a *AnchorNode) Type() string {
 
 // FileNotifierNode represents a node that can output alerts to a Writer.
 type FileNotifierNode struct {
-	*DefaultNode
 	encoder encoding.Encoder
 	file    io.WriteCloser
 }
