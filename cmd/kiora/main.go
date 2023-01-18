@@ -48,6 +48,7 @@ func main() {
 	serverConfig.NotifyConfig = conf
 
 	tracingConfig := tracing.DefaultTracingConfiguration()
+	tracingConfig.ExporterType = "jaeger"
 	tp, err := tracing.InitTracing(tracingConfig)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to start tracing")

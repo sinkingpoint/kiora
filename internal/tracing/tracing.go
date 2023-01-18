@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -19,8 +20,9 @@ func Tracer() trace.Tracer {
 }
 
 type TracingConfiguration struct {
-	ServiceName  string
-	ExporterType string
+	ServiceName    string
+	ExporterType   string
+	DestinationURL string
 }
 
 func DefaultTracingConfiguration() TracingConfiguration {
@@ -55,6 +57,12 @@ func newSpanExporter(config TracingConfiguration) (sdktrace.SpanExporter, error)
 		return stdouttrace.New(
 			stdouttrace.WithWriter(os.Stdout),
 		)
+	case "jaeger":
+		if config.DestinationURL != "" {
+			return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(config.DestinationURL)))
+		}
+
+		return jaeger.New(jaeger.WithCollectorEndpoint())
 	default:
 		return nil, fmt.Errorf("invalid exporter: %q", config.ExporterType)
 	}

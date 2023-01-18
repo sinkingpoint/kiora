@@ -34,7 +34,7 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 	ctx, span := tracing.Tracer().Start(ctx, "NotifierProcessor.ProcessAlert")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("alert", fmt.Sprint(newAlert)))
+	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", newAlert)))
 
 	if newAlert.AuthNode != n.me && (existingAlert == nil || existingAlert.AuthNode != n.me) {
 		span.AddEvent("Skipping because this node is not authoritative")
