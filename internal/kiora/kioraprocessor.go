@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rs/zerolog/log"
+	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -74,6 +75,9 @@ func (k *KioraProcessor) processSilence(ctx context.Context, m model.Silence) er
 }
 
 func (k *KioraProcessor) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error {
+	ctx, span := tracing.Tracer().Start(ctx, "KioraProcessor.ProcessAlerts")
+	defer span.End()
+
 	for _, alert := range alerts {
 		if err := k.processAlert(ctx, alert); err != nil {
 			log.Err(err).Msg("failed to process alert")
@@ -84,6 +88,9 @@ func (k *KioraProcessor) ProcessAlerts(ctx context.Context, alerts ...model.Aler
 }
 
 func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
+	ctx, span := tracing.Tracer().Start(ctx, "KioraProcessor.ProcessSilences")
+	defer span.End()
+
 	for _, silence := range silences {
 		if err := k.processSilence(ctx, silence); err != nil {
 			log.Err(err).Msg("failed to process silence")

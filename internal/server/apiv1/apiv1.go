@@ -13,6 +13,10 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"google.golang.org/protobuf/proto"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const CONTENT_TYPE_JSON = "application/json"
@@ -22,10 +26,10 @@ func Register(router *mux.Router, db kioradb.DB) {
 	api := apiv1{
 		db,
 	}
-	router.Path("/api/v1/alerts").Methods(http.MethodPost).HandlerFunc(api.postAlerts)
-	router.Path("/api/v1/alerts").Methods(http.MethodGet).HandlerFunc(api.getAlerts)
+	router.Path("/api/v1/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postAlerts), "POST api/v1/alerts"))
+	router.Path("/api/v1/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
 
-	router.Path("/api/v1/silences").Methods(http.MethodPost).HandlerFunc(api.postSilences)
+	router.Path("/api/v1/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postSilences), "GET /api/v1/silences"))
 }
 
 // ReadBody reads the body from the request, decoding any Content-Encoding present.
@@ -40,6 +44,8 @@ type apiv1 struct {
 // postAlerts handles the POST /alerts request, decoding a list of alerts
 // from the body, and forwarding them to the db.
 func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+
 	body, err := readBody(r)
 	if err != nil {
 		http.Error(w, "failed to read body", http.StatusBadRequest)
@@ -53,6 +59,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(io.NopCloser(bytes.NewBuffer(body)))
 		decoder.DisallowUnknownFields()
 		if err := decoder.Decode(&alerts); err != nil {
+			span.RecordError(err)
 			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
 		}
@@ -61,6 +68,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		// every struct each time.
 		protoAlerts := kioraproto.PostAlertsMessage{}
 		if err := proto.Unmarshal(body, &protoAlerts); err != nil {
+			span.RecordError(err)
 			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
 		}
@@ -68,6 +76,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		for _, protoAlert := range protoAlerts.Alerts {
 			var alert model.Alert
 			if err := alert.DeserializeFromProto(protoAlert); err != nil {
+				span.RecordError(err)
 				http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 				return
 			}
@@ -86,6 +95,8 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.db.ProcessAlerts(r.Context(), alerts...); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to process alerts")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -94,8 +105,12 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+
 	alerts, err := a.db.GetAlerts(r.Context())
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get alerts")
 		log.Err(err).Msg("failed to get alerts")
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
 		return
@@ -103,6 +118,8 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := json.Marshal(alerts)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal alerts")
 		log.Err(err).Msg("failed to get alerts")
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
 		return

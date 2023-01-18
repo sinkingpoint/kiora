@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
 	"github.com/sinkingpoint/kiora/internal/server"
+	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
@@ -44,6 +46,18 @@ func main() {
 	serverConfig.RaftConfig.LocalAddress = CLI.RaftListenURL
 	serverConfig.RaftConfig.Bootstrap = CLI.RaftBootstrap
 	serverConfig.NotifyConfig = conf
+
+	tracingConfig := tracing.DefaultTracingConfiguration()
+	tp, err := tracing.InitTracing(tracingConfig)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to start tracing")
+	}
+
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Warn().Err(err).Msg("failed to shutdown tracing. Spans may have been lost")
+		}
+	}()
 
 	server, err := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
 	if err != nil {

@@ -2,10 +2,13 @@ package kiora
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // NotifierConfig is an interface that defines a Configuration for the NotifierProcessor.
@@ -28,11 +31,18 @@ func NewNotifierProcessor(myName string, config NotifierConfig) *NotifierProcess
 }
 
 func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	ctx, span := tracing.Tracer().Start(ctx, "NotifierProcessor.ProcessAlert")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("alert", fmt.Sprint(newAlert)))
+
 	if newAlert.AuthNode != n.me && (existingAlert == nil || existingAlert.AuthNode != n.me) {
+		span.AddEvent("Skipping because this node is not authoritative")
 		return nil
 	}
 
 	if newAlert.Status != model.AlertStatusProcessing {
+		span.AddEvent("Skipping because the alert isn't processing")
 		return nil
 	}
 

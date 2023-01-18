@@ -8,8 +8,10 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
+	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
@@ -52,18 +54,26 @@ func (r *RaftDB) ProcessSilences(ctx context.Context, silences ...model.Silence)
 
 // applyLog takes the given protobuf message, marshals it, and adds it as a log into the raft log.
 func (r *RaftDB) applyLog(ctx context.Context, msg *kioraproto.RaftLogMessage) error {
+	ctx, span := tracing.Tracer().Start(ctx, "RaftDB.applyLog")
+	defer span.End()
+
 	leaderAddress, leaderID := r.raft.LeaderWithID()
 
 	if leaderID == r.myID {
 		return r.applyAsLeader(ctx, msg)
 	}
 
+	span.AddEvent("forwarding")
+
 	return r.forwardLog(ctx, string(leaderAddress), msg)
 }
 
 // forwardLog is responsible for forwarding a log to the leader node, in the case that the node that received the log is not the leader.
 func (r *RaftDB) forwardLog(ctx context.Context, leaderAddress string, msg *kioraproto.RaftLogMessage) error {
-	conn, err := grpc.Dial(string(leaderAddress), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(string(leaderAddress), grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+
 	if err != nil {
 		return err
 	}
@@ -84,8 +94,7 @@ func (r *RaftDB) applyAsLeader(ctx context.Context, msg *kioraproto.RaftLogMessa
 		return err
 	}
 
-	f := r.raft.Apply(bytes, 0)
-	return f.Error()
+	return r.raft.ApplyLogCtx(ctx, raft.Log{Data: bytes}).Error()
 }
 
 func (r *RaftDB) RegisterEndpoints(ctx context.Context, httpRouter *mux.Router, grpcServer *grpc.Server) error {

@@ -14,6 +14,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -113,7 +114,10 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 func (k *KioraServer) ListenAndServe() error {
 	errChan := make(chan error)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+
 	httpRouter := mux.NewRouter()
 
 	if err := k.db.RegisterEndpoints(context.Background(), httpRouter, grpcServer); err != nil {
