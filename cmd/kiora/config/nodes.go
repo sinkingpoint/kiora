@@ -104,6 +104,8 @@ func (f *FileNotifierNode) ProcessAlerts(ctx context.Context, alerts ...model.Al
 			continue
 		}
 
+		bytes = append(bytes, '\n')
+
 		if _, err := f.file.Write(bytes); err != nil {
 			lastError = multierror.Append(lastError, err)
 		}
