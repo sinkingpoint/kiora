@@ -5,7 +5,10 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"runtime"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
@@ -152,6 +155,9 @@ func (k *KioraServer) listenAndServeGRPC(server *grpc.Server) error {
 
 func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	apiv1.Register(r, k.db)
+
+	runtime.SetMutexProfileFraction(5)
+	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
 	httpServer := http.Server{
 		Addr:         k.HTTPListenAddress,
