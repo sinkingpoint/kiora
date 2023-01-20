@@ -6,6 +6,7 @@ import (
 	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/raft"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/internal/tracing"
@@ -20,9 +21,10 @@ import (
 var _ kioradb.ModelWriter = &RaftDB{}
 
 type RaftDB struct {
-	myID      raft.ServerID
-	raft      *raft.Raft
-	transport *transport.Manager
+	myID         raft.ServerID
+	raft         *raft.Raft
+	transport    *transport.Manager
+	dispatchChan chan *kioraproto.RaftLogMessage
 }
 
 func NewRaftDB(ctx context.Context, config RaftConfig, backingDB kioradb.DB) (*RaftDB, error) {
@@ -32,11 +34,22 @@ func NewRaftDB(ctx context.Context, config RaftConfig, backingDB kioradb.DB) (*R
 		return nil, err
 	}
 
-	return &RaftDB{
-		myID:      localID,
-		raft:      raft,
-		transport: transport,
-	}, nil
+	db := RaftDB{
+		myID:         localID,
+		raft:         raft,
+		transport:    transport,
+		dispatchChan: make(chan *kioraproto.RaftLogMessage, 500), // TODO(cdouch): This capacity is arbitrary. Should benchmark it.
+	}
+
+	go func() {
+		for msg := range db.dispatchChan {
+			if err := db.applyLog(context.Background(), msg); err != nil {
+				log.Err(err).Msg("failed to apply log")
+			}
+		}
+	}()
+
+	return &db, nil
 }
 
 func (r *RaftDB) Raft() *raft.Raft {
@@ -45,11 +58,13 @@ func (r *RaftDB) Raft() *raft.Raft {
 
 // ProcessAlerts takes alerts and processes them, adding new ones and resolving old ones.
 func (r *RaftDB) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error {
-	return r.applyLog(ctx, newPostAlertsRaftLogMessage(alerts...))
+	r.dispatchChan <- newPostAlertsRaftLogMessage(alerts...)
+	return nil
 }
 
 func (r *RaftDB) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
-	return r.applyLog(ctx, newPostSilencesRaftLogMessage(silences...))
+	r.dispatchChan <- newPostSilencesRaftLogMessage(silences...)
+	return nil
 }
 
 // applyLog takes the given protobuf message, marshals it, and adds it as a log into the raft log.
