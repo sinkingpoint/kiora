@@ -66,6 +66,15 @@ func NewServerConfig() serverConfig {
 func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
 
+	// Add an alert processor that marks this node as being the authoritative node for the alert.
+	processor.AddAlertProcessor(kiora.AlertProcessorFunc(func(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+		if newAlert.AuthNode == "" {
+			newAlert.AuthNode = conf.RaftConfig.LocalID
+		}
+
+		return nil
+	}))
+
 	// For now, just broadcast everything that comes in.
 	broadcastProcessor := kiora.BroadcastProcessor{}
 	processor.AddAlertProcessor(&broadcastProcessor)

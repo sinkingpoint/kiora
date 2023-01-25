@@ -21,6 +21,17 @@ type SilenceProcessor interface {
 	ProcessSilence(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, silence *model.Silence) error
 }
 
+// AlertProcessorFunc wraps a func and turns it into an AlertProcessor.
+type AlertProcessorFunc func(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
+
+func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	if a != nil {
+		return a(ctx, broadcast, localdb, existingAlert, newAlert)
+	}
+
+	return nil
+}
+
 // KioraProcessor is the main logic piece of Kiora that is responsible for actually acting on alerts, silences etc.
 type KioraProcessor struct {
 	*kioradb.FallthroughDB

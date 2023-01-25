@@ -89,7 +89,6 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// For all incoming alerts, mark them as processing so later stages know that these are new alerts, not replayed old ones.
 	for i := range alerts {
-		alerts[i].AuthNode = "fedora"
 		if alerts[i].Status == model.AlertStatusFiring {
 			alerts[i].Status = model.AlertStatusProcessing
 		}

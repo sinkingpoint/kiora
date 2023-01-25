@@ -36,12 +36,13 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 
 	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", newAlert)))
 
-	if newAlert.AuthNode != n.me && (existingAlert == nil || existingAlert.AuthNode != n.me) {
+	// Skip this notify if we're not authoritative in the new alert, or the existing alert.
+	if newAlert.AuthNode != n.me || (existingAlert != nil && existingAlert.AuthNode != n.me) {
 		span.AddEvent("Skipping because this node is not authoritative")
 		return nil
 	}
 
-	if newAlert.Status != model.AlertStatusProcessing {
+	if (existingAlert == nil || existingAlert.Status != model.AlertStatusProcessing) && newAlert.Status != model.AlertStatusProcessing {
 		span.AddEvent("Skipping because the alert isn't processing")
 		return nil
 	}
