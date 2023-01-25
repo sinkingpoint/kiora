@@ -83,8 +83,8 @@ func (k *KioraInstance) Start(t *testing.T) error {
 
 	// Setup a cleanup job that stops the instance, and removes the data directory.
 	t.Cleanup(func() {
-		t.Log("Stderr: ", k.Stderr())
-		t.Log("Stdout: ", k.Stdout())
+		t.Logf("Name: %q Stderr: \n%s", k.args, k.Stderr())
+		t.Logf("Name: %q Stdout: \n%s", k.args, k.Stdout())
 		require.NoError(t, k.Stop())
 		require.NoError(t, os.RemoveAll("../artifacts/test/"+name))
 	})
@@ -97,12 +97,14 @@ func (k *KioraInstance) Start(t *testing.T) error {
 }
 
 // clusterHasLeader checks the raft cluster status, and returns true if any node in the cluster is the leader.
-func (k *KioraInstance) clusterHasLeader() bool {
+func (k *KioraInstance) clusterHasLeader(t *testing.T) bool {
 	reqURL := k.GetURL("/admin/raft/status")
 	resp, err := http.Get(reqURL)
 	if err != nil {
 		return false
 	}
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -114,17 +116,17 @@ func (k *KioraInstance) clusterHasLeader() bool {
 }
 
 // WaitUntilLeader polls the raft endpoint until the cluster has a leader, failing if it isn't up within 10 seconds.
-func (k *KioraInstance) WaitUntilLeader(ctx context.Context) error {
+func (k *KioraInstance) WaitUntilLeader(t *testing.T, ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if k.clusterHasLeader() {
+			if k.clusterHasLeader(t) {
 				return nil
 			}
 
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
@@ -236,10 +238,10 @@ func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	leader := NewKioraInstance("--raft.bootstrap", "--raft.local-id", fmt.Sprintf("node-%d", numNodes-1))
 	require.NoError(t, leader.Start(t))
 
-	// Wait until the cluster it up, and then add every node to the leader.
+	// Wait until the cluster is up, and then add every node to the leader.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	require.NoError(t, leader.WaitUntilLeader(ctx))
+	require.NoError(t, leader.WaitUntilLeader(t, ctx))
 	for _, node := range nodes {
 		require.NoError(t, leader.JoinWith(node))
 	}

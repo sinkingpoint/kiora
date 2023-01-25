@@ -42,13 +42,15 @@ func TestKioraAlertPost(t *testing.T) {
 
 	kiora := NewKioraInstance("--raft.bootstrap")
 	require.NoError(t, kiora.Start(t))
-	require.NoError(t, kiora.WaitUntilLeader(ctx))
+	require.NoError(t, kiora.WaitUntilLeader(t, ctx))
 
 	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
 	require.NoError(t, err)
 
 	resp, err := http.Post(kiora.GetURL("/api/v1/alerts"), "application/json", strings.NewReader(fmt.Sprintf(`[{
-	"labels": {},
+	"labels": {
+		"foo": "bar"
+	},
 	"annotations": {},
 	"status": "firing",
 	"startTime": "%s"
@@ -60,6 +62,11 @@ func TestKioraAlertPost(t *testing.T) {
 	resp.Body.Close()
 
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode, string(body))
+
+	// Sleep a bit to apply the alert.
+	time.Sleep(1 * time.Second)
+
+	assert.Contains(t, kiora.stdout.String(), "foo")
 }
 
 // Test that a cluster of three nodes comes up properly, with a leader.
@@ -67,8 +74,6 @@ func TestKioraCluster(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-
-	t.Parallel()
 
 	nodes := StartKioraCluster(t, 3)
 	for _, k := range nodes {
@@ -83,8 +88,6 @@ func TestKioraClusterAlerts(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-
-	t.Parallel()
 
 	nodes := StartKioraCluster(t, 3)
 	requestURL := nodes[0].GetURL("/api/v1/alerts")
@@ -123,4 +126,57 @@ func TestKioraClusterAlerts(t *testing.T) {
 
 		assert.Contains(t, string(respBytes), "foo")
 	}
+}
+
+func TestClusterAlertOnlySentOnce(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	nodes := StartKioraCluster(t, 3)
+	for i := range nodes {
+		requestURL := nodes[i].GetURL("/api/v1/alerts")
+
+		referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
+		require.NoError(t, err)
+
+		resp, err := http.Post(requestURL, "application/json", strings.NewReader(fmt.Sprintf(`[{
+		"labels": {
+			"foo":"bar"
+		},
+		"annotations": {},
+		"status": "firing",
+		"startTime": "%s"
+	}]`, referenceTime.Format(time.RFC3339))))
+
+		require.NoError(t, err)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		resp.Body.Close()
+
+		t.Logf("Node %d Response: %q", i, string(body))
+		require.Equal(t, http.StatusAccepted, resp.StatusCode)
+	}
+
+	// Wait for raft to apply the log.
+	time.Sleep(1 * time.Second)
+
+	found := 0
+	notFound := 0
+
+	for i := range nodes {
+		if strings.Contains(nodes[i].stdout.String(), "foo") {
+			t.Logf("Node %d notified for alert", i)
+			found += 1
+		} else {
+			t.Logf("Node %d did not for alert", i)
+			notFound += 1
+		}
+	}
+
+	assert.Equal(t, 1, found, "Expected only one notification")
+	assert.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
 }
