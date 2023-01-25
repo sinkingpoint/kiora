@@ -42,7 +42,7 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 		return nil
 	}
 
-	if (existingAlert == nil || existingAlert.Status != model.AlertStatusProcessing) && newAlert.Status != model.AlertStatusProcessing {
+	if newAlert.Status != model.AlertStatusProcessing || (existingAlert != nil && existingAlert.Status != model.AlertStatusProcessing) {
 		span.AddEvent("Skipping because the alert isn't processing")
 		return nil
 	}
