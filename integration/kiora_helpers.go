@@ -3,6 +3,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -16,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -175,6 +177,21 @@ func (k *KioraInstance) WaitForExit(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model.Alert) {
+	requestURL := k.GetURL("/api/v1/alerts")
+
+	alertBytes, err := json.Marshal([]model.Alert{alert})
+	require.NoError(t, err)
+
+	t.Log(string(alertBytes))
+
+	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(alertBytes))
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 }
 
 // ClusterStatus is a convenience method that returns the output of the raft cluster status endpoint.

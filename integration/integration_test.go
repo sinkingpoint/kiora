@@ -2,16 +2,27 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func dummyAlert() model.Alert {
+	return model.Alert{
+		Labels: model.Labels{
+			"foo": "bar",
+		},
+		Annotations: map[string]string{},
+		Status:      model.AlertStatusFiring,
+		StartTime:   time.Now(),
+	}
+}
 
 // Test that Kiora doesn't immediatly exit.
 func TestKioraStart(t *testing.T) {
@@ -44,24 +55,7 @@ func TestKioraAlertPost(t *testing.T) {
 	require.NoError(t, kiora.Start(t))
 	require.NoError(t, kiora.WaitUntilLeader(t, ctx))
 
-	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
-	require.NoError(t, err)
-
-	resp, err := http.Post(kiora.GetURL("/api/v1/alerts"), "application/json", strings.NewReader(fmt.Sprintf(`[{
-	"labels": {
-		"foo": "bar"
-	},
-	"annotations": {},
-	"status": "firing",
-	"startTime": "%s"
-}]`, referenceTime.Format(time.RFC3339))))
-	require.NoError(t, err)
-
-	body, err := io.ReadAll(resp.Body)
-	assert.NoError(t, err)
-	resp.Body.Close()
-
-	assert.Equal(t, http.StatusAccepted, resp.StatusCode, string(body))
+	kiora.SendAlert(t, context.TODO(), dummyAlert())
 
 	// Sleep a bit to apply the alert.
 	time.Sleep(1 * time.Second)
@@ -90,28 +84,8 @@ func TestKioraClusterAlerts(t *testing.T) {
 	}
 
 	nodes := StartKioraCluster(t, 3)
-	requestURL := nodes[0].GetURL("/api/v1/alerts")
 
-	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
-	require.NoError(t, err)
-
-	resp, err := http.Post(requestURL, "application/json", strings.NewReader(fmt.Sprintf(`[{
-	"labels": {
-		"foo":"bar"
-	},
-	"annotations": {},
-	"status": "firing",
-	"startTime": "%s"
-}]`, referenceTime.Format(time.RFC3339))))
-
-	require.NoError(t, err)
-
-	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	resp.Body.Close()
-
-	t.Logf("Response: %q", string(body))
-	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+	nodes[0].SendAlert(t, context.TODO(), dummyAlert())
 
 	// Wait for raft to apply the log.
 	time.Sleep(1 * time.Second)
@@ -135,30 +109,11 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 
 	t.Parallel()
 
+	alert := dummyAlert()
+
 	nodes := StartKioraCluster(t, 3)
 	for i := range nodes {
-		requestURL := nodes[i].GetURL("/api/v1/alerts")
-
-		referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
-		require.NoError(t, err)
-
-		resp, err := http.Post(requestURL, "application/json", strings.NewReader(fmt.Sprintf(`[{
-		"labels": {
-			"foo":"bar"
-		},
-		"annotations": {},
-		"status": "firing",
-		"startTime": "%s"
-	}]`, referenceTime.Format(time.RFC3339))))
-
-		require.NoError(t, err)
-
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		resp.Body.Close()
-
-		t.Logf("Node %d Response: %q", i, string(body))
-		require.Equal(t, http.StatusAccepted, resp.StatusCode)
+		nodes[i].SendAlert(t, context.TODO(), alert)
 	}
 
 	// Wait for raft to apply the log.
@@ -178,5 +133,32 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, found, "Expected only one notification")
+	assert.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
+
+	found = 0
+	notFound = 0
+	totalFound := 0
+
+	// Apply the alert _a second time_ to test deduplication logic.
+	for i := range nodes {
+		nodes[i].SendAlert(t, context.TODO(), alert)
+	}
+
+	// Wait for raft to apply the log.
+	time.Sleep(1 * time.Second)
+
+	for i := range nodes {
+		if strings.Contains(nodes[i].Stdout(), "foo") {
+			t.Logf("Node %d notified for alert", i)
+			found += 1
+			totalFound += strings.Count(nodes[i].Stdout(), "foo")
+		} else {
+			t.Logf("Node %d did not for alert", i)
+			notFound += 1
+		}
+	}
+
+	assert.Equal(t, 1, found, "Expected only one notification")
+	assert.Equal(t, 1, totalFound, "Expected only one notification")
 	assert.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
 }
