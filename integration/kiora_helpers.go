@@ -27,6 +27,9 @@ type KioraInstance struct {
 	// The cluster name of this instance.
 	name string
 
+	// The path to the file that contains the config for this instance.
+	configFile string
+
 	// The CLI arguments to add to the command to start Kiora.
 	args []string
 
@@ -54,9 +57,15 @@ func NewKioraInstance(args ...string) *KioraInstance {
 	return &KioraInstance{
 		args:        args,
 		exitChannel: make(chan error),
+		configFile:  "../testdata/kiora.dot",
 		stdout:      &bytes.Buffer{},
 		stderr:      &bytes.Buffer{},
 	}
+}
+
+func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
+	k.configFile = configFile
+	return k
 }
 
 // Start actually executes the Kiora command, running it in a background go routine.
@@ -69,7 +78,7 @@ func (k *KioraInstance) Start(t *testing.T) error {
 	raftPort, err := getRandomPort()
 	require.NoError(t, err)
 
-	args := append([]string{"run", "../cmd/kiora", "-c", "../testdata/kiora.dot", "--raft.data-dir",
+	args := append([]string{"run", "../cmd/kiora", "-c", k.configFile, "--raft.data-dir",
 		"../artifacts/test/" + name, "--web.listen-url", "localhost:" + httpPort,
 		"--raft.listen-url", "localhost:" + raftPort}, k.args...)
 
@@ -269,4 +278,22 @@ func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	time.Sleep(2 * time.Second)
 
 	return nodes
+}
+
+// WriteConfigFile writes out the given config to a file, returning
+// the path that can be added to a Kiora instance.
+func WriteConfigFile(t *testing.T, config string) string {
+	t.Helper()
+	file, err := os.CreateTemp("", "")
+	require.NoError(t, err)
+
+	n, err := file.WriteString(config)
+	require.NoError(t, err)
+	require.Equal(t, len(config), n)
+
+	t.Cleanup(func() {
+		os.Remove(file.Name())
+	})
+
+	return file.Name()
 }
