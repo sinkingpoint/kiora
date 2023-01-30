@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
 
 	"github.com/alecthomas/kong"
 	"github.com/rs/zerolog/log"
@@ -66,7 +67,20 @@ func main() {
 		return
 	}
 
+	// Setup a SIGINT handler, so that we can shutdown gracefully.
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			log.Info().Msg("Received signal, shutting down")
+			server.Kill()
+			break
+		}
+	}()
+
 	if err := server.ListenAndServe(); err != nil {
 		log.Err(err).Msg("failed to listen and serve")
 	}
+
+	log.Info().Msg("Kiora Shut Down")
 }

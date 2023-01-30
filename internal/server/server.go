@@ -6,11 +6,13 @@ import (
 	"net"
 	"net/http"
 	"runtime"
+	"sync"
 	"time"
 
 	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/kiora"
 	"github.com/sinkingpoint/kiora/internal/raft"
@@ -102,6 +104,11 @@ type KioraServer struct {
 	serverConfig
 	broadcaster *raft.RaftDB
 	db          *kiora.KioraProcessor
+
+	httpServer *http.Server
+	grpcServer *grpc.Server
+
+	close sync.Once
 }
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
@@ -122,44 +129,66 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	}, nil
 }
 
+func (k *KioraServer) Kill() {
+	k.close.Do(func() {
+		k.httpServer.Shutdown(context.Background())
+		k.grpcServer.GracefulStop()
+	})
+}
+
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
 func (k *KioraServer) ListenAndServe() error {
-	errChan := make(chan error)
-
-	grpcServer := grpc.NewServer(
+	k.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 
 	httpRouter := mux.NewRouter()
 
-	if err := k.db.RegisterEndpoints(context.Background(), httpRouter, grpcServer); err != nil {
+	if err := k.db.RegisterEndpoints(context.Background(), httpRouter, k.grpcServer); err != nil {
 		return err
 	}
 
-	if err := k.broadcaster.RegisterEndpoints(context.Background(), httpRouter, grpcServer); err != nil {
+	if err := k.broadcaster.RegisterEndpoints(context.Background(), httpRouter, k.grpcServer); err != nil {
 		return err
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	go func() {
-		errChan <- k.listenAndServeHTTP(httpRouter)
+		if err := k.listenAndServeHTTP(httpRouter); err != nil {
+			log.Err(err).Msg("Error shutting down HTTP server")
+		}
+
+		wg.Done()
+
+		log.Info().Msg("HTTP Server Shut Down")
 	}()
 
 	go func() {
-		errChan <- k.listenAndServeGRPC(grpcServer)
+		if err := k.listenAndServeGRPC(); err != nil {
+			log.Err(err).Msg("Error shutting down GRPC server")
+		}
+
+		wg.Done()
+
+		log.Info().Msg("GRPC Server Shut Down")
 	}()
 
-	return <-errChan
+	wg.Wait()
+
+	return nil
 }
 
-func (k *KioraServer) listenAndServeGRPC(server *grpc.Server) error {
+func (k *KioraServer) listenAndServeGRPC() error {
 	listener, err := net.Listen("tcp", k.serverConfig.GRPCListenAddress)
 	if err != nil {
 		return err
 	}
 
-	kioraproto.RegisterRaftApplierServer(server, k)
-	reflection.Register(server)
-	return server.Serve(listener)
+	kioraproto.RegisterRaftApplierServer(k.grpcServer, k)
+	reflection.Register(k.grpcServer)
+	return k.grpcServer.Serve(listener)
 }
 
 func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
@@ -168,7 +197,7 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	runtime.SetMutexProfileFraction(5)
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
-	httpServer := http.Server{
+	k.httpServer = &http.Server{
 		Addr:         k.HTTPListenAddress,
 		ReadTimeout:  k.ReadTimeout,
 		WriteTimeout: k.WriteTimeout,
@@ -178,9 +207,9 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	var err error
 
 	if k.TLS != nil {
-		err = httpServer.ListenAndServeTLS(k.TLS.CertPath, k.TLS.KeyPath)
+		err = k.httpServer.ListenAndServeTLS(k.TLS.CertPath, k.TLS.KeyPath)
 	} else {
-		err = httpServer.ListenAndServe()
+		err = k.httpServer.ListenAndServe()
 	}
 
 	// ListenAndServe always returns an error, which is ErrServerClosed if cleanly exitted. Here we map
