@@ -13,11 +13,10 @@ type ModelReader interface {
 	// GetAlerts gets all the alerts currently in the database.
 	GetAlerts(ctx context.Context) ([]model.Alert, error)
 
-	// GetExistingAlert returns the existing data for a given labelset, if it exists.
-	GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error)
-
 	// GetSilence returns all the silences that would match a given label set
 	GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error)
+
+	QueryAlerts(ctx context.Context, query AlertQuery) []model.Alert
 }
 
 // ModelWriter defines an interface that takes various models and processes them, with no way to get them back out.
@@ -52,8 +51,8 @@ func (f *FallthroughDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 }
 
 // GetExistingAlert returns the existing data for a given labelset, if it exists.
-func (f *FallthroughDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	return f.db.GetExistingAlert(ctx, labels)
+func (f *FallthroughDB) QueryAlerts(ctx context.Context, query AlertQuery) []model.Alert {
+	return f.db.QueryAlerts(ctx, query)
 }
 
 // GetSilence returns all the silences that would match a given label set

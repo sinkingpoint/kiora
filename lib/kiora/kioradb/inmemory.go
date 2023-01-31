@@ -53,13 +53,24 @@ func (m *inMemoryDB) GetAlerts(ctx context.Context) ([]model.Alert, error) {
 	return alerts, nil
 }
 
-func (m *inMemoryDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	hash := labels.Hash()
-	if existingAlert, ok := m.alerts[hash]; ok {
-		return &existingAlert, nil
-	}
+func (m *inMemoryDB) QueryAlerts(ctx context.Context, query AlertQuery) []model.Alert {
+	switch query := query.(type) {
+	case *ExactLabelMatchQuery:
+		if existingAlert, ok := m.alerts[query.Labels.Hash()]; ok {
+			return []model.Alert{existingAlert}
+		}
 
-	return nil, nil
+		// Short circuit exact matches because we can process them more efficiently by just looking up the hash.
+		return []model.Alert{}
+	default:
+		alerts := []model.Alert{}
+		for _, alert := range m.alerts {
+			if query.MatchesAlert(ctx, &alert) {
+				alerts = append(alerts, alert)
+			}
+		}
+		return alerts
+	}
 }
 
 func (m *inMemoryDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {

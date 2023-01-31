@@ -131,7 +131,7 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 
 func (k *KioraServer) Kill() {
 	k.close.Do(func() {
-		k.httpServer.Shutdown(context.Background())
+		k.httpServer.Shutdown(context.Background()) //nolint:errcheck
 		k.grpcServer.GracefulStop()
 	})
 }

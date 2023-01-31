@@ -42,8 +42,8 @@ func (m *mockDB) ProcessSilences(ctx context.Context, silences ...model.Silence)
 	return nil
 }
 
-func (m *mockDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	return nil, nil
+func (m *mockDB) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []model.Alert {
+	return nil
 }
 
 func (r *mockDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {

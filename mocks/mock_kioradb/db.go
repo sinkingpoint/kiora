@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	mux "github.com/gorilla/mux"
+	kioradb "github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	model "github.com/sinkingpoint/kiora/lib/kiora/model"
 	grpc "google.golang.org/grpc"
 )
@@ -52,21 +53,6 @@ func (mr *MockModelReaderMockRecorder) GetAlerts(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlerts", reflect.TypeOf((*MockModelReader)(nil).GetAlerts), ctx)
 }
 
-// GetExistingAlert mocks base method.
-func (m *MockModelReader) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetExistingAlert", ctx, labels)
-	ret0, _ := ret[0].(*model.Alert)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetExistingAlert indicates an expected call of GetExistingAlert.
-func (mr *MockModelReaderMockRecorder) GetExistingAlert(ctx, labels interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExistingAlert", reflect.TypeOf((*MockModelReader)(nil).GetExistingAlert), ctx, labels)
-}
-
 // GetSilences mocks base method.
 func (m *MockModelReader) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
 	m.ctrl.T.Helper()
@@ -80,6 +66,20 @@ func (m *MockModelReader) GetSilences(ctx context.Context, labels model.Labels) 
 func (mr *MockModelReaderMockRecorder) GetSilences(ctx, labels interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSilences", reflect.TypeOf((*MockModelReader)(nil).GetSilences), ctx, labels)
+}
+
+// QueryAlerts mocks base method.
+func (m *MockModelReader) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []model.Alert {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueryAlerts", ctx, query)
+	ret0, _ := ret[0].([]model.Alert)
+	return ret0
+}
+
+// QueryAlerts indicates an expected call of QueryAlerts.
+func (mr *MockModelReaderMockRecorder) QueryAlerts(ctx, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAlerts", reflect.TypeOf((*MockModelReader)(nil).QueryAlerts), ctx, query)
 }
 
 // MockModelWriter is a mock of ModelWriter interface.
@@ -181,21 +181,6 @@ func (mr *MockDBMockRecorder) GetAlerts(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlerts", reflect.TypeOf((*MockDB)(nil).GetAlerts), ctx)
 }
 
-// GetExistingAlert mocks base method.
-func (m *MockDB) GetExistingAlert(ctx context.Context, labels model.Labels) (*model.Alert, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetExistingAlert", ctx, labels)
-	ret0, _ := ret[0].(*model.Alert)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetExistingAlert indicates an expected call of GetExistingAlert.
-func (mr *MockDBMockRecorder) GetExistingAlert(ctx, labels interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExistingAlert", reflect.TypeOf((*MockDB)(nil).GetExistingAlert), ctx, labels)
-}
-
 // GetSilences mocks base method.
 func (m *MockDB) GetSilences(ctx context.Context, labels model.Labels) ([]model.Silence, error) {
 	m.ctrl.T.Helper()
@@ -247,6 +232,20 @@ func (mr *MockDBMockRecorder) ProcessSilences(ctx interface{}, silences ...inter
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, silences...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessSilences", reflect.TypeOf((*MockDB)(nil).ProcessSilences), varargs...)
+}
+
+// QueryAlerts mocks base method.
+func (m *MockDB) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []model.Alert {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueryAlerts", ctx, query)
+	ret0, _ := ret[0].([]model.Alert)
+	return ret0
+}
+
+// QueryAlerts indicates an expected call of QueryAlerts.
+func (mr *MockDBMockRecorder) QueryAlerts(ctx, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAlerts", reflect.TypeOf((*MockDB)(nil).QueryAlerts), ctx, query)
 }
 
 // RegisterEndpoints mocks base method.

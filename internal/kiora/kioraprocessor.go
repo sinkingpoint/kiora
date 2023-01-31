@@ -61,9 +61,9 @@ func (k *KioraProcessor) AddSilenceProccessor(processor SilenceProcessor) {
 }
 
 func (k *KioraProcessor) processAlert(ctx context.Context, m model.Alert) error {
-	existingAlert, err := k.GetExistingAlert(ctx, m.Labels)
-	if err != nil {
-		return err
+	var existingAlert *model.Alert
+	if alerts := k.QueryAlerts(ctx, &kioradb.ExactLabelMatchQuery{Labels: m.Labels}); len(alerts) > 0 {
+		existingAlert = &alerts[0]
 	}
 
 	for _, processor := range k.alertProcessors {
