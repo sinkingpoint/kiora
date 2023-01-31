@@ -11,27 +11,6 @@ import (
 
 var _ kioradb.DB = &KioraProcessor{}
 
-// AlertProcessor is a type that can be used to process an alert as it goes through the pipeline.
-type AlertProcessor interface {
-	ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
-}
-
-// SilenceProcessor is a type that can be used to process a silence as it goes through the pipeline.
-type SilenceProcessor interface {
-	ProcessSilence(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, silence *model.Silence) error
-}
-
-// AlertProcessorFunc wraps a func and turns it into an AlertProcessor.
-type AlertProcessorFunc func(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
-
-func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
-	if a != nil {
-		return a(ctx, broadcast, localdb, existingAlert, newAlert)
-	}
-
-	return nil
-}
-
 // KioraProcessor is the main logic piece of Kiora that is responsible for actually acting on alerts, silences etc.
 type KioraProcessor struct {
 	*kioradb.FallthroughDB
@@ -108,5 +87,42 @@ func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.
 		}
 	}
 
+	return nil
+}
+
+// AlertProcessor is a type that can be used to process an alert as it goes through the pipeline.
+type AlertProcessor interface {
+	ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
+}
+
+// SilenceProcessor is a type that can be used to process a silence as it goes through the pipeline.
+type SilenceProcessor interface {
+	ProcessSilence(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, silence *model.Silence) error
+}
+
+// AlertProcessorFunc wraps a func and turns it into an AlertProcessor.
+type AlertProcessorFunc func(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
+
+func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	if a != nil {
+		return a(ctx, broadcast, localdb, existingAlert, newAlert)
+	}
+
+	return nil
+}
+
+// AlertObserver is an AlertProcessor that forwards each alert into a channel. This provides a read only interface to new alerts as they come in.
+type AlertObserver struct {
+	C chan *model.Alert
+}
+
+func NewAlertObserver() AlertObserver {
+	return AlertObserver{
+		C: make(chan *model.Alert),
+	}
+}
+
+func (a *AlertObserver) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	a.C <- newAlert
 	return nil
 }
