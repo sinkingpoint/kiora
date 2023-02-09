@@ -9,6 +9,7 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // NotifierConfig is an interface that defines a Configuration for the NotifierProcessor.
@@ -35,6 +36,13 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 	defer span.End()
 
 	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", newAlert)))
+
+	// Before we send any notifications, if this is a new alert, or an update to the states, save it in the local db.
+	if existingAlert == nil || newAlert.Status != model.AlertStatusProcessing {
+		if err := db.ProcessAlerts(ctx, *newAlert); err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+	}
 
 	// Skip this notify if we're not authoritative in the new alert, or the existing alert.
 	if newAlert.AuthNode != n.me || (existingAlert != nil && existingAlert.AuthNode != n.me) {

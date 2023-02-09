@@ -55,12 +55,18 @@ func TestKioraAlertPost(t *testing.T) {
 	require.NoError(t, kiora.Start(t))
 	require.NoError(t, kiora.WaitUntilLeader(t, ctx))
 
-	kiora.SendAlert(t, context.TODO(), dummyAlert())
+	// Send a bunch of the same alert.
+	for i := 0; i < 50; i++ {
+		kiora.SendAlert(t, context.TODO(), dummyAlert())
+	}
 
 	// Sleep a bit to apply the alert.
 	time.Sleep(1 * time.Second)
 
 	assert.Contains(t, kiora.stdout.String(), "foo")
+
+	// It should only have fired once.
+	assert.Equal(t, 1, strings.Count(kiora.stdout.String(), "foo"))
 }
 
 // Test that a cluster of three nodes comes up properly, with a leader.

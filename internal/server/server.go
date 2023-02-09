@@ -92,7 +92,6 @@ func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, 
 	localForwarder := kiora.LocalForwarderProcessor{}
 	processor.AddAlertProcessor(kiora.NewSilenceApplier())
 	processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.RaftConfig.LocalID, conf.NotifyConfig))
-	processor.AddAlertProcessor(&localForwarder)
 	processor.AddSilenceProccessor(&localForwarder)
 
 	return processor
