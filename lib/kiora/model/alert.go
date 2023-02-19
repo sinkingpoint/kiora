@@ -35,6 +35,9 @@ const (
 
 	// AlertStatusSilenced marks alerts that have been silenced by one or more silences.
 	AlertStatusSilenced AlertStatus = "silenced"
+
+	// AlertStatusSilenced marks alerts that are in the process of refiring.
+	AlertStatusRefiring AlertStatus = "refiring"
 )
 
 func (s AlertStatus) isValid() bool {
@@ -51,10 +54,18 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 	switch status {
 	case kioraproto.AlertStatus_firing:
 		return AlertStatusFiring
-	case kioraproto.AlertStatus_resolved:
-		return AlertStatusResolved
 	case kioraproto.AlertStatus_processing:
 		return AlertStatusProcessing
+	case kioraproto.AlertStatus_acked:
+		return AlertStatusAcked
+	case kioraproto.AlertStatus_resolved:
+		return AlertStatusResolved
+	case kioraproto.AlertStatus_silenced:
+		return AlertStatusSilenced
+	case kioraproto.AlertStatus_timed_out:
+		return AlertStatusTimedOut
+	case kioraproto.AlertStatus_refiring:
+		return AlertStatusRefiring
 	default:
 		panic(fmt.Sprintf("BUG: unhandled alert status received from proto: %q", status.String()))
 	}
@@ -62,12 +73,22 @@ func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
 
 func (a *AlertStatus) MapToProto() kioraproto.AlertStatus {
 	switch *a {
-	case AlertStatusResolved, AlertStatusTimedOut:
-		return kioraproto.AlertStatus_resolved
+	case AlertStatusFiring:
+		return kioraproto.AlertStatus_firing
 	case AlertStatusProcessing:
 		return kioraproto.AlertStatus_processing
+	case AlertStatusAcked:
+		return kioraproto.AlertStatus_acked
+	case AlertStatusResolved:
+		return kioraproto.AlertStatus_resolved
+	case AlertStatusSilenced:
+		return kioraproto.AlertStatus_silenced
+	case AlertStatusTimedOut:
+		return kioraproto.AlertStatus_timed_out
+	case AlertStatusRefiring:
+		return kioraproto.AlertStatus_refiring
 	default:
-		return kioraproto.AlertStatus_firing
+		panic(fmt.Sprintf("BUG: unhandled alert status: %q", *a))
 	}
 }
 

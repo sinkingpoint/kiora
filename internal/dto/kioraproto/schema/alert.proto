@@ -20,6 +20,10 @@ message Alert {
 // AlertStatus is the status of the alert coming in.
 enum AlertStatus {
     firing = 0;
-    resolved = 1;
-    processing = 2;
+    processing = 1;
+    acked = 2;
+    resolved = 3;
+    timed_out = 4;
+    silenced = 5;
+    refiring = 6;
 }
