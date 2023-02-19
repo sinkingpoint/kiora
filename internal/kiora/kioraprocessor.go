@@ -9,62 +9,24 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
-var _ kioradb.DB = &KioraProcessor{}
-
 // KioraProcessor is the main logic piece of Kiora that is responsible for actually acting on alerts, silences etc.
 type KioraProcessor struct {
-	*kioradb.FallthroughDB
-	Broadcast         kioradb.ModelWriter
-	alertProcessors   []AlertProcessor
-	silenceProcessors []SilenceProcessor
+	DB              kioradb.DB
+	Broadcaster     kioradb.Broadcaster
+	alertProcessors []AlertProcessor
 }
 
 // NewKioraProcessor creater a new KioraProcessor, starting the backing go routine that asynchronously processes incoming messages.
-func NewKioraProcessor(db kioradb.DB, broadcaster kioradb.ModelWriter) *KioraProcessor {
+func NewKioraProcessor(db kioradb.DB, broadcaster kioradb.Broadcaster) *KioraProcessor {
 	processor := &KioraProcessor{
-		FallthroughDB: kioradb.NewFallthroughDB(db),
-		Broadcast:     broadcaster,
+		DB:          db,
+		Broadcaster: broadcaster,
 	}
 
 	return processor
 }
 
-// AddAlertProcessor adds a processor to the stack of processors that get called when new alerts come in.
-func (k *KioraProcessor) AddAlertProcessor(processor AlertProcessor) {
-	k.alertProcessors = append(k.alertProcessors, processor)
-}
-
-// AddSilenceProccessor adds a processor to the stack of processors that get called when new silences come in.
-func (k *KioraProcessor) AddSilenceProccessor(processor SilenceProcessor) {
-	k.silenceProcessors = append(k.silenceProcessors, processor)
-}
-
-func (k *KioraProcessor) processAlert(ctx context.Context, m model.Alert) error {
-	var existingAlert *model.Alert
-	if alerts := k.QueryAlerts(ctx, &kioradb.ExactLabelMatchQuery{Labels: m.Labels}); len(alerts) > 0 {
-		existingAlert = &alerts[0]
-	}
-
-	for _, processor := range k.alertProcessors {
-		if err := processor.ProcessAlert(ctx, k.Broadcast, k.FallthroughDB, existingAlert, &m); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (k *KioraProcessor) processSilence(ctx context.Context, m model.Silence) error {
-	for _, processor := range k.silenceProcessors {
-		if err := processor.ProcessSilence(ctx, k.Broadcast, k.FallthroughDB, &m); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (k *KioraProcessor) ProcessAlerts(ctx context.Context, alerts ...model.Alert) error {
+func (k *KioraProcessor) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	ctx, span := tracing.Tracer().Start(ctx, "KioraProcessor.ProcessAlerts")
 	defer span.End()
 
@@ -77,13 +39,24 @@ func (k *KioraProcessor) ProcessAlerts(ctx context.Context, alerts ...model.Aler
 	return nil
 }
 
-func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.Silence) error {
-	ctx, span := tracing.Tracer().Start(ctx, "KioraProcessor.ProcessSilences")
-	defer span.End()
+func (k *KioraProcessor) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []model.Alert {
+	return k.DB.QueryAlerts(ctx, query)
+}
 
-	for _, silence := range silences {
-		if err := k.processSilence(ctx, silence); err != nil {
-			log.Err(err).Msg("failed to process silence")
+// AddAlertProcessor adds a processor to the stack of processors that get called when new alerts come in.
+func (k *KioraProcessor) AddAlertProcessor(processor AlertProcessor) {
+	k.alertProcessors = append(k.alertProcessors, processor)
+}
+
+func (k *KioraProcessor) processAlert(ctx context.Context, m model.Alert) error {
+	var existingAlert *model.Alert
+	if alerts := k.DB.QueryAlerts(ctx, &kioradb.ExactLabelMatchQuery{Labels: m.Labels}); len(alerts) > 0 {
+		existingAlert = &alerts[0]
+	}
+
+	for _, processor := range k.alertProcessors {
+		if err := processor.ProcessAlert(ctx, k.Broadcaster, k.DB, existingAlert, &m); err != nil {
+			return err
 		}
 	}
 
@@ -92,37 +65,16 @@ func (k *KioraProcessor) ProcessSilences(ctx context.Context, silences ...model.
 
 // AlertProcessor is a type that can be used to process an alert as it goes through the pipeline.
 type AlertProcessor interface {
-	ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
-}
-
-// SilenceProcessor is a type that can be used to process a silence as it goes through the pipeline.
-type SilenceProcessor interface {
-	ProcessSilence(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, silence *model.Silence) error
+	ProcessAlert(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
 }
 
 // AlertProcessorFunc wraps a func and turns it into an AlertProcessor.
-type AlertProcessorFunc func(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
+type AlertProcessorFunc func(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
 
-func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
 	if a != nil {
-		return a(ctx, broadcast, localdb, existingAlert, newAlert)
+		return a(ctx, broadcaster, localdb, existingAlert, newAlert)
 	}
 
-	return nil
-}
-
-// AlertObserver is an AlertProcessor that forwards each alert into a channel. This provides a read only interface to new alerts as they come in.
-type AlertObserver struct {
-	C chan *model.Alert
-}
-
-func NewAlertObserver() AlertObserver {
-	return AlertObserver{
-		C: make(chan *model.Alert),
-	}
-}
-
-func (a *AlertObserver) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
-	a.C <- newAlert
 	return nil
 }

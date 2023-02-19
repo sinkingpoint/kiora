@@ -36,14 +36,13 @@ func (k *kioraSnapshot) Persist(sink raft.SnapshotSink) error {
 
 func (k *kioraSnapshot) Release() {}
 
-// kioraFSM is the raft interface that handles consensus for the state of
-// alerts in the system.
+// kioraFSM is the raft interface that handles consensus for the state of alerts in the system.
 type kioraFSM struct {
 	db kioradb.DB
 }
 
 func (a *kioraFSM) Apply(l *raft.Log) any {
-	ctx, span := tracing.Tracer().Start(l.Context, "kioraFSM.Apply")
+	ctx, span := tracing.Tracer().Start(context.Background(), "kioraFSM.Apply")
 	defer span.End()
 
 	log, err := decodeLogMessage(l.Data)
@@ -77,16 +76,13 @@ func (a *kioraFSM) processAlerts(ctx context.Context, from string, protoAlerts *
 		alerts = append(alerts, alert)
 	}
 
-	if err := a.db.ProcessAlerts(ctx, alerts...); err != nil {
+	if err := a.db.StoreAlerts(ctx, alerts...); err != nil {
 		panic(fmt.Sprintf("BUG: failed to process alerts: %q", err))
 	}
 }
 
 func (a *kioraFSM) Snapshot() (raft.FSMSnapshot, error) {
-	alerts, err := a.db.GetAlerts(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	alerts := a.db.QueryAlerts(context.Background(), &kioradb.AllMatchQuery{})
 
 	return &kioraSnapshot{
 		Alerts: alerts,
@@ -101,10 +97,10 @@ func (a *kioraFSM) Restore(input io.ReadCloser) error {
 		return err
 	}
 
-	return a.db.ProcessAlerts(context.Background(), snapshot.Alerts...)
+	return a.db.StoreAlerts(context.Background(), snapshot.Alerts...)
 }
 
-// decodeLogMessage decodes the raw bytes into a kioraproto.RaftLog
+// decodeLogMessage decodes the raw bytes into a kioraproto.RaftLog.
 func decodeLogMessage(raw []byte) (*kioraproto.RaftLogMessage, error) {
 	msg := kioraproto.RaftLogMessage{}
 

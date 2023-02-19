@@ -6,17 +6,18 @@ import (
 	"os"
 
 	"github.com/awalterschulze/gographviz"
-	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/cmd/kiora/config/nodes"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"github.com/sinkingpoint/kiora/lib/kiora/notify"
 )
 
 type ConfigFile struct {
-	nodes map[string]Node
+	nodes map[string]nodes.Node
 	links map[string][]Link
 }
 
-func (c *ConfigFile) GetNotifiersForAlert(a *model.Alert) []kioradb.ModelWriter {
-	leaves := []kioradb.ModelWriter{}
+func (c *ConfigFile) GetNotifiersForAlert(a *model.Alert) []notify.Notifier {
+	leaves := []notify.Notifier{}
 
 	// We expect here that the ConfigFile has been passed through `Validate` already, and thus
 	// is assumed to have no cycles.
@@ -30,7 +31,7 @@ func (c *ConfigFile) GetNotifiersForAlert(a *model.Alert) []kioradb.ModelWriter 
 			}
 		}
 
-		if node, ok := c.nodes[nodeName].(kioradb.ModelWriter); node != nil && ok {
+		if node, ok := c.nodes[nodeName].(notify.Notifier); node != nil && ok {
 			leaves = append(leaves, node)
 		}
 	}
@@ -63,7 +64,7 @@ func (c *ConfigFile) Validate() error {
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.
 func LoadConfigFile(path string) (*ConfigFile, error) {
 	conf := &ConfigFile{
-		nodes: make(map[string]Node),
+		nodes: make(map[string]nodes.Node),
 		links: make(map[string][]Link),
 	}
 
@@ -84,12 +85,12 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 
 	for _, rawNode := range configGraph.nodes {
 		nodeType := rawNode.attrs["type"]
-		cons := LookupNode(nodeType)
+		cons := nodes.LookupNode(nodeType)
 		if cons == nil {
 			return conf, fmt.Errorf("invalid node type: %q", nodeType)
 		}
 
-		node, err := cons(rawNode)
+		node, err := cons(rawNode.name, rawNode.attrs)
 		if err != nil {
 			return conf, err
 		}

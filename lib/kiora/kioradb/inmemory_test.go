@@ -14,7 +14,7 @@ func TestInMemoryDB(t *testing.T) {
 	db := kioradb.NewInMemoryDB()
 
 	// Add an alert
-	assert.NoError(t, db.ProcessAlerts(context.Background(), []model.Alert{
+	assert.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
 		{
 			Labels: model.Labels{
 				"foo": "bar",
@@ -23,8 +23,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts, err := db.GetAlerts(context.Background())
-	assert.NoError(t, err)
+	alerts := db.QueryAlerts(context.TODO(), &kioradb.AllMatchQuery{})
 
 	assert.Len(t, alerts, 1)
 	alert := alerts[0]
@@ -32,7 +31,7 @@ func TestInMemoryDB(t *testing.T) {
 	assert.Equal(t, model.AlertStatusFiring, alert.Status)
 
 	// Resolve the above alert, add another
-	assert.NoError(t, db.ProcessAlerts(context.Background(), []model.Alert{
+	assert.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
 		{
 			Labels: model.Labels{
 				"foo": "bar",
@@ -47,8 +46,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts, err = db.GetAlerts(context.Background())
-	assert.NoError(t, err)
+	alerts = db.QueryAlerts(context.TODO(), &kioradb.AllMatchQuery{})
 	require.Len(t, alerts, 2)
 
 	for _, alert := range alerts {
@@ -64,7 +62,7 @@ func TestInMemoryDB(t *testing.T) {
 	}
 
 	// Timeout the second alert
-	assert.NoError(t, db.ProcessAlerts(context.Background(), []model.Alert{
+	assert.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
 		{
 			Labels: model.Labels{
 				"bar": "baz",
@@ -73,8 +71,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts, err = db.GetAlerts(context.Background())
-	assert.NoError(t, err)
+	alerts = db.QueryAlerts(context.TODO(), &kioradb.AllMatchQuery{})
 	require.Len(t, alerts, 2)
 
 	for _, alert := range alerts {

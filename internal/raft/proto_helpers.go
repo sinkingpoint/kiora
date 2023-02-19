@@ -32,35 +32,3 @@ func newPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessa
 		From: from,
 	}
 }
-
-// newPostSilencesRaftLogMessage takes a slice of model.Silences and packages
-// them into a protobuf message that can be put into the raft log.
-func newPostSilencesRaftLogMessage(silences ...model.Silence) *kioraproto.RaftLogMessage {
-	protoSilences := []*kioraproto.Silence{}
-	for _, silence := range silences {
-		matchers := make([]*kioraproto.Matcher, 0, len(silence.Matchers))
-		for _, m := range silence.Matchers {
-			proto := m.MarshalProto()
-			if proto != nil {
-				matchers = append(matchers, proto)
-			}
-		}
-
-		protoSilences = append(protoSilences, &kioraproto.Silence{
-			ID:        silence.ID,
-			Creator:   silence.Creator,
-			Comment:   silence.Comment,
-			StartTime: timestamppb.New(silence.StartTime),
-			EndTime:   timestamppb.New(silence.EndTime),
-			Matchers:  matchers,
-		})
-	}
-
-	return &kioraproto.RaftLogMessage{
-		Log: &kioraproto.RaftLogMessage_Silences{
-			Silences: &kioraproto.PostSilencesRequest{
-				Silences: protoSilences,
-			},
-		},
-	}
-}

@@ -8,6 +8,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"github.com/sinkingpoint/kiora/lib/kiora/notify"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
@@ -15,7 +16,7 @@ import (
 // NotifierConfig is an interface that defines a Configuration for the NotifierProcessor.
 type NotifierConfig interface {
 	// GetNotifiersForAlert takes an Alert and returns all the notifiers that should be notified about the alert.
-	GetNotifiersForAlert(a *model.Alert) []kioradb.ModelWriter
+	GetNotifiersForAlert(a *model.Alert) []notify.Notifier
 }
 
 // NotifierProcessor is an Alert Processor responsible for actually notifying for alerts.
@@ -31,7 +32,7 @@ func NewNotifierProcessor(myName string, config NotifierConfig) *NotifierProcess
 	}
 }
 
-func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.ModelWriter, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
+func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster kioradb.Broadcaster, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
 	ctx, span := tracing.Tracer().Start(ctx, "NotifierProcessor.ProcessAlert")
 	defer span.End()
 
@@ -39,7 +40,7 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 
 	// Before we send any notifications, if this is a new alert, or an update to the states, save it in the local db.
 	if existingAlert == nil || newAlert.Status != model.AlertStatusProcessing {
-		if err := db.ProcessAlerts(ctx, *newAlert); err != nil {
+		if err := db.StoreAlerts(ctx, *newAlert); err != nil {
 			span.SetStatus(codes.Error, err.Error())
 		}
 	}
@@ -59,16 +60,16 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcast kioradb.
 	var notifyError error
 	notifiers := n.config.GetNotifiersForAlert(newAlert)
 	for _, notify := range notifiers {
-		if err := notify.ProcessAlerts(ctx, *newAlert); err != nil {
+		if err := notify.Notify(ctx, *newAlert); err != nil {
 			notifyError = multierror.Append(notifyError, err)
 		}
 	}
 
-	if err := db.ProcessAlerts(ctx, *newAlert); err != nil {
+	if err := db.StoreAlerts(ctx, *newAlert); err != nil {
 		notifyError = multierror.Append(notifyError, err)
 	}
 
-	if err := broadcast.ProcessAlerts(ctx, *newAlert); err != nil {
+	if err := broadcaster.BroadcastAlerts(ctx, *newAlert); err != nil {
 		notifyError = multierror.Append(notifyError, err)
 	}
 

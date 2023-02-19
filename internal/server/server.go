@@ -65,11 +65,11 @@ func NewServerConfig() serverConfig {
 }
 
 // assembleProcessor is responsible for constructing the KioraProcessor that pre-processes models before they enter the main flow.
-func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, db kioradb.DB) *kiora.KioraProcessor {
+func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
 
 	// Add an alert processor that marks this node as being the authoritative node for the alert.
-	processor.AddAlertProcessor(kiora.AlertProcessorFunc(func(ctx context.Context, broadcast kioradb.ModelWriter, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+	processor.AddAlertProcessor(kiora.AlertProcessorFunc(func(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
 		if newAlert.AuthNode == "" {
 			newAlert.AuthNode = conf.RaftConfig.LocalID
 		}
@@ -80,19 +80,14 @@ func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, d
 	// For now, just broadcast everything that comes in.
 	broadcastProcessor := kiora.BroadcastProcessor{}
 	processor.AddAlertProcessor(&broadcastProcessor)
-	processor.AddSilenceProccessor(&broadcastProcessor)
 
 	return processor
 }
 
 // assemblePostProcessor is responsible for constructing the KioraProcessor that processes models _after_ they have been broadcasted.
-func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, db kioradb.DB) *kiora.KioraProcessor {
+func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
-
-	localForwarder := kiora.LocalForwarderProcessor{}
-	processor.AddAlertProcessor(kiora.NewSilenceApplier())
 	processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.RaftConfig.LocalID, conf.NotifyConfig))
-	processor.AddSilenceProccessor(&localForwarder)
 
 	return processor
 }
@@ -101,8 +96,8 @@ func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.ModelWriter, 
 type KioraServer struct {
 	kioraproto.UnimplementedRaftApplierServer
 	serverConfig
-	broadcaster *raft.RaftDB
-	db          *kiora.KioraProcessor
+	broadcaster kioradb.Broadcaster
+	db          kioradb.DB
 
 	httpServer *http.Server
 	grpcServer *grpc.Server
@@ -112,14 +107,14 @@ type KioraServer struct {
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	postProcessor := assemblePostProcessor(&conf, nil, db)
-	broadcaster, err := raft.NewRaftDB(context.Background(), conf.RaftConfig, postProcessor)
+	broadcaster, err := raft.NewRaftBroadcaster(context.Background(), conf.RaftConfig, postProcessor)
 	if err != nil {
 		return nil, err
 	}
 
 	// this makes a weird loop where we could go broadcast -> postprocessor -> broadcast infinitely.
 	// TODO(cdouch): detangle this if the circular dependency proves unweildy.
-	postProcessor.Broadcast = broadcaster
+	postProcessor.Broadcaster = broadcaster
 
 	return &KioraServer{
 		serverConfig: conf,
@@ -142,11 +137,6 @@ func (k *KioraServer) ListenAndServe() error {
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 
 	httpRouter := mux.NewRouter()
-
-	if err := k.db.RegisterEndpoints(context.Background(), httpRouter, k.grpcServer); err != nil {
-		return err
-	}
-
 	if err := k.broadcaster.RegisterEndpoints(context.Background(), httpRouter, k.grpcServer); err != nil {
 		return err
 	}
@@ -238,7 +228,7 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessa
 			modelAlerts = append(modelAlerts, alert)
 		}
 
-		return &kioraproto.RaftLogReply{}, k.db.ProcessAlerts(ctx, modelAlerts...)
+		return &kioraproto.RaftLogReply{}, k.db.StoreAlerts(ctx, modelAlerts...)
 	case *kioraproto.RaftLogMessage_Silences:
 	}
 

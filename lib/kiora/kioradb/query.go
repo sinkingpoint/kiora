@@ -50,3 +50,10 @@ func (e *ExactLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.Al
 
 	return alert.Labels.Hash() == e.labelsHash
 }
+
+type AllMatchQuery struct {
+}
+
+func (a *AllMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	return true
+}
