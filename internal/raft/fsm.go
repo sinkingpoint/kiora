@@ -66,9 +66,7 @@ func (a *kioraFSM) processAlerts(ctx context.Context, from string, protoAlerts *
 	alerts := []model.Alert{}
 
 	for _, protoAlert := range protoAlerts.Alerts {
-		alert := model.Alert{
-			AuthNode: from,
-		}
+		alert := model.Alert{}
 
 		if err := alert.DeserializeFromProto(protoAlert); err != nil {
 			panic(fmt.Sprintf("BUG: failed to unmarshal a model.Alert from a proto alert: %q", err))

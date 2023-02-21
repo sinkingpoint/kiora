@@ -110,9 +110,6 @@ type Alert struct {
 
 	// TimeOutDeadline is when the alert should be marked as timed out, assuming no further messages come in.
 	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
-
-	// AuthNode is the node that last sent a notification for this alert.
-	AuthNode string `json:"-"`
 }
 
 func (a *Alert) validate() error {

@@ -21,13 +21,11 @@ type NotifierConfig interface {
 
 // NotifierProcessor is an Alert Processor responsible for actually notifying for alerts.
 type NotifierProcessor struct {
-	me     string
 	config NotifierConfig
 }
 
-func NewNotifierProcessor(myName string, config NotifierConfig) *NotifierProcessor {
+func NewNotifierProcessor(config NotifierConfig) *NotifierProcessor {
 	return &NotifierProcessor{
-		me:     myName,
 		config: config,
 	}
 }
@@ -43,12 +41,6 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster kiorad
 		if err := db.StoreAlerts(ctx, *newAlert); err != nil {
 			span.SetStatus(codes.Error, err.Error())
 		}
-	}
-
-	// Skip this notify if we're not authoritative in the new alert, or the existing alert.
-	if newAlert.AuthNode != n.me || (existingAlert != nil && existingAlert.AuthNode != n.me) {
-		span.AddEvent("Skipping because this node is not authoritative")
-		return nil
 	}
 
 	if newAlert.Status != model.AlertStatusProcessing || (existingAlert != nil && existingAlert.Status != model.AlertStatusProcessing) {

@@ -39,6 +39,7 @@ func (c *ConfigFile) GetNotifiersForAlert(a *model.Alert) []notify.Notifier {
 	return leaves
 }
 
+// Validate returns nil if the config is valid, or an error to be displayed to the user if not.
 func (c *ConfigFile) Validate() error {
 	// Check if the config file is acyclic.
 	for _, tree := range []string{"alerts", "silences"} {
@@ -59,6 +60,10 @@ func (c *ConfigFile) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *ConfigFile) AmIAuthoritativeFor(a *model.Alert) bool {
+	return false
 }
 
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.

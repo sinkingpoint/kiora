@@ -68,15 +68,6 @@ func NewServerConfig() serverConfig {
 func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
 
-	// Add an alert processor that marks this node as being the authoritative node for the alert.
-	processor.AddAlertProcessor(kiora.AlertProcessorFunc(func(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
-		if newAlert.AuthNode == "" {
-			newAlert.AuthNode = conf.RaftConfig.LocalID
-		}
-
-		return nil
-	}))
-
 	// For now, just broadcast everything that comes in.
 	broadcastProcessor := kiora.BroadcastProcessor{}
 	processor.AddAlertProcessor(&broadcastProcessor)
@@ -87,7 +78,7 @@ func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, d
 // assemblePostProcessor is responsible for constructing the KioraProcessor that processes models _after_ they have been broadcasted.
 func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
-	processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.RaftConfig.LocalID, conf.NotifyConfig))
+	processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig))
 
 	return processor
 }
@@ -217,9 +208,7 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessa
 	case *kioraproto.RaftLogMessage_Alerts:
 		modelAlerts := make([]model.Alert, 0, len(msg.Alerts.Alerts))
 		for _, protoAlert := range msg.Alerts.Alerts {
-			alert := model.Alert{
-				AuthNode: log.From,
-			}
+			alert := model.Alert{}
 
 			if err := alert.DeserializeFromProto(protoAlert); err != nil {
 				return nil, err

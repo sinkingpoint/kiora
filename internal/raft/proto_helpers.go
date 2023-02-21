@@ -19,8 +19,6 @@ func newPostAlertsRaftLogMessage(alerts ...model.Alert) *kioraproto.RaftLogMessa
 			StartTime:   timestamppb.New(a.StartTime),
 			EndTime:     timestamppb.New(a.TimeOutDeadline),
 		})
-
-		from = a.AuthNode
 	}
 
 	return &kioraproto.RaftLogMessage{
