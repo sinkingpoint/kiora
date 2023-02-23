@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/kiora"
 	"github.com/sinkingpoint/kiora/internal/raft"
@@ -65,7 +66,7 @@ func NewServerConfig() serverConfig {
 }
 
 // assembleProcessor is responsible for constructing the KioraProcessor that pre-processes models before they enter the main flow.
-func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
+func assemblePreProcessor(conf *serverConfig, broadcaster clustering.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
 
 	// For now, just broadcast everything that comes in.
@@ -76,7 +77,7 @@ func assemblePreProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, d
 }
 
 // assemblePostProcessor is responsible for constructing the KioraProcessor that processes models _after_ they have been broadcasted.
-func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
+func assemblePostProcessor(conf *serverConfig, broadcaster clustering.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
 	processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig))
 
@@ -87,7 +88,7 @@ func assemblePostProcessor(conf *serverConfig, broadcaster kioradb.Broadcaster, 
 type KioraServer struct {
 	kioraproto.UnimplementedRaftApplierServer
 	serverConfig
-	broadcaster kioradb.Broadcaster
+	broadcaster clustering.Broadcaster
 	db          kioradb.DB
 
 	httpServer *http.Server

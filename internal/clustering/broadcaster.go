@@ -1,4 +1,4 @@
-package kioradb
+package clustering
 
 import (
 	"context"
@@ -7,6 +7,15 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"google.golang.org/grpc"
 )
+
+type Server interface {
+	Name() string
+	Address() string
+}
+
+type Clusterer interface {
+	GetMembers(ctx context.Context) ([]Server, error)
+}
 
 type Broadcaster interface {
 	RegisterEndpoints(ctx context.Context, router *mux.Router, grcpServer *grpc.Server) error

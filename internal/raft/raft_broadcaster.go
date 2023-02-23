@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/raft"
 	"github.com/rs/zerolog/log"
+	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
 	"github.com/sinkingpoint/kiora/internal/tracing"
@@ -18,7 +19,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ kioradb.Broadcaster = &RaftBroadcaster{}
+var _ clustering.Broadcaster = &RaftBroadcaster{}
 
 type RaftBroadcaster struct {
 	myID         raft.ServerID

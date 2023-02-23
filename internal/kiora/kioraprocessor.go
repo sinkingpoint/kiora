@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rs/zerolog/log"
+	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -12,12 +13,12 @@ import (
 // KioraProcessor is the main logic piece of Kiora that is responsible for actually acting on alerts, silences etc.
 type KioraProcessor struct {
 	DB              kioradb.DB
-	Broadcaster     kioradb.Broadcaster
+	Broadcaster     clustering.Broadcaster
 	alertProcessors []AlertProcessor
 }
 
 // NewKioraProcessor creater a new KioraProcessor, starting the backing go routine that asynchronously processes incoming messages.
-func NewKioraProcessor(db kioradb.DB, broadcaster kioradb.Broadcaster) *KioraProcessor {
+func NewKioraProcessor(db kioradb.DB, broadcaster clustering.Broadcaster) *KioraProcessor {
 	processor := &KioraProcessor{
 		DB:          db,
 		Broadcaster: broadcaster,
@@ -65,13 +66,13 @@ func (k *KioraProcessor) processAlert(ctx context.Context, m model.Alert) error 
 
 // AlertProcessor is a type that can be used to process an alert as it goes through the pipeline.
 type AlertProcessor interface {
-	ProcessAlert(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
+	ProcessAlert(ctx context.Context, broadcaster clustering.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
 }
 
 // AlertProcessorFunc wraps a func and turns it into an AlertProcessor.
-type AlertProcessorFunc func(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
+type AlertProcessorFunc func(ctx context.Context, broadcaster clustering.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error
 
-func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcaster kioradb.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
+func (a AlertProcessorFunc) ProcessAlert(ctx context.Context, broadcaster clustering.Broadcaster, localdb kioradb.DB, existingAlert, newAlert *model.Alert) error {
 	if a != nil {
 		return a(ctx, broadcaster, localdb, existingAlert, newAlert)
 	}

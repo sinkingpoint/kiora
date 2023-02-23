@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/tracing"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -30,7 +31,7 @@ func NewNotifierProcessor(config NotifierConfig) *NotifierProcessor {
 	}
 }
 
-func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster kioradb.Broadcaster, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
+func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster clustering.Broadcaster, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
 	ctx, span := tracing.Tracer().Start(ctx, "NotifierProcessor.ProcessAlert")
 	defer span.End()
 

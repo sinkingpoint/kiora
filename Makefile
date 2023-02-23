@@ -45,6 +45,8 @@ $(PROTO_OUTPUTS): $(PROTO_TARGETS)
 .PHONY: generate
 generate: $(PROTO_OUTPUTS) ./lib/kiora/kioradb/db.go
 	mockgen -source ./lib/kiora/kioradb/db.go > mocks/mock_kioradb/db.go
+	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
+	mockgen -source ./internal/clustering/state_observer.go > mocks/mock_clustering/state_observer.go
 
 .PHONY: generate-clean
 generate-clean:
