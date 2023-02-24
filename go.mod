@@ -6,6 +6,7 @@ require (
 	github.com/Jille/raft-grpc-transport v1.3.0
 	github.com/alecthomas/kong v0.7.1
 	github.com/awalterschulze/gographviz v2.0.3+incompatible
+	github.com/buraksezer/consistent v0.10.0
 	github.com/cespare/xxhash v1.1.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0

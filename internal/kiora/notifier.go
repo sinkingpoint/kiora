@@ -23,17 +23,24 @@ type NotifierConfig interface {
 // NotifierProcessor is an Alert Processor responsible for actually notifying for alerts.
 type NotifierProcessor struct {
 	config NotifierConfig
+
+	clusterer clustering.Clusterer
 }
 
-func NewNotifierProcessor(config NotifierConfig) *NotifierProcessor {
+func NewNotifierProcessor(config NotifierConfig, clusterer clustering.Clusterer) *NotifierProcessor {
 	return &NotifierProcessor{
-		config: config,
+		config:    config,
+		clusterer: clusterer,
 	}
 }
 
 func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster clustering.Broadcaster, db kioradb.DB, existingAlert, newAlert *model.Alert) error {
 	ctx, span := tracing.Tracer().Start(ctx, "NotifierProcessor.ProcessAlert")
 	defer span.End()
+
+	if !n.clusterer.AmIAuthoritativeFor(newAlert) {
+		return nil
+	}
 
 	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", newAlert)))
 

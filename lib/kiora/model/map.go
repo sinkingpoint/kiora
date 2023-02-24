@@ -1,6 +1,8 @@
 package model
 
 import (
+	"bytes"
+
 	"github.com/cespare/xxhash"
 )
 
@@ -15,11 +17,18 @@ type Labels map[string]string
 func (s Labels) Hash() LabelsHash {
 	hash := xxhash.New()
 
-	for k, v := range s {
-		hash.Write([]byte(k))
-		hash.Write(hashSep)
-		hash.Write([]byte(v))
-	}
+	hash.Write(s.Bytes())
 
 	return hash.Sum64()
+}
+
+func (s Labels) Bytes() []byte {
+	buf := bytes.Buffer{}
+	for k, v := range s {
+		buf.Write([]byte(k))
+		buf.Write(hashSep)
+		buf.Write([]byte(v))
+	}
+
+	return buf.Bytes()
 }

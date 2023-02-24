@@ -79,7 +79,7 @@ func assemblePreProcessor(conf *serverConfig, broadcaster clustering.Broadcaster
 // assemblePostProcessor is responsible for constructing the KioraProcessor that processes models _after_ they have been broadcasted.
 func assemblePostProcessor(conf *serverConfig, broadcaster clustering.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
 	processor := kiora.NewKioraProcessor(db, broadcaster)
-	processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig))
+	// processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig))
 
 	return processor
 }
@@ -90,6 +90,9 @@ type KioraServer struct {
 	serverConfig
 	broadcaster clustering.Broadcaster
 	db          kioradb.DB
+
+	clusterStateObserver *clustering.StateObserver
+	clusterer            clustering.Clusterer
 
 	httpServer *http.Server
 	grpcServer *grpc.Server
@@ -108,17 +111,25 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	// TODO(cdouch): detangle this if the circular dependency proves unweildy.
 	postProcessor.Broadcaster = broadcaster
 
+	observer := clustering.NewStateObserver(broadcaster)
+	clusterer := clustering.NewKioraClusterer(conf.RaftConfig.LocalID)
+	observer.AddObserver(clusterer)
+
 	return &KioraServer{
-		serverConfig: conf,
-		db:           assemblePreProcessor(&conf, broadcaster, db),
-		broadcaster:  broadcaster,
+		serverConfig:         conf,
+		db:                   assemblePreProcessor(&conf, broadcaster, db),
+		broadcaster:          broadcaster,
+		clusterStateObserver: observer,
+		clusterer:            clusterer,
 	}, nil
 }
 
 func (k *KioraServer) Kill() {
 	k.close.Do(func() {
+		// todo: add more synonyms of stop.
 		k.httpServer.Shutdown(context.Background()) //nolint:errcheck
 		k.grpcServer.GracefulStop()
+		k.clusterStateObserver.Kill()
 	})
 }
 
@@ -134,7 +145,14 @@ func (k *KioraServer) ListenAndServe() error {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(3)
+
+	go func() {
+		k.clusterStateObserver.Run()
+		wg.Done()
+
+		log.Info().Msg("Cluster State Observer shut down")
+	}()
 
 	go func() {
 		if err := k.listenAndServeHTTP(httpRouter); err != nil {

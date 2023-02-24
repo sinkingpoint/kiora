@@ -66,31 +66,45 @@ func (mr *MockServerMockRecorder) Name() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockServer)(nil).Name))
 }
 
-// MockClusterer is a mock of Clusterer interface.
-type MockClusterer struct {
+// String mocks base method.
+func (m *MockServer) String() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "String")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// String indicates an expected call of String.
+func (mr *MockServerMockRecorder) String() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockServer)(nil).String))
+}
+
+// MockClusterMemberTracker is a mock of ClusterMemberTracker interface.
+type MockClusterMemberTracker struct {
 	ctrl     *gomock.Controller
-	recorder *MockClustererMockRecorder
+	recorder *MockClusterMemberTrackerMockRecorder
 }
 
-// MockClustererMockRecorder is the mock recorder for MockClusterer.
-type MockClustererMockRecorder struct {
-	mock *MockClusterer
+// MockClusterMemberTrackerMockRecorder is the mock recorder for MockClusterMemberTracker.
+type MockClusterMemberTrackerMockRecorder struct {
+	mock *MockClusterMemberTracker
 }
 
-// NewMockClusterer creates a new mock instance.
-func NewMockClusterer(ctrl *gomock.Controller) *MockClusterer {
-	mock := &MockClusterer{ctrl: ctrl}
-	mock.recorder = &MockClustererMockRecorder{mock}
+// NewMockClusterMemberTracker creates a new mock instance.
+func NewMockClusterMemberTracker(ctrl *gomock.Controller) *MockClusterMemberTracker {
+	mock := &MockClusterMemberTracker{ctrl: ctrl}
+	mock.recorder = &MockClusterMemberTrackerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockClusterer) EXPECT() *MockClustererMockRecorder {
+func (m *MockClusterMemberTracker) EXPECT() *MockClusterMemberTrackerMockRecorder {
 	return m.recorder
 }
 
 // GetMembers mocks base method.
-func (m *MockClusterer) GetMembers(ctx context.Context) ([]clustering.Server, error) {
+func (m *MockClusterMemberTracker) GetMembers(ctx context.Context) ([]clustering.Server, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMembers", ctx)
 	ret0, _ := ret[0].([]clustering.Server)
@@ -99,9 +113,9 @@ func (m *MockClusterer) GetMembers(ctx context.Context) ([]clustering.Server, er
 }
 
 // GetMembers indicates an expected call of GetMembers.
-func (mr *MockClustererMockRecorder) GetMembers(ctx interface{}) *gomock.Call {
+func (mr *MockClusterMemberTrackerMockRecorder) GetMembers(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembers", reflect.TypeOf((*MockClusterer)(nil).GetMembers), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembers", reflect.TypeOf((*MockClusterMemberTracker)(nil).GetMembers), ctx)
 }
 
 // MockBroadcaster is a mock of Broadcaster interface.

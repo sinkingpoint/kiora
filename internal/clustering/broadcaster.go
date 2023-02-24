@@ -2,6 +2,7 @@ package clustering
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -9,11 +10,12 @@ import (
 )
 
 type Server interface {
+	fmt.Stringer
 	Name() string
 	Address() string
 }
 
-type Clusterer interface {
+type ClusterMemberTracker interface {
 	GetMembers(ctx context.Context) ([]Server, error)
 }
 

@@ -19,17 +19,17 @@ type Observer interface {
 	RemoveServer(server Server)
 }
 
-// StateObserver periodically polls a Clusterer, comparing the servers
+// StateObserver periodically polls a ClusterMemberTracker, comparing the servers
 // to the previous and updating Observers when the state changes.
 type StateObserver struct {
 	refreshTime     time.Duration
-	backend         Clusterer
+	backend         ClusterMemberTracker
 	previousServers map[string]Server
 	observers       map[ObserverID]Observer
 	killChan        chan struct{}
 }
 
-func NewStateObserver(backend Clusterer) *StateObserver {
+func NewStateObserver(backend ClusterMemberTracker) *StateObserver {
 	return &StateObserver{
 		refreshTime:     DEFAULT_REFRESH_TIME,
 		backend:         backend,
@@ -39,6 +39,7 @@ func NewStateObserver(backend Clusterer) *StateObserver {
 	}
 }
 
+// WithRefreshInterval sets the interval that this Observer will poll the cluster state.
 func (s *StateObserver) WithRefreshInterval(interval time.Duration) *StateObserver {
 	s.refreshTime = interval
 	return s

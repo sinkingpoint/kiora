@@ -55,11 +55,13 @@ func main() {
 		log.Warn().Err(err).Msg("failed to start tracing")
 	}
 
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Warn().Err(err).Msg("failed to shutdown tracing. Spans may have been lost")
-		}
-	}()
+	if tp != nil {
+		defer func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Warn().Err(err).Msg("failed to shutdown tracing. Spans may have been lost")
+			}
+		}()
+	}
 
 	server, err := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
 	if err != nil {

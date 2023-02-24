@@ -30,10 +30,14 @@ func (t testServer) Address() string {
 	return t.address
 }
 
+func (t testServer) String() string {
+	return t.name
+}
+
 func TestStateObserver(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
-	clusterer := mock_clustering.NewMockClusterer(ctrl)
+	clusterer := mock_clustering.NewMockClusterMemberTracker(ctrl)
 	clusterer.EXPECT().GetMembers(gomock.Any()).Return([]clustering.Server{
 		NewTestServer("foo", "foo"),
 	}, nil)
