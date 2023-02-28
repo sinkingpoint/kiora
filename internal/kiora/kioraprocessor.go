@@ -18,10 +18,9 @@ type KioraProcessor struct {
 }
 
 // NewKioraProcessor creater a new KioraProcessor, starting the backing go routine that asynchronously processes incoming messages.
-func NewKioraProcessor(db kioradb.DB, broadcaster clustering.Broadcaster) *KioraProcessor {
+func NewKioraProcessor(db kioradb.DB) *KioraProcessor {
 	processor := &KioraProcessor{
-		DB:          db,
-		Broadcaster: broadcaster,
+		DB: db,
 	}
 
 	return processor

@@ -57,6 +57,10 @@ func (k *KioraClusterer) RemoveServer(server Server) {
 }
 
 func (k *KioraClusterer) AmIAuthoritativeFor(a *model.Alert) bool {
+	if k.ring == nil {
+		return false
+	}
+
 	member := k.ring.LocateKey(a.Labels.Bytes())
 
 	return member != nil && member.String() == k.myName

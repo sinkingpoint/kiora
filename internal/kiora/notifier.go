@@ -38,10 +38,6 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster cluste
 	ctx, span := tracing.Tracer().Start(ctx, "NotifierProcessor.ProcessAlert")
 	defer span.End()
 
-	if !n.clusterer.AmIAuthoritativeFor(newAlert) {
-		return nil
-	}
-
 	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", newAlert)))
 
 	// Before we send any notifications, if this is a new alert, or an update to the states, save it in the local db.
@@ -49,6 +45,10 @@ func (n *NotifierProcessor) ProcessAlert(ctx context.Context, broadcaster cluste
 		if err := db.StoreAlerts(ctx, *newAlert); err != nil {
 			span.SetStatus(codes.Error, err.Error())
 		}
+	}
+
+	if !n.clusterer.AmIAuthoritativeFor(newAlert) {
+		return nil
 	}
 
 	if newAlert.Status != model.AlertStatusProcessing || (existingAlert != nil && existingAlert.Status != model.AlertStatusProcessing) {

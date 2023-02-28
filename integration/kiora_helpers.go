@@ -63,6 +63,11 @@ func NewKioraInstance(args ...string) *KioraInstance {
 	}
 }
 
+func (k *KioraInstance) WithName(name string) *KioraInstance {
+	k.name = name
+	return k
+}
+
 func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
 	k.configFile = configFile
 	return k
@@ -72,6 +77,10 @@ func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
 func (k *KioraInstance) Start(t *testing.T) error {
 	t.Helper()
 	name := kioraInstanceName()
+	if k.name == "" {
+		k.name = name
+	}
+
 	httpPort, err := getRandomPort()
 	require.NoError(t, err)
 
@@ -80,9 +89,8 @@ func (k *KioraInstance) Start(t *testing.T) error {
 
 	args := append([]string{"run", "../cmd/kiora", "-c", k.configFile, "--raft.data-dir",
 		"../artifacts/test/" + name, "--web.listen-url", "localhost:" + httpPort,
-		"--raft.listen-url", "localhost:" + raftPort}, k.args...)
+		"--raft.listen-url", "localhost:" + raftPort, "--raft.local-id", k.name}, k.args...)
 
-	k.name = name
 	k.httpPort = httpPort
 	k.raftPort = raftPort
 	k.cmd = exec.Command("go", args...)
@@ -134,6 +142,7 @@ func (k *KioraInstance) WaitUntilLeader(t *testing.T, ctx context.Context) error
 			return ctx.Err()
 		default:
 			if k.clusterHasLeader(t) {
+				time.Sleep(2 * time.Second)
 				return nil
 			}
 
@@ -194,8 +203,6 @@ func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model
 	alertBytes, err := json.Marshal([]model.Alert{alert})
 	require.NoError(t, err)
 
-	t.Log(string(alertBytes))
-
 	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(alertBytes))
 	require.NoError(t, err)
 	resp.Body.Close()
@@ -255,13 +262,13 @@ func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	// Start n-1 instances.
 	nodes := []*KioraInstance{}
 	for i := 0; i < numNodes-1; i++ {
-		node := NewKioraInstance("--raft.local-id", fmt.Sprintf("node-%d", i))
+		node := NewKioraInstance().WithName(fmt.Sprintf("node-%d", i))
 		require.NoError(t, node.Start(t))
 		nodes = append(nodes, node)
 	}
 
 	// Start a leader node, telling it to bootstrap the cluster.
-	leader := NewKioraInstance("--raft.bootstrap", "--raft.local-id", fmt.Sprintf("node-%d", numNodes-1))
+	leader := NewKioraInstance("--raft.bootstrap").WithName(fmt.Sprintf("node-%d", numNodes-1))
 	require.NoError(t, leader.Start(t))
 
 	// Wait until the cluster is up, and then add every node to the leader.

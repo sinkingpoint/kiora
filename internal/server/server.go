@@ -66,20 +66,12 @@ func NewServerConfig() serverConfig {
 }
 
 // assembleProcessor is responsible for constructing the KioraProcessor that pre-processes models before they enter the main flow.
-func assemblePreProcessor(conf *serverConfig, broadcaster clustering.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
-	processor := kiora.NewKioraProcessor(db, broadcaster)
+func assemblePreProcessor(conf *serverConfig, db kioradb.DB) *kiora.KioraProcessor {
+	processor := kiora.NewKioraProcessor(db)
 
 	// For now, just broadcast everything that comes in.
 	broadcastProcessor := kiora.BroadcastProcessor{}
 	processor.AddAlertProcessor(&broadcastProcessor)
-
-	return processor
-}
-
-// assemblePostProcessor is responsible for constructing the KioraProcessor that processes models _after_ they have been broadcasted.
-func assemblePostProcessor(conf *serverConfig, broadcaster clustering.Broadcaster, db kioradb.DB) *kiora.KioraProcessor {
-	processor := kiora.NewKioraProcessor(db, broadcaster)
-	// processor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig))
 
 	return processor
 }
@@ -101,7 +93,9 @@ type KioraServer struct {
 }
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
-	postProcessor := assemblePostProcessor(&conf, nil, db)
+	preProcessor := assemblePreProcessor(&conf, db)
+	postProcessor := kiora.NewKioraProcessor(db)
+
 	broadcaster, err := raft.NewRaftBroadcaster(context.Background(), conf.RaftConfig, postProcessor)
 	if err != nil {
 		return nil, err
@@ -109,15 +103,17 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 
 	// this makes a weird loop where we could go broadcast -> postprocessor -> broadcast infinitely.
 	// TODO(cdouch): detangle this if the circular dependency proves unweildy.
+	preProcessor.Broadcaster = broadcaster
 	postProcessor.Broadcaster = broadcaster
 
 	observer := clustering.NewStateObserver(broadcaster)
 	clusterer := clustering.NewKioraClusterer(conf.RaftConfig.LocalID)
 	observer.AddObserver(clusterer)
+	postProcessor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig, clusterer))
 
 	return &KioraServer{
 		serverConfig:         conf,
-		db:                   assemblePreProcessor(&conf, broadcaster, db),
+		db:                   preProcessor,
 		broadcaster:          broadcaster,
 		clusterStateObserver: observer,
 		clusterer:            clusterer,
