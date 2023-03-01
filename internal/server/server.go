@@ -237,3 +237,7 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.KioraLogMess
 
 	return &kioraproto.KioraLogReply{}, nil
 }
+
+func (k *KioraServer) Heartbeat(ctx context.Context, hearbeat *kioraproto.HeartbeatMessage) (*kioraproto.HeartbeatReply, error) {
+	return &kioraproto.HeartbeatReply{}, nil
+}

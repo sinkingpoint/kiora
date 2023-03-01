@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KioraClient interface {
 	ApplyLog(ctx context.Context, in *KioraLogMessage, opts ...grpc.CallOption) (*KioraLogReply, error)
+	Heartbeat(ctx context.Context, in *HeartbeatMessage, opts ...grpc.CallOption) (*HeartbeatReply, error)
 }
 
 type kioraClient struct {
@@ -42,11 +43,21 @@ func (c *kioraClient) ApplyLog(ctx context.Context, in *KioraLogMessage, opts ..
 	return out, nil
 }
 
+func (c *kioraClient) Heartbeat(ctx context.Context, in *HeartbeatMessage, opts ...grpc.CallOption) (*HeartbeatReply, error) {
+	out := new(HeartbeatReply)
+	err := c.cc.Invoke(ctx, "/kioraproto.Kiora/Heartbeat", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KioraServer is the server API for Kiora service.
 // All implementations must embed UnimplementedKioraServer
 // for forward compatibility
 type KioraServer interface {
 	ApplyLog(context.Context, *KioraLogMessage) (*KioraLogReply, error)
+	Heartbeat(context.Context, *HeartbeatMessage) (*HeartbeatReply, error)
 	mustEmbedUnimplementedKioraServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedKioraServer struct {
 
 func (UnimplementedKioraServer) ApplyLog(context.Context, *KioraLogMessage) (*KioraLogReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyLog not implemented")
+}
+func (UnimplementedKioraServer) Heartbeat(context.Context, *HeartbeatMessage) (*HeartbeatReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
 }
 func (UnimplementedKioraServer) mustEmbedUnimplementedKioraServer() {}
 
@@ -88,6 +102,24 @@ func _Kiora_ApplyLog_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Kiora_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HeartbeatMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KioraServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kioraproto.Kiora/Heartbeat",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KioraServer).Heartbeat(ctx, req.(*HeartbeatMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Kiora_ServiceDesc is the grpc.ServiceDesc for Kiora service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var Kiora_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApplyLog",
 			Handler:    _Kiora_ApplyLog_Handler,
+		},
+		{
+			MethodName: "Heartbeat",
+			Handler:    _Kiora_Heartbeat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

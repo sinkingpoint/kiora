@@ -3,6 +3,7 @@ package kioraproto;
 
 import "alert.proto";
 import "silence.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/sinkingpoint/internal/dto/kioraproto";
 
@@ -15,6 +16,14 @@ message KioraLogMessage {
 
 message KioraLogReply {}
 
+message HeartbeatMessage {
+    google.protobuf.Timestamp time = 1;
+    string from = 2;
+}
+
+message HeartbeatReply {}
+
 service Kiora {
     rpc ApplyLog(KioraLogMessage) returns (KioraLogReply) {}
+    rpc Heartbeat(HeartbeatMessage) returns (HeartbeatReply) {}
 }
