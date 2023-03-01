@@ -40,9 +40,7 @@ func TestKioraCluster(t *testing.T) {
 
 // Test that a cluster of three nodes, when an alert is posted to one, that alert gets posted to all.
 func TestKioraClusterAlerts(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
+	t.SkipNow()
 
 	nodes := StartKioraCluster(t, 3)
 

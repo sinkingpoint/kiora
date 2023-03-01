@@ -1,0 +1,20 @@
+syntax = "proto3";
+package kioraproto;
+
+import "alert.proto";
+import "silence.proto";
+
+option go_package = "github.com/sinkingpoint/internal/dto/kioraproto";
+
+message KioraLogMessage {
+    oneof log {
+        PostAlertsMessage alerts = 1;
+        PostSilencesRequest silences = 2;
+    }
+}
+
+message KioraLogReply {}
+
+service Kiora {
+    rpc ApplyLog(KioraLogMessage) returns (KioraLogReply) {}
+}

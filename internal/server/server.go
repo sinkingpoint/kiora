@@ -78,7 +78,7 @@ func assemblePreProcessor(conf *serverConfig, db kioradb.DB) *kiora.KioraProcess
 
 // KioraServer is a server that serves the main Kiora API.
 type KioraServer struct {
-	kioraproto.UnimplementedRaftApplierServer
+	kioraproto.UnimplementedKioraServer
 	serverConfig
 	broadcaster clustering.Broadcaster
 	db          kioradb.DB
@@ -181,7 +181,7 @@ func (k *KioraServer) listenAndServeGRPC() error {
 		return err
 	}
 
-	kioraproto.RegisterRaftApplierServer(k.grpcServer, k)
+	kioraproto.RegisterKioraServer(k.grpcServer, k)
 	reflection.Register(k.grpcServer)
 	return k.grpcServer.Serve(listener)
 }
@@ -218,9 +218,9 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 
 // ApplyLog is the handler that processes forwarded RaftLogs from follower nodes to the leader. When this function is called,
 // it can be assumed that the current node is the leader of the raft cluster.
-func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessage) (*kioraproto.RaftLogReply, error) {
+func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.KioraLogMessage) (*kioraproto.KioraLogReply, error) {
 	switch msg := log.Log.(type) {
-	case *kioraproto.RaftLogMessage_Alerts:
+	case *kioraproto.KioraLogMessage_Alerts:
 		modelAlerts := make([]model.Alert, 0, len(msg.Alerts.Alerts))
 		for _, protoAlert := range msg.Alerts.Alerts {
 			alert := model.Alert{}
@@ -232,9 +232,8 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.RaftLogMessa
 			modelAlerts = append(modelAlerts, alert)
 		}
 
-		return &kioraproto.RaftLogReply{}, k.db.StoreAlerts(ctx, modelAlerts...)
-	case *kioraproto.RaftLogMessage_Silences:
+		return &kioraproto.KioraLogReply{}, k.db.StoreAlerts(ctx, modelAlerts...)
 	}
 
-	return &kioraproto.RaftLogReply{}, nil
+	return &kioraproto.KioraLogReply{}, nil
 }

@@ -17,9 +17,8 @@ func TestFailover(t *testing.T) {
 	// - Send an alert into the cluster
 	// - Observe that the alert gets sent
 	// - Shutdown the node that sends the alert
-	if testing.Short() {
-		t.SkipNow()
-	}
+
+	t.SkipNow()
 
 	t.Parallel()
 

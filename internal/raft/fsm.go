@@ -51,8 +51,8 @@ func (a *kioraFSM) Apply(l *raft.Log) any {
 	}
 
 	switch msg := log.Log.(type) {
-	case *kioraproto.RaftLogMessage_Alerts:
-		a.processAlerts(ctx, log.From, msg.Alerts)
+	case *kioraproto.KioraLogMessage_Alerts:
+		a.processAlerts(ctx, msg.Alerts)
 	default:
 		panic(fmt.Sprintf("BUG: Got a type of message that we haven't handled (%q)", msg))
 	}
@@ -62,7 +62,7 @@ func (a *kioraFSM) Apply(l *raft.Log) any {
 
 // processAlerts handles the Alerts raft message, decoding the alerts into the model
 // and passing them into the db for further processing.
-func (a *kioraFSM) processAlerts(ctx context.Context, from string, protoAlerts *kioraproto.PostAlertsMessage) {
+func (a *kioraFSM) processAlerts(ctx context.Context, protoAlerts *kioraproto.PostAlertsMessage) {
 	alerts := []model.Alert{}
 
 	for _, protoAlert := range protoAlerts.Alerts {
@@ -99,8 +99,8 @@ func (a *kioraFSM) Restore(input io.ReadCloser) error {
 }
 
 // decodeLogMessage decodes the raw bytes into a kioraproto.RaftLog.
-func decodeLogMessage(raw []byte) (*kioraproto.RaftLogMessage, error) {
-	msg := kioraproto.RaftLogMessage{}
+func decodeLogMessage(raw []byte) (*kioraproto.KioraLogMessage, error) {
+	msg := kioraproto.KioraLogMessage{}
 
 	if err := proto.Unmarshal(raw, &msg); err != nil {
 		return nil, err
