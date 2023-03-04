@@ -34,7 +34,7 @@ func DefaultRaftConfig() RaftConfig {
 	}
 }
 
-func NewRaft(ctx context.Context, config RaftConfig, stateMachine *kioraFSM) (*raft.Raft, *transport.Manager, error) {
+func newRaft(ctx context.Context, config RaftConfig, stateMachine *kioraFSM) (*raft.Raft, *transport.Manager, error) {
 	c := raft.DefaultConfig()
 	c.LocalID = raft.ServerID(config.LocalID)
 	baseDir := filepath.Join(config.DataDir, config.LocalID)

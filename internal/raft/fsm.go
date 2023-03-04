@@ -64,18 +64,18 @@ func (a *kioraFSM) Apply(l *raft.Log) any {
 // and passing them into the db for further processing.
 func (a *kioraFSM) processAlerts(ctx context.Context, protoAlerts *kioraproto.PostAlertsMessage) {
 	alerts := []model.Alert{}
-
 	for _, protoAlert := range protoAlerts.Alerts {
 		alert := model.Alert{}
 
 		if err := alert.DeserializeFromProto(protoAlert); err != nil {
 			panic(fmt.Sprintf("BUG: failed to unmarshal a model.Alert from a proto alert: %q", err))
 		}
+
 		alerts = append(alerts, alert)
 	}
 
 	if err := a.db.StoreAlerts(ctx, alerts...); err != nil {
-		panic(fmt.Sprintf("BUG: failed to process alerts: %q", err))
+		panic(fmt.Sprintf("BUG: failed to store alert: %q", err))
 	}
 }
 

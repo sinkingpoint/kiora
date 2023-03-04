@@ -6,7 +6,6 @@ import (
 	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/raft"
-	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/internal/server/raftadmin"
@@ -22,41 +21,33 @@ import (
 var _ clustering.Broadcaster = &RaftBroadcaster{}
 
 type RaftBroadcaster struct {
-	myID         raft.ServerID
-	raft         *raft.Raft
-	transport    *transport.Manager
-	dispatchChan chan *kioraproto.KioraLogMessage
+	myID      raft.ServerID
+	raft      *raft.Raft
+	transport *transport.Manager
 }
 
 func NewRaftBroadcaster(ctx context.Context, config RaftConfig, backingDB kioradb.DB) (*RaftBroadcaster, error) {
 	localID := raft.ServerID(config.LocalID)
-	raft, transport, err := NewRaft(ctx, config, &kioraFSM{db: backingDB})
+	raft, transport, err := newRaft(ctx, config, &kioraFSM{
+		db: backingDB,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	db := RaftBroadcaster{
-		myID:         localID,
-		raft:         raft,
-		transport:    transport,
-		dispatchChan: make(chan *kioraproto.KioraLogMessage, 500), // TODO(cdouch): This capacity is arbitrary. Should benchmark it.
+		myID:      localID,
+		raft:      raft,
+		transport: transport,
 	}
-
-	go func() {
-		for msg := range db.dispatchChan {
-			if err := db.applyLog(context.Background(), msg); err != nil {
-				log.Err(err).Msg("failed to apply log")
-			}
-		}
-	}()
 
 	return &db, nil
 }
 
 // ProcessAlerts takes alerts and processes them, adding new ones and resolving old ones.
 func (r *RaftBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) error {
-	r.dispatchChan <- newPostAlertsRaftLogMessage(alerts...)
-	return nil
+	return r.applyLog(ctx, newPostAlertsRaftLogMessage(alerts...))
 }
 
 func (r *RaftBroadcaster) RegisterEndpoints(ctx context.Context, router *mux.Router, grcpServer *grpc.Server) error {

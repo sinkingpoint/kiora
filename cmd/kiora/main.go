@@ -33,7 +33,7 @@ func main() {
 		}
 	}
 
-	conf, err := config.LoadConfigFile(CLI.ConfigFile)
+	_, err := config.LoadConfigFile(CLI.ConfigFile)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
@@ -46,7 +46,6 @@ func main() {
 	serverConfig.RaftConfig.DataDir = CLI.RaftDataDir
 	serverConfig.RaftConfig.LocalAddress = CLI.RaftListenURL
 	serverConfig.RaftConfig.Bootstrap = CLI.RaftBootstrap
-	serverConfig.NotifyConfig = conf
 
 	tracingConfig := tracing.DefaultTracingConfiguration()
 	tracingConfig.ExporterType = "noop" // TODO(cdouch): Make this a CLI arg
@@ -75,7 +74,7 @@ func main() {
 	go func() {
 		for range c {
 			log.Info().Msg("Received signal, shutting down")
-			server.Kill()
+			server.Shutdown()
 			break
 		}
 	}()

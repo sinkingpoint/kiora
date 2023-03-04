@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -22,9 +23,10 @@ import (
 const CONTENT_TYPE_JSON = "application/json"
 const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
 
-func Register(router *mux.Router, db kioradb.DB) {
+func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcaster) {
 	api := apiv1{
-		db,
+		db:          db,
+		broadcaster: broadcaster,
 	}
 	router.Path("/api/v1/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postAlerts), "POST api/v1/alerts"))
 	router.Path("/api/v1/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
@@ -36,7 +38,8 @@ func readBody(r *http.Request) ([]byte, error) {
 }
 
 type apiv1 struct {
-	db kioradb.DB
+	db          kioradb.DB
+	broadcaster clustering.Broadcaster
 }
 
 // postAlerts handles the POST /alerts request, decoding a list of alerts
@@ -92,7 +95,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := a.db.StoreAlerts(r.Context(), alerts...); err != nil {
+	if err := a.broadcaster.BroadcastAlerts(r.Context(), alerts...); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process alerts")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

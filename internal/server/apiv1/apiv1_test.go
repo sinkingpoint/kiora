@@ -10,11 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -28,6 +30,14 @@ type mockDB struct {
 func (m *mockDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	m.alerts = append(m.alerts, alerts...)
 	return nil
+}
+
+func (m *mockDB) RegisterEndpoints(ctx context.Context, router *mux.Router, grcpServer *grpc.Server) error {
+	return nil
+}
+
+func (m *mockDB) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) error {
+	return m.StoreAlerts(ctx, alerts...)
 }
 
 func (m *mockDB) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []model.Alert {
@@ -89,7 +99,7 @@ func TestPostAlerts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &mockDB{}
-			api := apiv1{db}
+			api := apiv1{db, db}
 
 			request, err := http.NewRequest(http.MethodPost, "localhost/api/v1/alerts", bytes.NewReader(tt.body))
 			require.NoError(t, err)

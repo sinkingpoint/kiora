@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net"
 	"net/http"
 	"runtime"
@@ -12,10 +11,10 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
-	"github.com/sinkingpoint/kiora/internal/kiora"
 	"github.com/sinkingpoint/kiora/internal/raft"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
@@ -49,8 +48,6 @@ type serverConfig struct {
 	// TLS is an optional pair of cert and key files that will be used to serve TLS connections.
 	TLS *TLSPair
 
-	NotifyConfig kiora.NotifierConfig
-
 	RaftConfig raft.RaftConfig
 }
 
@@ -65,67 +62,38 @@ func NewServerConfig() serverConfig {
 	}
 }
 
-// assembleProcessor is responsible for constructing the KioraProcessor that pre-processes models before they enter the main flow.
-func assemblePreProcessor(conf *serverConfig, db kioradb.DB) *kiora.KioraProcessor {
-	processor := kiora.NewKioraProcessor(db)
-
-	// For now, just broadcast everything that comes in.
-	broadcastProcessor := kiora.BroadcastProcessor{}
-	processor.AddAlertProcessor(&broadcastProcessor)
-
-	return processor
-}
-
 // KioraServer is a server that serves the main Kiora API.
 type KioraServer struct {
 	kioraproto.UnimplementedKioraServer
 	serverConfig
-	broadcaster clustering.Broadcaster
-	db          kioradb.DB
-
-	clusterStateObserver *clustering.StateObserver
-	clusterer            clustering.Clusterer
 
 	httpServer *http.Server
 	grpcServer *grpc.Server
 
-	close sync.Once
+	broadcaster clustering.Broadcaster
+	db          kioradb.DB
+
+	shutdownOnce sync.Once
 }
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
-	preProcessor := assemblePreProcessor(&conf, db)
-	postProcessor := kiora.NewKioraProcessor(db)
-
-	broadcaster, err := raft.NewRaftBroadcaster(context.Background(), conf.RaftConfig, postProcessor)
+	broadcaster, err := raft.NewRaftBroadcaster(context.Background(), conf.RaftConfig, db)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to initialise raft")
 	}
 
-	// this makes a weird loop where we could go broadcast -> postprocessor -> broadcast infinitely.
-	// TODO(cdouch): detangle this if the circular dependency proves unweildy.
-	preProcessor.Broadcaster = broadcaster
-	postProcessor.Broadcaster = broadcaster
-
-	observer := clustering.NewStateObserver(broadcaster)
-	clusterer := clustering.NewKioraClusterer(conf.RaftConfig.LocalID)
-	observer.AddObserver(clusterer)
-	postProcessor.AddAlertProcessor(kiora.NewNotifierProcessor(conf.NotifyConfig, clusterer))
-
 	return &KioraServer{
-		serverConfig:         conf,
-		db:                   preProcessor,
-		broadcaster:          broadcaster,
-		clusterStateObserver: observer,
-		clusterer:            clusterer,
+		db:           db,
+		serverConfig: conf,
+		broadcaster:  broadcaster,
 	}, nil
 }
 
-func (k *KioraServer) Kill() {
-	k.close.Do(func() {
+func (k *KioraServer) Shutdown() {
+	k.shutdownOnce.Do(func() {
 		// todo: add more synonyms of stop.
 		k.httpServer.Shutdown(context.Background()) //nolint:errcheck
 		k.grpcServer.GracefulStop()
-		k.clusterStateObserver.Kill()
 	})
 }
 
@@ -136,19 +104,13 @@ func (k *KioraServer) ListenAndServe() error {
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 
 	httpRouter := mux.NewRouter()
+
 	if err := k.broadcaster.RegisterEndpoints(context.Background(), httpRouter, k.grpcServer); err != nil {
-		return err
+		return errors.Wrap(err, "failed to register broadcaster endpoints")
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(3)
-
-	go func() {
-		k.clusterStateObserver.Run()
-		wg.Done()
-
-		log.Info().Msg("Cluster State Observer shut down")
-	}()
+	wg.Add(2)
 
 	go func() {
 		if err := k.listenAndServeHTTP(httpRouter); err != nil {
@@ -187,7 +149,7 @@ func (k *KioraServer) listenAndServeGRPC() error {
 }
 
 func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
-	apiv1.Register(r, k.db)
+	apiv1.Register(r, k.db, k.broadcaster)
 
 	runtime.SetMutexProfileFraction(5)
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
@@ -216,12 +178,11 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	return err
 }
 
-// ApplyLog is the handler that processes forwarded RaftLogs from follower nodes to the leader. When this function is called,
-// it can be assumed that the current node is the leader of the raft cluster.
+// ApplyLog is the handler that Log Messages that have been received on a follower and forwarded to the Raft leader for applying.
 func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.KioraLogMessage) (*kioraproto.KioraLogReply, error) {
 	switch msg := log.Log.(type) {
 	case *kioraproto.KioraLogMessage_Alerts:
-		modelAlerts := make([]model.Alert, 0, len(msg.Alerts.Alerts))
+		alerts := []model.Alert{}
 		for _, protoAlert := range msg.Alerts.Alerts {
 			alert := model.Alert{}
 
@@ -229,10 +190,12 @@ func (k *KioraServer) ApplyLog(ctx context.Context, log *kioraproto.KioraLogMess
 				return nil, err
 			}
 
-			modelAlerts = append(modelAlerts, alert)
+			alerts = append(alerts, alert)
 		}
 
-		return &kioraproto.KioraLogReply{}, k.db.StoreAlerts(ctx, modelAlerts...)
+		if err := k.broadcaster.BroadcastAlerts(ctx, alerts...); err != nil {
+			return nil, err
+		}
 	}
 
 	return &kioraproto.KioraLogReply{}, nil
