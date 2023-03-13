@@ -9,6 +9,7 @@ import (
 	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
 	boltdb "github.com/hashicorp/raft-boltdb"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -37,6 +38,10 @@ func DefaultRaftConfig() RaftConfig {
 func newRaft(ctx context.Context, config RaftConfig, stateMachine *kioraFSM) (*raft.Raft, *transport.Manager, error) {
 	c := raft.DefaultConfig()
 	c.LocalID = raft.ServerID(config.LocalID)
+	c.Logger = &zerologLogger{
+		Logger: zerolog.New(os.Stdout).With().Str("service_name", "raft").Logger(),
+	}
+
 	baseDir := filepath.Join(config.DataDir, config.LocalID)
 	if err := os.MkdirAll(baseDir, 0o700); err != nil {
 		return nil, nil, err
