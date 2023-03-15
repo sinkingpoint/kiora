@@ -10,10 +10,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
-	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/codes"
@@ -32,11 +30,6 @@ func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcas
 	router.Path("/api/v1/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
 }
 
-// ReadBody reads the body from the request, decoding any Content-Encoding present.
-func readBody(r *http.Request) ([]byte, error) {
-	return io.ReadAll(r.Body)
-}
-
 type apiv1 struct {
 	db          kioradb.DB
 	broadcaster clustering.Broadcaster
@@ -47,7 +40,7 @@ type apiv1 struct {
 func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	body, err := readBody(r)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "failed to read body", http.StatusBadRequest)
 		return
@@ -63,25 +56,6 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 			span.RecordError(err)
 			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
-		}
-	case CONTENT_TYPE_PROTO:
-		// TODO(cdouch): Move this into a helper function so we're not having to manually decode
-		// every struct each time.
-		protoAlerts := kioraproto.PostAlertsMessage{}
-		if err := proto.Unmarshal(body, &protoAlerts); err != nil {
-			span.RecordError(err)
-			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
-			return
-		}
-
-		for _, protoAlert := range protoAlerts.Alerts {
-			var alert model.Alert
-			if err := alert.DeserializeFromProto(protoAlert); err != nil {
-				span.RecordError(err)
-				http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
-				return
-			}
-			alerts = append(alerts, alert)
 		}
 	default:
 		http.Error(w, fmt.Sprintf("invalid content-type %q", r.Header.Get("Content-Type")), http.StatusUnsupportedMediaType)

@@ -10,113 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	mux "github.com/gorilla/mux"
-	clustering "github.com/sinkingpoint/kiora/internal/clustering"
 	model "github.com/sinkingpoint/kiora/lib/kiora/model"
-	grpc "google.golang.org/grpc"
 )
-
-// MockServer is a mock of Server interface.
-type MockServer struct {
-	ctrl     *gomock.Controller
-	recorder *MockServerMockRecorder
-}
-
-// MockServerMockRecorder is the mock recorder for MockServer.
-type MockServerMockRecorder struct {
-	mock *MockServer
-}
-
-// NewMockServer creates a new mock instance.
-func NewMockServer(ctrl *gomock.Controller) *MockServer {
-	mock := &MockServer{ctrl: ctrl}
-	mock.recorder = &MockServerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockServer) EXPECT() *MockServerMockRecorder {
-	return m.recorder
-}
-
-// Address mocks base method.
-func (m *MockServer) Address() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Address")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Address indicates an expected call of Address.
-func (mr *MockServerMockRecorder) Address() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Address", reflect.TypeOf((*MockServer)(nil).Address))
-}
-
-// Name mocks base method.
-func (m *MockServer) Name() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Name")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// Name indicates an expected call of Name.
-func (mr *MockServerMockRecorder) Name() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockServer)(nil).Name))
-}
-
-// String mocks base method.
-func (m *MockServer) String() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "String")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// String indicates an expected call of String.
-func (mr *MockServerMockRecorder) String() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockServer)(nil).String))
-}
-
-// MockClusterMemberTracker is a mock of ClusterMemberTracker interface.
-type MockClusterMemberTracker struct {
-	ctrl     *gomock.Controller
-	recorder *MockClusterMemberTrackerMockRecorder
-}
-
-// MockClusterMemberTrackerMockRecorder is the mock recorder for MockClusterMemberTracker.
-type MockClusterMemberTrackerMockRecorder struct {
-	mock *MockClusterMemberTracker
-}
-
-// NewMockClusterMemberTracker creates a new mock instance.
-func NewMockClusterMemberTracker(ctrl *gomock.Controller) *MockClusterMemberTracker {
-	mock := &MockClusterMemberTracker{ctrl: ctrl}
-	mock.recorder = &MockClusterMemberTrackerMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockClusterMemberTracker) EXPECT() *MockClusterMemberTrackerMockRecorder {
-	return m.recorder
-}
-
-// GetMembers mocks base method.
-func (m *MockClusterMemberTracker) GetMembers(ctx context.Context) ([]clustering.Server, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMembers", ctx)
-	ret0, _ := ret[0].([]clustering.Server)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetMembers indicates an expected call of GetMembers.
-func (mr *MockClusterMemberTrackerMockRecorder) GetMembers(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMembers", reflect.TypeOf((*MockClusterMemberTracker)(nil).GetMembers), ctx)
-}
 
 // MockBroadcaster is a mock of Broadcaster interface.
 type MockBroadcaster struct {
@@ -161,15 +56,15 @@ func (mr *MockBroadcasterMockRecorder) BroadcastAlerts(ctx interface{}, alerts .
 }
 
 // RegisterEndpoints mocks base method.
-func (m *MockBroadcaster) RegisterEndpoints(ctx context.Context, router *mux.Router, grcpServer *grpc.Server) error {
+func (m *MockBroadcaster) RegisterEndpoints(ctx context.Context, router *mux.Router) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegisterEndpoints", ctx, router, grcpServer)
+	ret := m.ctrl.Call(m, "RegisterEndpoints", ctx, router)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RegisterEndpoints indicates an expected call of RegisterEndpoints.
-func (mr *MockBroadcasterMockRecorder) RegisterEndpoints(ctx, router, grcpServer interface{}) *gomock.Call {
+func (mr *MockBroadcasterMockRecorder) RegisterEndpoints(ctx, router interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterEndpoints", reflect.TypeOf((*MockBroadcaster)(nil).RegisterEndpoints), ctx, router, grcpServer)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterEndpoints", reflect.TypeOf((*MockBroadcaster)(nil).RegisterEndpoints), ctx, router)
 }

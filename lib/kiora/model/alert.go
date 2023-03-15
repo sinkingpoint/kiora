@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 )
 
 // DEFAULT_TIMEOUT_INTERVAL is the length of time after first seeing an alert that we time out the alert
@@ -46,49 +44,6 @@ func (s AlertStatus) isValid() bool {
 		return true
 	default:
 		return false
-	}
-}
-
-// deserializeStatusFromProto takes the proto AlertStatus and turns it into a model.AlertStatus
-func deserializeStatusFromProto(status kioraproto.AlertStatus) AlertStatus {
-	switch status {
-	case kioraproto.AlertStatus_firing:
-		return AlertStatusFiring
-	case kioraproto.AlertStatus_processing:
-		return AlertStatusProcessing
-	case kioraproto.AlertStatus_acked:
-		return AlertStatusAcked
-	case kioraproto.AlertStatus_resolved:
-		return AlertStatusResolved
-	case kioraproto.AlertStatus_silenced:
-		return AlertStatusSilenced
-	case kioraproto.AlertStatus_timed_out:
-		return AlertStatusTimedOut
-	case kioraproto.AlertStatus_refiring:
-		return AlertStatusRefiring
-	default:
-		panic(fmt.Sprintf("BUG: unhandled alert status received from proto: %q", status.String()))
-	}
-}
-
-func (a *AlertStatus) MapToProto() kioraproto.AlertStatus {
-	switch *a {
-	case AlertStatusFiring:
-		return kioraproto.AlertStatus_firing
-	case AlertStatusProcessing:
-		return kioraproto.AlertStatus_processing
-	case AlertStatusAcked:
-		return kioraproto.AlertStatus_acked
-	case AlertStatusResolved:
-		return kioraproto.AlertStatus_resolved
-	case AlertStatusSilenced:
-		return kioraproto.AlertStatus_silenced
-	case AlertStatusTimedOut:
-		return kioraproto.AlertStatus_timed_out
-	case AlertStatusRefiring:
-		return kioraproto.AlertStatus_refiring
-	default:
-		panic(fmt.Sprintf("BUG: unhandled alert status: %q", *a))
 	}
 }
 
@@ -158,36 +113,6 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Status = rawAlert.Status
 	a.StartTime = rawAlert.StartTime
 	a.TimeOutDeadline = rawAlert.TimeOutDeadline
-
-	return a.validate()
-}
-
-// DeserializeFromProto creates a model.Alert from a proto alert
-func (a *Alert) DeserializeFromProto(proto *kioraproto.Alert) error {
-	// Protobuf encodes empty maps as nils, so we have to be a bit more lenient here and default the maps
-	// if they don't exist, which we don't do in JSON.
-	if proto.Labels != nil {
-		a.Labels = proto.Labels
-	} else {
-		a.Labels = make(Labels)
-	}
-
-	if proto.Annotations != nil {
-		a.Annotations = proto.Annotations
-	} else {
-		a.Annotations = make(map[string]string)
-	}
-	a.Status = deserializeStatusFromProto(proto.Status)
-
-	if proto.StartTime != nil {
-		a.StartTime = time.UnixMilli(proto.StartTime.AsTime().UnixMilli()).UTC()
-	}
-
-	if proto.EndTime != nil && proto.EndTime.Nanos > 0 {
-		a.TimeOutDeadline = time.UnixMilli(proto.EndTime.AsTime().UnixMilli())
-	} else {
-		a.TimeOutDeadline = a.StartTime.Add(DEFAULT_TIMEOUT_INTERVAL)
-	}
 
 	return a.validate()
 }

@@ -40,14 +40,12 @@ run-cluster:
 PROTO_TARGETS = $(wildcard internal/dto/kioraproto/schema/*.proto)
 PROTO_OUTPUTS = $(patsubst internal/dto/kioraproto/schema/%.proto,internal/dto/kioraproto/%.pb.go,$(PROTO_TARGETS))
 $(PROTO_OUTPUTS): $(PROTO_TARGETS)
-	cd internal/dto/kioraproto/schema && protoc --go_opt=paths=source_relative --go_out=../ --go-grpc_out=../ --go-grpc_opt=paths=source_relative $(patsubst internal/dto/kioraproto/schema/%,%,$^)
+	cd internal/dto/kioraproto/schema && protoc --go_opt=paths=source_relative --go_out=../ $(patsubst internal/dto/kioraproto/schema/%,%,$^)
 
 .PHONY: generate
 generate: $(PROTO_OUTPUTS) ./lib/kiora/kioradb/db.go
 	mockgen -source ./lib/kiora/kioradb/db.go > mocks/mock_kioradb/db.go
 	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
-	mockgen -source ./internal/clustering/state_observer.go > mocks/mock_clustering/state_observer.go
-	mockgen -source ./internal/clustering/clusterer.go > mocks/mock_clustering/clusterer.go
 
 .PHONY: generate-clean
 generate-clean:

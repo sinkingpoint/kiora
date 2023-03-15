@@ -11,14 +11,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/sinkingpoint/kiora/internal/dto/kioraproto"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var _ kioradb.DB = &mockDB{}
@@ -32,7 +28,7 @@ func (m *mockDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	return nil
 }
 
-func (m *mockDB) RegisterEndpoints(ctx context.Context, router *mux.Router, grcpServer *grpc.Server) error {
+func (m *mockDB) RegisterEndpoints(ctx context.Context, router *mux.Router) error {
 	return nil
 }
 
@@ -47,27 +43,6 @@ func (m *mockDB) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []mo
 func TestPostAlerts(t *testing.T) {
 	// Construct a referenceTime that is used for each alert, and is expected to be found in the db.
 	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")
-	require.NoError(t, err)
-
-	// Construct, then Marshal a kioraproto.Alert.
-	msg := kioraproto.PostAlertsMessage{
-		Alerts: []*kioraproto.Alert{
-			{
-				Labels: map[string]string{
-					"foo": "bar",
-				},
-				Annotations: map[string]string{
-					"foo": "bar",
-				},
-				Status: kioraproto.AlertStatus_firing,
-				StartTime: &timestamppb.Timestamp{
-					Seconds: referenceTime.Unix(),
-				},
-			},
-		},
-	}
-
-	alertBytes, err := proto.Marshal(&msg)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -86,13 +61,6 @@ func TestPostAlerts(t *testing.T) {
 	"status": "firing",
 	"startTime": "%s"
 }]`, referenceTime.Format(time.RFC3339))),
-		},
-		{
-			name: "test proto unmarshal",
-			headers: map[string]string{
-				"content-type": "application/vnd.google.protobuf",
-			},
-			body: alertBytes,
 		},
 	}
 
