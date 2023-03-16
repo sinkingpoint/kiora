@@ -33,6 +33,7 @@ type serverConfig struct {
 	HTTPListenAddress string
 
 	ClusterListenAddress string
+	BootstrapPeers       []string
 
 	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
 	ReadTimeout time.Duration
@@ -70,6 +71,8 @@ type KioraServer struct {
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	config := serf.DefaultConfig()
+	config.ListenURL = conf.ClusterListenAddress
+	config.BootstrapPeers = conf.BootstrapPeers
 	broadcaster, err := serf.NewSerfBroadcaster(config, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")

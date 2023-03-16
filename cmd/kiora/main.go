@@ -14,9 +14,12 @@ import (
 )
 
 var CLI struct {
-	HTTPListenAddress    string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
-	ConfigFile           string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
-	ClusterListenAddress string `name:"grpc.listen-url" help:"the address to run cluster activities on" default:"localhost:4279"`
+	HTTPListenAddress string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
+	ConfigFile        string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
+
+	NodeName             string   `name:"cluster.node-name" help:"the name to join the cluster with"`
+	ClusterListenAddress string   `name:"cluster.listen-url" help:"the address to run cluster activities on" default:"localhost:4279"`
+	BootstrapPeers       []string `name:"cluster.bootstrap-peers" help:"the peers to bootstrap with"`
 }
 
 func main() {
@@ -30,6 +33,7 @@ func main() {
 	serverConfig := server.NewServerConfig()
 	serverConfig.HTTPListenAddress = CLI.HTTPListenAddress
 	serverConfig.ClusterListenAddress = CLI.ClusterListenAddress
+	serverConfig.BootstrapPeers = CLI.BootstrapPeers
 
 	tracingConfig := tracing.DefaultTracingConfiguration()
 	tracingConfig.ExporterType = "noop" // TODO(cdouch): Make this a CLI arg

@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	mux "github.com/gorilla/mux"
 	model "github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
@@ -53,18 +52,4 @@ func (mr *MockBroadcasterMockRecorder) BroadcastAlerts(ctx interface{}, alerts .
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, alerts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastAlerts", reflect.TypeOf((*MockBroadcaster)(nil).BroadcastAlerts), varargs...)
-}
-
-// RegisterEndpoints mocks base method.
-func (m *MockBroadcaster) RegisterEndpoints(ctx context.Context, router *mux.Router) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegisterEndpoints", ctx, router)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RegisterEndpoints indicates an expected call of RegisterEndpoints.
-func (mr *MockBroadcasterMockRecorder) RegisterEndpoints(ctx, router interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterEndpoints", reflect.TypeOf((*MockBroadcaster)(nil).RegisterEndpoints), ctx, router)
 }

@@ -2,12 +2,15 @@ package serf
 
 import (
 	"context"
+	"math/rand"
 	"net"
 	"strconv"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/serf/serf"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf/messages"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
@@ -17,15 +20,27 @@ import (
 
 var _ = clustering.Broadcaster(&SerfBroadcaster{})
 
+// randomNodeName returns a random, 16 char long node name to use when one isn't given.
+func randomNodeName() string {
+	var letterRunes = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	b := make([]rune, 16)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
 type Config struct {
 	ListenURL      string
 	BootstrapPeers []string
+	NodeName       string
 }
 
 func DefaultConfig() *Config {
 	return &Config{
 		ListenURL:      "localhost:4279",
 		BootstrapPeers: []string{},
+		NodeName:       randomNodeName(),
 	}
 }
 
@@ -37,6 +52,7 @@ type SerfBroadcaster struct {
 	serf   *serf.Serf
 }
 
+// NewSerfBroadcaster constructs a SerfBroadcaster with the given config, storing models in the given DB.
 func NewSerfBroadcaster(conf *Config, db kioradb.DB) (*SerfBroadcaster, error) {
 	host, portStr, err := net.SplitHostPort(conf.ListenURL)
 	if err != nil {
@@ -53,10 +69,12 @@ func NewSerfBroadcaster(conf *Config, db kioradb.DB) (*SerfBroadcaster, error) {
 	memberlistConf := memberlist.DefaultLANConfig()
 	memberlistConf.BindAddr = host
 	memberlistConf.BindPort = int(port)
+	memberlistConf.Name = conf.NodeName
 
 	serfConfig := serf.DefaultConfig()
 	serfConfig.MemberlistConfig = memberlistConf
 	serfConfig.EventCh = serfCh
+	serfConfig.NodeName = conf.NodeName
 
 	serf, err := serf.Create(serfConfig)
 	if err != nil {
@@ -71,6 +89,11 @@ func NewSerfBroadcaster(conf *Config, db kioradb.DB) (*SerfBroadcaster, error) {
 	}, nil
 }
 
+func (s *SerfBroadcaster) Name() string {
+	return "serf"
+}
+
+// Run provides a BackgroundService that processes events that come in via the Serf cluster.
 func (s *SerfBroadcaster) Run(ctx context.Context) error {
 	defer close(s.serfCh)
 
@@ -83,21 +106,65 @@ func (s *SerfBroadcaster) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case event := <-s.serfCh:
-			s.processEvent(event)
+			s.processEvent(context.Background(), event)
 		}
 	}
 }
 
-func (s *SerfBroadcaster) processEvent(event serf.Event) {
-
+func (s *SerfBroadcaster) processEvent(ctx context.Context, event serf.Event) {
+	switch ev := event.(type) {
+	case serf.UserEvent:
+		s.processUserEvent(ctx, ev)
+	default:
+		return
+	}
 }
 
-func (s *SerfBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) error {
-	msg := messages.AlertMessage{}
-	bytes, err := msgpack.Marshal(&msg)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal alerts")
+func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent) {
+	msg := messages.GetMessage(u.Name)
+	if msg == nil {
+		log.Error().Str("message name", u.Name).Msg("unhandled message type")
+		return
 	}
 
-	return s.serf.UserEvent(msg.Name(), bytes, false)
+	if err := msgpack.Unmarshal(u.Payload, msg); err != nil {
+		log.Err(err).Str("message name", u.Name).Msg("failed to unmarshal message")
+		return
+	}
+
+	var err error
+	switch msg := msg.(type) {
+	case *messages.AlertMessage:
+		err = s.db.StoreAlerts(ctx, msg.Alert)
+	default:
+		log.Error().Str("message name", u.Name).Msg("unhandled message type")
+		return
+	}
+
+	if err != nil {
+		log.Error().Str("message name", u.Name).Msg("failed to process message")
+	}
+}
+
+// BroadcastAlerts sends alerts over the Serf gossip channel to the cluster.
+func (s *SerfBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) error {
+	var broadcastError error
+
+	// Note: We break the alerts into individual messages in order to attempt to avoid Serf message size limits.
+	for _, a := range alerts {
+		msg := messages.AlertMessage{
+			Alert: a,
+		}
+
+		bytes, err := msgpack.Marshal(&msg)
+		if err != nil {
+			broadcastError = multierror.Append(broadcastError, errors.Wrap(err, "failed to marshal alerts"))
+		}
+
+		if err := s.serf.UserEvent(msg.Name(), bytes, false); err != nil {
+			broadcastError = multierror.Append(broadcastError, err)
+		}
+	}
+
+	return broadcastError
 }
