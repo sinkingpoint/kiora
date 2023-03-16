@@ -15,11 +15,12 @@ func (h hasher) Sum64(bytes []byte) uint64 {
 }
 
 type kioraMember struct {
-	name string
+	Name    string `json:"name"`
+	Address string `json:"address"`
 }
 
 func (k *kioraMember) String() string {
-	return k.name
+	return k.Name
 }
 
 var _ = Clusterer(&RingClusterer{})
@@ -35,7 +36,8 @@ type RingClusterer struct {
 // This name and address _must_ be the same as the node in the underlying Cluster in order to properly shard alerts.
 func NewRingClusterer(myName string, myAddress string) *RingClusterer {
 	me := &kioraMember{
-		name: myName,
+		Name:    myName,
+		Address: myAddress,
 	}
 
 	config := consistent.Config{
@@ -54,10 +56,22 @@ func (r *RingClusterer) IsAuthoritativeFor(ctx context.Context, a *model.Alert) 
 
 func (r *RingClusterer) AddNode(name string, address string) {
 	r.ring.Add(&kioraMember{
-		name: name,
+		Name:    name,
+		Address: address,
 	})
 }
 
 func (r *RingClusterer) RemoveNode(name string) {
 	r.ring.Remove(name)
+}
+
+func (r *RingClusterer) Nodes() []any {
+	members := r.ring.GetMembers()
+	nodes := make([]any, 0, len(members))
+
+	for _, node := range members {
+		nodes = append(nodes, node)
+	}
+
+	return nodes
 }

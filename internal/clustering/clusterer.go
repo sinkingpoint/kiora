@@ -8,10 +8,14 @@ import (
 
 // Clusterer is used to determine if this node is authoritative (and thus should send a notification for) a given alert.
 type Clusterer interface {
+	// IsAuthoritativeFor returns true if this is the node that should send notifications for the given alert.
 	IsAuthoritativeFor(ctx context.Context, a *model.Alert) bool
+
+	// Nodes returns a list of the nodes in the cluster.
+	Nodes() []any
 }
 
-// ClustererDelegates receive cluster updates (node additions and removals)
+// ClustererDelegates receive cluster updates (node additions and removals).
 type ClustererDelegate interface {
 	// AddNode is called when a node is added to the cluster.
 	AddNode(name string, address string)

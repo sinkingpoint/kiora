@@ -22,18 +22,24 @@ import (
 const CONTENT_TYPE_JSON = "application/json"
 const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
 
-func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcaster) {
+func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcaster, clusterer clustering.Clusterer) {
 	api := apiv1{
 		db:          db,
 		broadcaster: broadcaster,
+		clusterer:   clusterer,
 	}
-	router.Path("/api/v1/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postAlerts), "POST api/v1/alerts"))
-	router.Path("/api/v1/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
+
+	subRouter := router.PathPrefix("/api/v1").Subrouter()
+
+	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postAlerts), "POST api/v1/alerts"))
+	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
+	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getClusterStatus), "GET /api/v1/cluster/status"))
 }
 
 type apiv1 struct {
 	db          kioradb.DB
 	broadcaster clustering.Broadcaster
+	clusterer   clustering.Clusterer
 }
 
 // postAlerts handles the POST /alerts request, decoding a list of alerts
@@ -96,4 +102,27 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytes) //nolint:errcheck
+}
+
+func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+
+	if a.clusterer == nil {
+		http.Error(w, "no clusterer configured", http.StatusNotFound)
+		return
+	}
+
+	clusterNodes := a.clusterer.Nodes()
+	bytes, err := json.Marshal(clusterNodes)
+
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal cluster nodes")
+		log.Err(err).Msg("failed to marshal cluster nodes")
+		http.Error(w, "failed to marshal cluster nodes", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes) // nolint:errcheck
 }

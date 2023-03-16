@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"runtime"
 	"sync"
@@ -66,6 +67,7 @@ type KioraServer struct {
 
 	broadcaster clustering.Broadcaster
 	db          kioradb.DB
+	clusterer   clustering.Clusterer
 
 	backgroundServices *services.BackgroundServices
 
@@ -73,8 +75,16 @@ type KioraServer struct {
 }
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
+	// Resolve the cluster address into an actual address so that it's consistent with other members of the cluster
+	// that communicate over an actual resolved address.
+	clusterAddress, err := resolveConcreteAddress(conf.ClusterListenAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode cluster listen address")
+	}
+
 	config := serf.DefaultConfig()
-	ringClusterer := clustering.NewRingClusterer(config.NodeName, "")
+
+	ringClusterer := clustering.NewRingClusterer(config.NodeName, clusterAddress)
 
 	config.ListenURL = conf.ClusterListenAddress
 	config.BootstrapPeers = conf.BootstrapPeers
@@ -93,6 +103,7 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 		db:                 db,
 		serverConfig:       conf,
 		broadcaster:        broadcaster,
+		clusterer:          ringClusterer,
 		backgroundServices: services,
 	}, nil
 }
@@ -140,7 +151,7 @@ func (k *KioraServer) ListenAndServe() error {
 }
 
 func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
-	apiv1.Register(r, k.db, k.broadcaster)
+	apiv1.Register(r, k.db, k.broadcaster, k.clusterer)
 
 	runtime.SetMutexProfileFraction(5)
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
@@ -167,4 +178,20 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	}
 
 	return err
+}
+
+// resolveConcreteAddress takes a listen address like `localhost:4278` and resolves
+// it into a concrete address like `[::]:4278`
+func resolveConcreteAddress(address string) (string, error) {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return "", err
+	}
+
+	localIP, err := net.ResolveIPAddr("ip", host)
+	if err != nil {
+		return "", err
+	}
+
+	return net.JoinHostPort(localIP.String(), port), nil
 }

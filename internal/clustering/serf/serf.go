@@ -2,7 +2,6 @@ package serf
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"net"
 	"strconv"
@@ -59,8 +58,6 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get host and port from Serf listen URL")
 	}
-
-	fmt.Println(portStr)
 
 	port, err := strconv.ParseUint(portStr, 10, 16) // 16 bits because that's the range of port numbers.
 	if err != nil {
@@ -133,7 +130,8 @@ func (s *SerfBroadcaster) processMemberEvent(ctx context.Context, ev serf.Member
 	switch ev.Type {
 	case serf.EventMemberJoin:
 		for _, member := range ev.Members {
-			s.conf.ClustererDelegate.AddNode(member.Name, string(member.Addr))
+			addr := net.JoinHostPort(member.Addr.String(), strconv.Itoa(int(member.Port)))
+			s.conf.ClustererDelegate.AddNode(member.Name, addr)
 		}
 	case serf.EventMemberLeave, serf.EventMemberFailed:
 		for _, member := range ev.Members {
