@@ -33,6 +33,10 @@ func DefaultTracingConfiguration() TracingConfiguration {
 }
 
 func newTracerProvider(config TracingConfiguration, exp sdktrace.SpanExporter) (*sdktrace.TracerProvider, error) {
+	if exp == nil {
+		return nil, nil
+	}
+
 	r, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
@@ -53,6 +57,8 @@ func newTracerProvider(config TracingConfiguration, exp sdktrace.SpanExporter) (
 
 func newSpanExporter(config TracingConfiguration) (sdktrace.SpanExporter, error) {
 	switch config.ExporterType {
+	case "noop":
+		return nil, nil
 	case "console":
 		return stdouttrace.New(
 			stdouttrace.WithWriter(os.Stdout),
@@ -79,7 +85,9 @@ func InitTracing(config TracingConfiguration) (*sdktrace.TracerProvider, error) 
 		return nil, err
 	}
 
-	otel.SetTracerProvider(provider)
+	if provider != nil {
+		otel.SetTracerProvider(provider)
+	}
 
 	return provider, nil
 }
