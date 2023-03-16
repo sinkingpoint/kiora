@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf/messages"
-	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -35,6 +34,7 @@ type Config struct {
 	BootstrapPeers    []string
 	NodeName          string
 	ClustererDelegate clustering.ClustererDelegate
+	EventDelegate     clustering.EventDelegate
 }
 
 func DefaultConfig() *Config {
@@ -48,23 +48,23 @@ func DefaultConfig() *Config {
 type SerfBroadcaster struct {
 	conf *Config
 
-	db     kioradb.DB
 	serfCh chan serf.Event
 	serf   *serf.Serf
 }
 
 // NewSerfBroadcaster constructs a SerfBroadcaster with the given config, storing models in the given DB.
-func NewSerfBroadcaster(conf *Config, db kioradb.DB) (*SerfBroadcaster, error) {
+func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	host, portStr, err := net.SplitHostPort(conf.ListenURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get host and port from Serf listen URL")
 	}
 
-	port, err := strconv.ParseInt(portStr, 10, 16)
+	port, err := strconv.ParseInt(portStr, 10, 16) // 16 bits because that's the range of port numbers.
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse port from Serf listen URL")
 	}
 
+	// TODO(cdouch): 16 here is arbitrary. Should benchmark it.
 	serfCh := make(chan serf.Event, 16)
 
 	memberlistConf := memberlist.DefaultLANConfig()
@@ -86,7 +86,6 @@ func NewSerfBroadcaster(conf *Config, db kioradb.DB) (*SerfBroadcaster, error) {
 		conf:   conf,
 		serf:   serf,
 		serfCh: serfCh,
-		db:     db,
 	}, nil
 }
 
@@ -141,6 +140,11 @@ func (s *SerfBroadcaster) processMemberEvent(ctx context.Context, ev serf.Member
 }
 
 func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent) {
+	// If we don't have an EventDelegate, there's nothing to handle these events.
+	if s.conf.EventDelegate == nil {
+		return
+	}
+
 	msg := messages.GetMessage(u.Name)
 	if msg == nil {
 		log.Error().Str("message name", u.Name).Msg("unhandled message type")
@@ -155,7 +159,7 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 	var err error
 	switch msg := msg.(type) {
 	case *messages.AlertMessage:
-		err = s.db.StoreAlerts(ctx, msg.Alert)
+		s.conf.EventDelegate.ProcessAlert(ctx, msg.Alert)
 	default:
 		log.Error().Str("message name", u.Name).Msg("unhandled message type")
 		return

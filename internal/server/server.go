@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf"
+	"github.com/sinkingpoint/kiora/internal/kiora/pipeline"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/internal/server/services"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
@@ -78,7 +79,8 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	config.ListenURL = conf.ClusterListenAddress
 	config.BootstrapPeers = conf.BootstrapPeers
 	config.ClustererDelegate = ringClusterer
-	broadcaster, err := serf.NewSerfBroadcaster(config, db)
+	config.EventDelegate = pipeline.NewDBEventDelegate(db)
+	broadcaster, err := serf.NewSerfBroadcaster(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
 	}
