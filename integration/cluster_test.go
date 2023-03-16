@@ -24,35 +24,25 @@ func dummyAlert() model.Alert {
 	}
 }
 
-// Test that a cluster of three nodes comes up properly, with a leader.
-func TestKioraCluster(t *testing.T) {
+// Test that a cluster of three nodes, when an alert is posted to one, that alert gets posted to all.
+func TestKioraClusterAlerts(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
 
 	nodes := StartKioraCluster(t, 3)
-	for _, k := range nodes {
-		status := k.ClusterStatus(t)
-		assert.Contains(t, status, `"is_leader":true`)
-		assert.Equal(t, 3, strings.Count(status, `"id"`), status)
-	}
-}
-
-// Test that a cluster of three nodes, when an alert is posted to one, that alert gets posted to all.
-func TestKioraClusterAlerts(t *testing.T) {
-	t.SkipNow()
-
-	nodes := StartKioraCluster(t, 3)
 
 	nodes[0].SendAlert(t, context.TODO(), dummyAlert())
 
-	// Wait for raft to apply the log.
+	// Wait a bit for the gossip to settle.
 	time.Sleep(1 * time.Second)
 
 	for _, k := range nodes {
-		reqURL := k.GetURL("/api/v1/alerts")
+		reqURL := k.GetHTTPURL("/api/v1/alerts")
 		resp, err := http.Get(reqURL)
 		require.NoError(t, err)
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		respBytes, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
@@ -75,7 +65,7 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 		nodes[i].SendAlert(t, context.TODO(), alert)
 	}
 
-	// Wait for raft to apply the log.
+	// Wait a bit for the gossip to settle.
 	time.Sleep(1 * time.Second)
 
 	found := 0

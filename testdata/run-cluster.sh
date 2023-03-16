@@ -4,13 +4,6 @@ set -euo pipefail
 
 make build
 
-trap on_exit INT EXIT
-
-function on_exit() {
-    rm -rf artifacts/kiora-raft-data-*
-    kill -- -$$
-}
-
 mkdir -p artifacts/logs
 
 echo 'Starting Kiora'

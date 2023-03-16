@@ -4,21 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,8 +46,8 @@ type KioraInstance struct {
 	// The port that the HTTP end of this instance is attached to.
 	httpPort string
 
-	// The port that the raft end of this instance is attached to.
-	raftPort string
+	// The port that the cluster communication end of this instance is attached to.
+	clusterPort string
 }
 
 // NewKioraInstance constructs a new KioraInstance that will start a Kiora run with the given CLI args.
@@ -84,15 +82,13 @@ func (k *KioraInstance) Start(t *testing.T) error {
 	httpPort, err := getRandomPort()
 	require.NoError(t, err)
 
-	raftPort, err := getRandomPort()
+	clusterPort, err := getRandomPort()
 	require.NoError(t, err)
 
-	args := append([]string{"run", "../cmd/kiora", "-c", k.configFile, "--raft.data-dir",
-		"../artifacts/test/" + name, "--web.listen-url", "localhost:" + httpPort,
-		"--raft.listen-url", "localhost:" + raftPort, "--raft.local-id", k.name}, k.args...)
+	args := append([]string{"run", "../cmd/kiora", "-c", k.configFile, "--web.listen-url", "localhost:" + httpPort, "--cluster.listen-url", "localhost:" + clusterPort}, k.args...)
 
 	k.httpPort = httpPort
-	k.raftPort = raftPort
+	k.clusterPort = clusterPort
 	k.cmd = exec.Command("go", args...)
 	k.cmd.Stdout = k.stdout
 	k.cmd.Stderr = k.stderr
@@ -112,64 +108,40 @@ func (k *KioraInstance) Start(t *testing.T) error {
 		k.exitChannel <- k.cmd.Run()
 	}()
 
-	return nil
+	return k.WaitTillUp(context.TODO(), t)
 }
 
-// clusterHasLeader checks the raft cluster status, and returns true if any node in the cluster is the leader.
-func (k *KioraInstance) clusterHasLeader(t *testing.T) bool {
-	reqURL := k.GetURL("/admin/raft/status")
-	resp, err := http.Get(reqURL)
-	if err != nil {
-		return false
-	}
+func (k *KioraInstance) IsUp(ctx context.Context, t *testing.T) bool {
+	url := k.GetHTTPURL("/")
 
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	require.NoError(t, err)
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false
-	}
-	resp.Body.Close()
-
-	return strings.Contains(string(body), `"is_leader":true`)
+	_, err = http.DefaultClient.Do(req)
+	return err == nil
 }
 
-// WaitUntilLeader polls the raft endpoint until the cluster has a leader, failing if it isn't up within 10 seconds.
-func (k *KioraInstance) WaitUntilLeader(t *testing.T, ctx context.Context) error {
+func (k *KioraInstance) WaitTillUp(ctx context.Context, t *testing.T) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			if k.clusterHasLeader(t) {
-				time.Sleep(2 * time.Second)
+		case <-ticker.C:
+			if k.IsUp(ctx, t) {
 				return nil
 			}
-
-			time.Sleep(100 * time.Millisecond)
+		case <-ctx.Done():
+			return errors.New("didn't come up within context")
 		}
 	}
 }
 
-// JoinWith adds in the given KioraInstance to the cluster that contains `k`
-func (k *KioraInstance) JoinWith(k2 *KioraInstance) error {
-	reqURL := k.GetURL("/admin/raft/add_member")
-	resp, err := http.Post(reqURL, "application/json", strings.NewReader(fmt.Sprintf(`{"id":"%s","address":"%s"}`, k2.name, "localhost:"+k2.raftPort)))
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to add to raft cluster")
-	}
-
-	return err
+// GetURL returns a call to this instance, on the given path. This ellides the need to interact with the ports on this instance directly.
+func (k *KioraInstance) GetHTTPURL(path string) string {
+	return "http://localhost:" + k.httpPort + path
 }
 
-// GetURL returns a call to this instance, on the given path. This ellides the need to interact with the ports on this instance directly.
-func (k *KioraInstance) GetURL(path string) string {
-	return "http://localhost:" + k.httpPort + path
+func (k *KioraInstance) GetClusterHost() string {
+	return "localhost:" + k.clusterPort
 }
 
 // Stop sends a sigkill to the process group that backs this instance.
@@ -198,7 +170,7 @@ func (k *KioraInstance) WaitForExit(ctx context.Context) error {
 }
 
 func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model.Alert) {
-	requestURL := k.GetURL("/api/v1/alerts")
+	requestURL := k.GetHTTPURL("/api/v1/alerts")
 
 	alertBytes, err := json.Marshal([]model.Alert{alert})
 	require.NoError(t, err)
@@ -208,20 +180,6 @@ func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model
 	resp.Body.Close()
 
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
-}
-
-// ClusterStatus is a convenience method that returns the output of the raft cluster status endpoint.
-func (k *KioraInstance) ClusterStatus(t *testing.T) string {
-	t.Helper()
-	statusResp, err := http.Get(k.GetURL("/admin/raft/status"))
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, statusResp.StatusCode)
-
-	s, err := io.ReadAll(statusResp.Body)
-	assert.NoError(t, err)
-	statusResp.Body.Close()
-
-	return string(s)
 }
 
 // kioraInstanceName returns a 16 character long random string that will be used as the name of a KioraInstance.
@@ -256,32 +214,25 @@ func getRandomPort() (string, error) {
 	return url.Port(), nil
 }
 
-// StartKioraCluster starts n KioraInstance's, binding them into a raft cluster.
+// StartKioraCluster starts n KioraInstance's, binding them into a serf cluster.
 func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	t.Helper()
+
+	// Start a leader node, telling it to bootstrap the cluster.
+	leader := NewKioraInstance().WithName("node-0")
+	require.NoError(t, leader.Start(t))
+
 	// Start n-1 instances.
 	nodes := []*KioraInstance{}
-	for i := 0; i < numNodes-1; i++ {
-		node := NewKioraInstance().WithName(fmt.Sprintf("node-%d", i))
+	for i := 1; i < numNodes; i++ {
+		node := NewKioraInstance("--cluster.bootstrap-peers", leader.GetClusterHost()).WithName(fmt.Sprintf("node-%d", i))
 		require.NoError(t, node.Start(t))
 		nodes = append(nodes, node)
 	}
 
-	// Start a leader node, telling it to bootstrap the cluster.
-	leader := NewKioraInstance("--raft.bootstrap").WithName(fmt.Sprintf("node-%d", numNodes-1))
-	require.NoError(t, leader.Start(t))
-
-	// Wait until the cluster is up, and then add every node to the leader.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	require.NoError(t, leader.WaitUntilLeader(t, ctx))
-	for _, node := range nodes {
-		require.NoError(t, leader.JoinWith(node))
-	}
-
 	nodes = append(nodes, leader)
 
-	// Wait for a bit, to let the raft cluster settle.
+	// Wait for a bit, to let the gossip to settle.
 	time.Sleep(2 * time.Second)
 
 	return nodes

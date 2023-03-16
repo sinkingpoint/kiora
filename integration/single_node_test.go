@@ -34,12 +34,9 @@ func TestKioraAlertPost(t *testing.T) {
 	}
 
 	t.Parallel()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
-	kiora := NewKioraInstance("--raft.bootstrap")
+	kiora := NewKioraInstance()
 	require.NoError(t, kiora.Start(t))
-	require.NoError(t, kiora.WaitUntilLeader(t, ctx))
 
 	// Send a bunch of the same alert.
 	for i := 0; i < 50; i++ {

@@ -23,7 +23,9 @@ var CLI struct {
 }
 
 func main() {
-	kong.Parse(&CLI)
+	kong.Parse(&CLI, kong.Name("kiora"), kong.Description("An experimental Alertmanager"), kong.UsageOnError(), kong.ConfigureHelp(kong.HelpOptions{
+		Compact: true,
+	}))
 
 	config, err := config.LoadConfigFile(CLI.ConfigFile)
 	if err != nil {

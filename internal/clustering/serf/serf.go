@@ -2,6 +2,7 @@ package serf
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net"
 	"strconv"
@@ -59,7 +60,9 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 		return nil, errors.Wrap(err, "failed to get host and port from Serf listen URL")
 	}
 
-	port, err := strconv.ParseInt(portStr, 10, 16) // 16 bits because that's the range of port numbers.
+	fmt.Println(portStr)
+
+	port, err := strconv.ParseUint(portStr, 10, 16) // 16 bits because that's the range of port numbers.
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse port from Serf listen URL")
 	}

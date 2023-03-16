@@ -31,7 +31,7 @@ build-unchecked:
 
 .PHONY: run
 run: build
-	./artifacts/kiora -c ./testdata/kiora.dot --raft.data-dir artifacts/kiora-raft-data
+	./artifacts/kiora -c ./testdata/kiora.dot
 
 .PHONY: run-cluster
 run-cluster:
