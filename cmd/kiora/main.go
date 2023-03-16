@@ -16,7 +16,7 @@ import (
 var CLI struct {
 	HTTPListenAddress    string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
 	ConfigFile           string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
-	ClusterListenAddress string `name:"grpc.listen-url"`
+	ClusterListenAddress string `name:"grpc.listen-url" help:"the address to run cluster activities on" default:"localhost:4279"`
 }
 
 func main() {
