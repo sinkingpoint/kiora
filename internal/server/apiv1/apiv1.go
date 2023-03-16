@@ -83,7 +83,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	alerts := a.db.QueryAlerts(r.Context(), &query.AllMatchQuery{})
+	alerts := a.db.QueryAlerts(r.Context(), query.MatchAll())
 
 	bytes, err := json.Marshal(alerts)
 	if err != nil {

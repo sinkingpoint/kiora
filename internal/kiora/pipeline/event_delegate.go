@@ -23,7 +23,7 @@ func NewDBEventDelegate(db kioradb.DB) *DBEventDelegate {
 }
 
 func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
-	currentAlert := d.db.QueryAlerts(ctx, &query.ExactLabelMatchQuery{Labels: alert.Labels})
+	currentAlert := d.db.QueryAlerts(ctx, query.ExactLabelMatch(alert.Labels))
 	if len(currentAlert) > 0 {
 		// If we have the alert already, and this new alert is in Processing (i.e. it just came in), skip it.
 		// This works to deduplicate alerts.

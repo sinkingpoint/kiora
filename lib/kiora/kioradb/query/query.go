@@ -27,6 +27,12 @@ type PartialLabelMatchQuery struct {
 	Labels model.Labels
 }
 
+func PartialLabelMatch(labels model.Labels) AlertQuery {
+	return &PartialLabelMatchQuery{
+		Labels: labels,
+	}
+}
+
 func (p *PartialLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	for k, v := range p.Labels {
 		if alertV, ok := alert.Labels[k]; !ok || alertV != v {
@@ -43,6 +49,12 @@ type ExactLabelMatchQuery struct {
 	labelsHash model.LabelsHash
 }
 
+func ExactLabelMatch(labels model.Labels) AlertQuery {
+	return &ExactLabelMatchQuery{
+		Labels: labels,
+	}
+}
+
 func (e *ExactLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	if e.labelsHash == 0 {
 		e.labelsHash = e.Labels.Hash()
@@ -55,6 +67,10 @@ func (e *ExactLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.Al
 type AllMatchQuery struct {
 }
 
+func MatchAll() AlertQuery {
+	return &AllMatchQuery{}
+}
+
 func (a *AllMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return true
 }
@@ -62,6 +78,12 @@ func (a *AllMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bo
 // StatusQuery returns all the alerts that match the given status.
 type StatusQuery struct {
 	Status model.AlertStatus
+}
+
+func Status(s model.AlertStatus) AlertQuery {
+	return &StatusQuery{
+		Status: s,
+	}
 }
 
 func (s *StatusQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {

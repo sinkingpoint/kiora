@@ -47,9 +47,7 @@ outer:
 }
 
 func (n *NotifyService) notify(ctx context.Context) {
-	q := &query.StatusQuery{
-		Status: model.AlertStatusProcessing,
-	}
+	q := query.Status(model.AlertStatusProcessing)
 
 	for _, a := range n.db.QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
