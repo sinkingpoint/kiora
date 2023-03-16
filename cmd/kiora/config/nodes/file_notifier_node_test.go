@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/sinkingpoint/kiora/internal/services/notify"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/sinkingpoint/kiora/lib/kiora/notify"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

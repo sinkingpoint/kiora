@@ -3,6 +3,7 @@ package kioradb
 import (
 	"context"
 
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
@@ -32,9 +33,9 @@ func (m *inMemoryDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) err
 	return nil
 }
 
-func (m *inMemoryDB) QueryAlerts(ctx context.Context, query AlertQuery) []model.Alert {
-	switch query := query.(type) {
-	case *ExactLabelMatchQuery:
+func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertQuery) []model.Alert {
+	switch query := q.(type) {
+	case *query.ExactLabelMatchQuery:
 		if existingAlert, ok := m.alerts[query.Labels.Hash()]; ok {
 			return []model.Alert{existingAlert}
 		}

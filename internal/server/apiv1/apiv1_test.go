@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ func (m *mockDB) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) err
 	return m.StoreAlerts(ctx, alerts...)
 }
 
-func (m *mockDB) QueryAlerts(ctx context.Context, query kioradb.AlertQuery) []model.Alert {
+func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
 	return nil
 }
 

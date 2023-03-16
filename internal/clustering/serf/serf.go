@@ -31,9 +31,10 @@ func randomNodeName() string {
 }
 
 type Config struct {
-	ListenURL      string
-	BootstrapPeers []string
-	NodeName       string
+	ListenURL         string
+	BootstrapPeers    []string
+	NodeName          string
+	ClustererDelegate clustering.ClustererDelegate
 }
 
 func DefaultConfig() *Config {
@@ -115,8 +116,27 @@ func (s *SerfBroadcaster) processEvent(ctx context.Context, event serf.Event) {
 	switch ev := event.(type) {
 	case serf.UserEvent:
 		s.processUserEvent(ctx, ev)
+	case serf.MemberEvent:
+		s.processMemberEvent(ctx, ev)
 	default:
 		return
+	}
+}
+
+func (s *SerfBroadcaster) processMemberEvent(ctx context.Context, ev serf.MemberEvent) {
+	if s.conf.ClustererDelegate == nil {
+		return
+	}
+
+	switch ev.Type {
+	case serf.EventMemberJoin:
+		for _, member := range ev.Members {
+			s.conf.ClustererDelegate.AddNode(member.Name, string(member.Addr))
+		}
+	case serf.EventMemberLeave, serf.EventMemberFailed:
+		for _, member := range ev.Members {
+			s.conf.ClustererDelegate.RemoveNode(member.Name)
+		}
 	}
 }
 

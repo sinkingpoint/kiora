@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -82,7 +83,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	alerts := a.db.QueryAlerts(r.Context(), &kioradb.AllMatchQuery{})
+	alerts := a.db.QueryAlerts(r.Context(), &query.AllMatchQuery{})
 
 	bytes, err := json.Marshal(alerts)
 	if err != nil {

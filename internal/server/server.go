@@ -16,6 +16,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/clustering/serf"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/internal/server/services"
+	"github.com/sinkingpoint/kiora/internal/services/notify"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
@@ -34,6 +35,7 @@ type serverConfig struct {
 
 	ClusterListenAddress string
 	BootstrapPeers       []string
+	NotifierConfig       notify.NotifierConfig
 
 	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
 	ReadTimeout time.Duration
@@ -71,8 +73,11 @@ type KioraServer struct {
 
 func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	config := serf.DefaultConfig()
+	ringClusterer := clustering.NewRingClusterer(config.NodeName, "")
+
 	config.ListenURL = conf.ClusterListenAddress
 	config.BootstrapPeers = conf.BootstrapPeers
+	config.ClustererDelegate = ringClusterer
 	broadcaster, err := serf.NewSerfBroadcaster(config, db)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
@@ -80,6 +85,7 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 
 	services := services.NewBackgroundServices()
 	services.RegisterService(broadcaster)
+	services.RegisterService(notify.NewNotifyService(notify.NewClusterNotifier(ringClusterer, conf.NotifierConfig), db, broadcaster))
 
 	return &KioraServer{
 		db:                 db,

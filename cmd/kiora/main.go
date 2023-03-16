@@ -25,7 +25,7 @@ var CLI struct {
 func main() {
 	kong.Parse(&CLI)
 
-	_, err := config.LoadConfigFile(CLI.ConfigFile)
+	config, err := config.LoadConfigFile(CLI.ConfigFile)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
@@ -34,6 +34,7 @@ func main() {
 	serverConfig.HTTPListenAddress = CLI.HTTPListenAddress
 	serverConfig.ClusterListenAddress = CLI.ClusterListenAddress
 	serverConfig.BootstrapPeers = CLI.BootstrapPeers
+	serverConfig.NotifierConfig = config
 
 	tracingConfig := tracing.DefaultTracingConfiguration()
 	tracingConfig.ExporterType = "noop" // TODO(cdouch): Make this a CLI arg

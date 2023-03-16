@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts := db.QueryAlerts(context.TODO(), &kioradb.AllMatchQuery{})
+	alerts := db.QueryAlerts(context.TODO(), &query.AllMatchQuery{})
 
 	assert.Len(t, alerts, 1)
 	alert := alerts[0]
@@ -46,7 +47,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts = db.QueryAlerts(context.TODO(), &kioradb.AllMatchQuery{})
+	alerts = db.QueryAlerts(context.TODO(), &query.AllMatchQuery{})
 	require.Len(t, alerts, 2)
 
 	for _, alert := range alerts {
@@ -71,7 +72,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts = db.QueryAlerts(context.TODO(), &kioradb.AllMatchQuery{})
+	alerts = db.QueryAlerts(context.TODO(), &query.AllMatchQuery{})
 	require.Len(t, alerts, 2)
 
 	for _, alert := range alerts {

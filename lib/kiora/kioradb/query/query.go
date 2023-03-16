@@ -1,4 +1,4 @@
-package kioradb
+package query
 
 import (
 	"context"
@@ -51,9 +51,19 @@ func (e *ExactLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.Al
 	return alert.Labels.Hash() == e.labelsHash
 }
 
+// AllMatchQuery is a query that returns every alert.
 type AllMatchQuery struct {
 }
 
 func (a *AllMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return true
+}
+
+// StatusQuery returns all the alerts that match the given status.
+type StatusQuery struct {
+	Status model.AlertStatus
+}
+
+func (s *StatusQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	return alert.Status == s.Status
 }

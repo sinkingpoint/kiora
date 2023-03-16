@@ -1,22 +1,25 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
 	"github.com/awalterschulze/gographviz"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config/nodes"
+	"github.com/sinkingpoint/kiora/internal/services/notify"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/sinkingpoint/kiora/lib/kiora/notify"
 )
+
+var _ = notify.NotifierConfig(&ConfigFile{})
 
 type ConfigFile struct {
 	nodes map[string]nodes.Node
 	links map[string][]Link
 }
 
-func (c *ConfigFile) GetNotifiersForAlert(a *model.Alert) []notify.Notifier {
+func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) []notify.Notifier {
 	leaves := []notify.Notifier{}
 
 	// We expect here that the ConfigFile has been passed through `Validate` already, and thus
