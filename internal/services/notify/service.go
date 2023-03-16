@@ -64,11 +64,11 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 		return
 	}
 
+	a.Status = model.AlertStatusFiring
+
 	for _, n := range notifiers {
 		n.Notify(ctx, a) //nolint
 	}
-
-	a.Status = model.AlertStatusFiring
 
 	n.broadcaster.BroadcastAlerts(ctx, a) //nolint
 }
