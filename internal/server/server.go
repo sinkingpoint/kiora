@@ -15,6 +15,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
+	"github.com/sinkingpoint/kiora/internal/server/services"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
@@ -62,6 +63,8 @@ type KioraServer struct {
 	broadcaster clustering.Broadcaster
 	db          kioradb.DB
 
+	backgroundServices *services.BackgroundServices
+
 	shutdownOnce sync.Once
 }
 
@@ -71,17 +74,26 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
 	}
+
+	services := services.NewBackgroundServices()
+	services.RegisterService(broadcaster)
+
 	return &KioraServer{
-		db:           db,
-		serverConfig: conf,
-		broadcaster:  broadcaster,
+		db:                 db,
+		serverConfig:       conf,
+		broadcaster:        broadcaster,
+		backgroundServices: services,
 	}, nil
 }
 
 func (k *KioraServer) Shutdown() {
 	k.shutdownOnce.Do(func() {
 		// todo: add more synonyms of stop.
-		k.httpServer.Shutdown(context.Background()) //nolint:errcheck
+		if k.httpServer != nil {
+			k.httpServer.Shutdown(context.Background()) //nolint:errcheck
+		}
+
+		k.backgroundServices.Shutdown(context.Background())
 	})
 }
 
@@ -90,7 +102,7 @@ func (k *KioraServer) ListenAndServe() error {
 	httpRouter := mux.NewRouter()
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
+	wg.Add(2)
 
 	go func() {
 		if err := k.listenAndServeHTTP(httpRouter); err != nil {
@@ -100,6 +112,15 @@ func (k *KioraServer) ListenAndServe() error {
 		wg.Done()
 
 		log.Info().Msg("HTTP Server Shut Down")
+	}()
+
+	go func() {
+		if err := k.backgroundServices.Run(context.Background()); err != nil {
+			log.Err(err).Msg("background services failed")
+			k.Shutdown()
+		}
+
+		wg.Done()
 	}()
 
 	wg.Wait()
