@@ -16,6 +16,8 @@ import (
 
 var _ = services.Service(&NotifyService{})
 
+const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
+
 // NotifyService is a background service that scans the db for alerts to send notifications for.
 type NotifyService struct {
 	config      NotifierConfig
@@ -50,7 +52,7 @@ outer:
 }
 
 func (n *NotifyService) notify(ctx context.Context) {
-	q := query.Status(model.AlertStatusProcessing)
+	q := query.All(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL)))
 
 	for _, a := range n.db.QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
@@ -72,6 +74,7 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	}
 
 	a.Status = model.AlertStatusFiring
+	a.LastNotifyTime = time.Now()
 
 	for _, n := range notifiers {
 		n.Notify(ctx, a) //nolint

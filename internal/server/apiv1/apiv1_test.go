@@ -89,7 +89,7 @@ func TestPostAlerts(t *testing.T) {
 			require.Equal(t, 1, len(db.alerts), "expected one alert")
 			alert := db.alerts[0]
 			assert.Equal(t, referenceTime, alert.StartTime)
-			assert.Equal(t, model.AlertStatusProcessing, alert.Status)
+			assert.Equal(t, model.AlertStatusFiring, alert.Status)
 		})
 	}
 }

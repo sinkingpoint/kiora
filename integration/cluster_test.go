@@ -93,7 +93,7 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 		nodes[i].SendAlert(t, context.TODO(), alert)
 	}
 
-	// Wait for raft to apply the log.
+	// Wait for the gossip to settle.
 	time.Sleep(1 * time.Second)
 
 	for i := range nodes {

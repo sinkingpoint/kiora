@@ -19,9 +19,6 @@ const (
 	// AlertStatusFiring marks alerts that are currently active.
 	AlertStatusFiring AlertStatus = "firing"
 
-	// AlertStatusProcessing marks alerts that have been accepted, but aren't active for whatever reason.
-	AlertStatusProcessing AlertStatus = "processing"
-
 	// AlertStatusAcked marks alerts that are firing, but have been acknowledged by a human.
 	AlertStatusAcked AlertStatus = "acked"
 
@@ -40,7 +37,7 @@ const (
 
 func (s AlertStatus) isValid() bool {
 	switch s {
-	case AlertStatusFiring, AlertStatusProcessing, AlertStatusAcked, AlertStatusResolved, AlertStatusTimedOut:
+	case AlertStatusFiring, AlertStatusAcked, AlertStatusResolved, AlertStatusTimedOut:
 		return true
 	default:
 		return false
@@ -65,6 +62,9 @@ type Alert struct {
 
 	// TimeOutDeadline is when the alert should be marked as timed out, assuming no further messages come in.
 	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
+
+	// LastNotifyTime is the time that a notification for this alert was last sent.
+	LastNotifyTime time.Time `json:"-"`
 }
 
 func (a *Alert) validate() error {

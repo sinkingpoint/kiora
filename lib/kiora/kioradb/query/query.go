@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -88,4 +89,60 @@ func Status(s model.AlertStatus) AlertQuery {
 
 func (s *StatusQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return alert.Status == s.Status
+}
+
+type LastNotifyTimeRangeQuery struct {
+	MinTime time.Time
+	MaxTime time.Time
+}
+
+func (l *LastNotifyTimeRangeQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	if !l.MinTime.IsZero() && alert.LastNotifyTime.Before(l.MinTime) {
+		return false
+	}
+
+	if !l.MaxTime.IsZero() && alert.LastNotifyTime.After(l.MaxTime) {
+		return false
+	}
+
+	return true
+}
+
+func LastNotifyTimeMin(minTime time.Time) *LastNotifyTimeRangeQuery {
+	return &LastNotifyTimeRangeQuery{
+		MinTime: minTime,
+	}
+}
+
+func LastNotifyTimeMax(maxTime time.Time) *LastNotifyTimeRangeQuery {
+	return &LastNotifyTimeRangeQuery{
+		MaxTime: maxTime,
+	}
+}
+
+func LastNotifyTimeWithin(minTime, maxTime time.Time) *LastNotifyTimeRangeQuery {
+	return &LastNotifyTimeRangeQuery{
+		MinTime: minTime,
+		MaxTime: maxTime,
+	}
+}
+
+type AllQuery struct {
+	queries []AlertQuery
+}
+
+func (a *AllQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	for _, q := range a.queries {
+		if !q.MatchesAlert(ctx, alert) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func All(queries ...AlertQuery) *AllQuery {
+	return &AllQuery{
+		queries: queries,
+	}
 }
