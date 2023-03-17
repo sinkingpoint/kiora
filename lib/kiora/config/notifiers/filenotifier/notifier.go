@@ -1,4 +1,4 @@
-package nodes
+package filenotifier
 
 import (
 	"context"
@@ -9,10 +9,20 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/internal/encoding"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
 )
 
+func init() {
+	config.RegisterNode(STDOUT_NODE_NAME, NewFileNotifierNode)
+	config.RegisterNode(STDERR_NODE_NAME, NewFileNotifierNode)
+	config.RegisterNode(FILE_NODE_NAME, NewFileNotifierNode)
+}
+
+const STDOUT_NODE_NAME = "stdout"
+const STDERR_NODE_NAME = "stderr"
+const FILE_NODE_NAME = "file"
 const DEFAULT_ENCODING = "json"
 
 // FileNotifierNode represents a node that can output alerts to a Writer.
@@ -21,7 +31,7 @@ type FileNotifierNode struct {
 	file    io.WriteCloser
 }
 
-func NewFileNotifierNode(name string, attrs map[string]string) (Node, error) {
+func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, error) {
 	encodingName := DEFAULT_ENCODING
 	if enc, ok := attrs["encoding"]; ok {
 		encodingName = enc

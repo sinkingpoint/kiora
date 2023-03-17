@@ -7,15 +7,21 @@ import (
 	"os"
 
 	"github.com/awalterschulze/gographviz"
-	"github.com/sinkingpoint/kiora/cmd/kiora/config/nodes"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
 var _ = notify.NotifierConfig(&ConfigFile{})
 
+// Link represents a connection between nodes, that may or may not have an attached filter.
+type Link struct {
+	incomingFilter config.Filter
+	to             string
+}
+
 type ConfigFile struct {
-	nodes map[string]nodes.Node
+	nodes map[string]config.Node
 	links map[string][]Link
 }
 
@@ -65,14 +71,10 @@ func (c *ConfigFile) Validate() error {
 	return nil
 }
 
-func (c *ConfigFile) AmIAuthoritativeFor(a *model.Alert) bool {
-	return false
-}
-
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.
 func LoadConfigFile(path string) (*ConfigFile, error) {
 	conf := &ConfigFile{
-		nodes: make(map[string]nodes.Node),
+		nodes: make(map[string]config.Node),
 		links: make(map[string][]Link),
 	}
 
@@ -93,8 +95,8 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 
 	for _, rawNode := range configGraph.nodes {
 		nodeType := rawNode.attrs["type"]
-		cons := nodes.LookupNode(nodeType)
-		if cons == nil {
+		cons, ok := config.LookupNode(nodeType)
+		if !ok {
 			return conf, fmt.Errorf("invalid node type: %q", nodeType)
 		}
 
@@ -108,11 +110,11 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 
 	for _, rawLink := range configGraph.edges {
 		linkType := rawLink.attrs["type"]
-		cons := LookupFilter(linkType)
+		cons, _ := config.LookupFilter(linkType)
 
-		var filter Filter
+		var filter config.Filter
 		if cons != nil {
-			filter, err = cons(rawLink)
+			filter, err = cons(rawLink.attrs)
 			if err != nil {
 				return conf, err
 			}

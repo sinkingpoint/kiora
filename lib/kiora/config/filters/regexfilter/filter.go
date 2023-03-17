@@ -1,30 +1,15 @@
-package config
+package regexfilter
 
 import (
-	"errors"
 	"regexp"
 
+	"github.com/pkg/errors"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
-type Filter interface {
-	Type() string
-	FilterAlert(a *model.Alert) bool
-}
-
-type Link struct {
-	incomingFilter Filter
-	to             string
-}
-
-type FilterConstructor = func(n edge) (Filter, error)
-
-var filterRegistry = map[string]FilterConstructor{
-	"regex": NewRegexFilter,
-}
-
-func LookupFilter(name string) FilterConstructor {
-	return filterRegistry[name]
+func init() {
+	config.RegisterFilter("regex", NewRegexFilter)
 }
 
 // RegexFilter is a filter that matches if the given alert a) has the given label and b) that label matches a regex.
@@ -33,20 +18,20 @@ type RegexFilter struct {
 	Regex *regexp.Regexp
 }
 
-func NewRegexFilter(n edge) (Filter, error) {
-	field := n.attrs["field"]
+func NewRegexFilter(attrs map[string]string) (config.Filter, error) {
+	field := attrs["field"]
 	if field == "" {
 		return nil, errors.New("expected `field` in regex filter")
 	}
 
-	regexStr := n.attrs["regex"]
+	regexStr := attrs["regex"]
 	if regexStr == "" {
 		return nil, errors.New("expected `regex` in regex filter")
 	}
 
 	regex, err := regexp.Compile(regexStr)
 	if err == nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to compile regex")
 	}
 
 	return &RegexFilter{

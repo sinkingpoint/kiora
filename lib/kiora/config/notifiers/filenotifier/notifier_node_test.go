@@ -1,4 +1,4 @@
-package nodes
+package filenotifier_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/sinkingpoint/kiora/internal/services/notify"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/notifiers/filenotifier"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +17,7 @@ func TestFileNotifierNode(t *testing.T) {
 	require.NoError(t, err)
 	defer file.Close()
 
-	node, err := NewFileNotifierNode("",
+	node, err := filenotifier.NewFileNotifierNode("",
 		map[string]string{
 			"type": "file",
 			"path": file.Name(),
