@@ -39,7 +39,7 @@ func main() {
 	serverConfig.NotifierConfig = config
 
 	tracingConfig := tracing.DefaultTracingConfiguration()
-	tracingConfig.ExporterType = "noop" // TODO(cdouch): Make this a CLI arg
+	tracingConfig.ExporterType = "jaeger" // TODO(cdouch): Make this a CLI arg
 	tp, err := tracing.InitTracing(tracingConfig)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to start tracing")

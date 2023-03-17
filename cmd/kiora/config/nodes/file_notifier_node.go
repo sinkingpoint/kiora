@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/internal/encoding"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/otel"
 )
 
 const DEFAULT_ENCODING = "json"
@@ -67,6 +68,9 @@ func (f *FileNotifierNode) Type() string {
 }
 
 func (f *FileNotifierNode) Notify(ctx context.Context, alerts ...model.Alert) error {
+	_, span := otel.Tracer("").Start(ctx, "FileNotifierNode.Notify")
+	defer span.End()
+
 	var lastError error
 	for _, alert := range alerts {
 		bytes, err := f.encoder.Marshal(alert)

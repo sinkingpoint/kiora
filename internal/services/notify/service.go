@@ -2,6 +2,7 @@ package notify
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
@@ -9,6 +10,8 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var _ = services.Service(&NotifyService{})
@@ -57,8 +60,14 @@ func (n *NotifyService) notify(ctx context.Context) {
 // notifyAlert sends a notification for the given alert.
 // TODO(cdouch): Handle errors here.
 func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
+	ctx, span := otel.Tracer("").Start(ctx, "NotifyService.notifyAlert")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", a)))
+
 	notifiers := n.config.GetNotifiersForAlert(ctx, &a)
 	if notifiers == nil {
+		span.AddEvent("Not responsible for this alert")
 		return
 	}
 

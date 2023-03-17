@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -39,8 +40,7 @@ func newTracerProvider(config TracingConfiguration, exp sdktrace.SpanExporter) (
 
 	r, err := resource.Merge(
 		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
+		resource.NewSchemaless(
 			semconv.ServiceNameKey.String(config.ServiceName),
 		),
 	)
@@ -77,12 +77,12 @@ func newSpanExporter(config TracingConfiguration) (sdktrace.SpanExporter, error)
 func InitTracing(config TracingConfiguration) (*sdktrace.TracerProvider, error) {
 	exporter, err := newSpanExporter(config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create span exporter")
 	}
 
 	provider, err := newTracerProvider(config, exporter)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create tracer provider")
 	}
 
 	if provider != nil {
