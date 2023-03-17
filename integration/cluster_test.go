@@ -8,27 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func dummyAlert() model.Alert {
-	return model.Alert{
-		Labels: model.Labels{
-			"foo": "bar",
-		},
-		Annotations: map[string]string{},
-		Status:      model.AlertStatusFiring,
-		StartTime:   time.Now(),
-	}
-}
-
 // Test that a cluster of three nodes, when an alert is posted to one, that alert gets posted to all.
 func TestKioraClusterAlerts(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
+	initT(t)
 
 	nodes := StartKioraCluster(t, 3)
 
@@ -52,11 +38,7 @@ func TestKioraClusterAlerts(t *testing.T) {
 }
 
 func TestClusterAlertOnlySentOnce(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
-	t.Parallel()
+	initT(t)
 
 	alert := dummyAlert()
 

@@ -6,17 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // Test that Kiora doesn't immediatly exit.
 func TestKioraStart(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
-	t.Parallel()
+	initT(t)
 	kiora := NewKioraInstance()
 	require.NoError(t, kiora.Start(t))
 	time.Sleep(1 * time.Second)
@@ -29,11 +26,7 @@ func TestKioraStart(t *testing.T) {
 
 // Test that a post to a Kiora instance stores the alert.
 func TestKioraAlertPost(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
-	t.Parallel()
+	initT(t)
 
 	kiora := NewKioraInstance()
 	require.NoError(t, kiora.Start(t))
@@ -50,4 +43,30 @@ func TestKioraAlertPost(t *testing.T) {
 
 	// It should only have fired once.
 	assert.Equal(t, 1, strings.Count(kiora.stdout.String(), "foo"))
+}
+
+// Test that an alert refires if it fires, resolves, and then refires.
+func TestKioraResolveResends(t *testing.T) {
+	initT(t)
+
+	kiora := NewKioraInstance()
+	require.NoError(t, kiora.Start(t))
+
+	alert := dummyAlert()
+	resolved := dummyAlert()
+	resolved.Status = model.AlertStatusResolved
+
+	kiora.SendAlert(t, context.Background(), alert)
+	time.Sleep(1 * time.Second)
+	assert.Equal(t, 1, strings.Count(kiora.Stdout(), "foo"))
+
+	kiora.SendAlert(t, context.Background(), resolved)
+	time.Sleep(1 * time.Second)
+	// TODO(cdouch): Check resolved notifications.
+	// assert.Contains(t, kiora.stdout.String(), "resolved")
+	assert.Equal(t, 1, strings.Count(kiora.Stdout(), "foo"))
+
+	kiora.SendAlert(t, context.Background(), alert)
+	time.Sleep(1 * time.Second)
+	assert.Equal(t, 2, strings.Count(kiora.Stdout(), "foo"))
 }
