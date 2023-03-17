@@ -58,7 +58,10 @@ type Alert struct {
 	Status AlertStatus `json:"status"`
 
 	// StartTime is when the alert first started firing.
-	StartTime time.Time `json:"startTime"`
+	StartTime time.Time `json:"startsAt"`
+
+	// EndTime is when the alert ended (either timed out or resolved).
+	EndTime time.Time `json:"endsAt"`
 
 	// TimeOutDeadline is when the alert should be marked as timed out, assuming no further messages come in.
 	TimeOutDeadline time.Time `json:"timeOutDeadline,omitempty"`
@@ -98,6 +101,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		Annotations     map[string]string `json:"annotations"`
 		Status          AlertStatus       `json:"status"`
 		StartTime       time.Time         `json:"startTime"`
+		EndTime         time.Time         `json:"endsAt"`
 		TimeOutDeadline time.Time         `json:"timeOutDeadline,omitempty"`
 	}{}
 
@@ -106,6 +110,12 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 
 	if err := decoder.Decode(&rawAlert); err != nil {
 		return err
+	}
+
+	if a.Status == AlertStatusResolved && a.EndTime.IsZero() {
+		a.EndTime = time.Now()
+	} else {
+		a.EndTime = rawAlert.EndTime
 	}
 
 	a.Labels = rawAlert.Labels

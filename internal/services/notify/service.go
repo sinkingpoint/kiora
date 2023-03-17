@@ -43,7 +43,8 @@ outer:
 	for {
 		select {
 		case <-ticker.C:
-			n.notify(ctx)
+			n.notifyFiring(ctx)
+			n.notifyResolved(ctx)
 		case <-ctx.Done():
 			break outer
 		}
@@ -51,11 +52,20 @@ outer:
 	return nil
 }
 
-func (n *NotifyService) notify(ctx context.Context) {
+func (n *NotifyService) notifyFiring(ctx context.Context) {
 	q := query.All(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL)))
 
 	for _, a := range n.db.QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
+	}
+}
+
+func (n *NotifyService) notifyResolved(ctx context.Context) {
+	q := query.Status(model.AlertStatusResolved)
+	for _, alert := range n.db.QueryAlerts(ctx, q) {
+		if alert.LastNotifyTime.Before(alert.EndTime) {
+			n.notifyAlert(ctx, alert)
+		}
 	}
 }
 
@@ -73,7 +83,6 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 		return
 	}
 
-	a.Status = model.AlertStatusFiring
 	a.LastNotifyTime = time.Now()
 
 	for _, n := range notifiers {
