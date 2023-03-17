@@ -5,7 +5,7 @@ test:
 
 .PHONY: integration
 integration:
-	go test -count=1 ./integration
+	go test -timeout=1m -count=1 ./integration
 
 .PHONY: coverage
 coverage: test

@@ -6,11 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFailover(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	// The general flow of this test is:
 	// - Spin up a cluster, with 3 nodes
 	// While we still have nodes in the cluster:
@@ -18,11 +22,11 @@ func TestFailover(t *testing.T) {
 	// - Observe that the alert gets sent
 	// - Shutdown the node that sends the alert
 
-	t.SkipNow()
-
 	t.Parallel()
 
 	alert := dummyAlert()
+	resolvedAlert := dummyAlert()
+	resolvedAlert.Status = model.AlertStatusResolved
 
 	nodes := StartKioraCluster(t, 3)
 
@@ -31,20 +35,32 @@ func TestFailover(t *testing.T) {
 			nodes[i].SendAlert(t, context.TODO(), alert)
 		}
 
-		// Wait a bit for raft to converge.
-		time.Sleep(1 * time.Second)
+		// wait a bit for the gossip to settle.
+		time.Sleep(10 * time.Second)
 
-		foundAndShutdown := -1
+		foundNodeIndex := -1
 		for i, n := range nodes {
 			if strings.Contains(n.stdout.String(), "foo") {
 				require.NoError(t, n.Stop())
-				foundAndShutdown = i
+				foundNodeIndex = i
 				break
 			}
 		}
 
-		assert.Greater(t, foundAndShutdown, -1, "failed to find the firing node (still have nodes: %+v)", nodes)
+		found := foundNodeIndex >= 0
+		nodeNames := []string{}
+		for _, node := range nodes {
+			nodeNames = append(nodeNames, node.name)
+		}
 
-		nodes = append(nodes[:foundAndShutdown], nodes[foundAndShutdown+1:]...)
+		require.True(t, found, "failed to find the firing node (still have nodes: %+v)", nodeNames)
+		require.NoError(t, nodes[foundNodeIndex].Stop())
+
+		nodes = append(nodes[:foundNodeIndex], nodes[foundNodeIndex+1:]...)
+
+		// resolve the alert so it can fire again.
+		for i := range nodes {
+			nodes[i].SendAlert(t, context.TODO(), resolvedAlert)
+		}
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -48,6 +49,9 @@ type KioraInstance struct {
 
 	// The port that the cluster communication end of this instance is attached to.
 	clusterPort string
+
+	shutdownOnce sync.Once
+	shutdown     bool
 }
 
 // NewKioraInstance constructs a new KioraInstance that will start a Kiora run with the given CLI args.
@@ -98,9 +102,11 @@ func (k *KioraInstance) Start(t *testing.T) error {
 
 	// Setup a cleanup job that stops the instance, and removes the data directory.
 	t.Cleanup(func() {
-		t.Logf("Name: %q Stderr: \n%s", k.args, k.Stderr())
-		t.Logf("Name: %q Stdout: \n%s", k.args, k.Stdout())
-		require.NoError(t, k.Stop())
+		t.Logf("Name: %q Stderr: \n%s", k.name, k.Stderr())
+		t.Logf("Name: %q Stdout: \n%s", k.name, k.Stdout())
+		if !k.shutdown {
+			require.NoError(t, k.Stop())
+		}
 		require.NoError(t, os.RemoveAll("../artifacts/test/"+name))
 	})
 
@@ -146,7 +152,13 @@ func (k *KioraInstance) GetClusterHost() string {
 
 // Stop sends a sigkill to the process group that backs this instance.
 func (k *KioraInstance) Stop() error {
-	return syscall.Kill(-k.cmd.Process.Pid, syscall.SIGKILL)
+	var err error
+	k.shutdownOnce.Do(func() {
+		err = syscall.Kill(-k.cmd.Process.Pid, syscall.SIGKILL)
+		k.shutdown = true
+	})
+
+	return err
 }
 
 // Stdout returns the contents of the stdout stream of this instance.
