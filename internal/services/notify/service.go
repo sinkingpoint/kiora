@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sinkingpoint/kiora/internal/clustering"
-	"github.com/sinkingpoint/kiora/internal/server/services"
-	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
@@ -20,16 +18,14 @@ const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
 
 // NotifyService is a background service that scans the db for alerts to send notifications for.
 type NotifyService struct {
-	config      NotifierConfig
-	db          kioradb.DB
-	broadcaster clustering.Broadcaster
+	config NotifierConfig
+	bus    services.Bus
 }
 
-func NewNotifyService(config NotifierConfig, db kioradb.DB, broadcaster clustering.Broadcaster) *NotifyService {
+func NewNotifyService(config NotifierConfig, bus services.Bus) *NotifyService {
 	return &NotifyService{
-		config:      config,
-		db:          db,
-		broadcaster: broadcaster,
+		config: config,
+		bus:    bus,
 	}
 }
 
@@ -55,14 +51,14 @@ outer:
 func (n *NotifyService) notifyFiring(ctx context.Context) {
 	q := query.All(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL)))
 
-	for _, a := range n.db.QueryAlerts(ctx, q) {
+	for _, a := range n.bus.DB().QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
 	}
 }
 
 func (n *NotifyService) notifyResolved(ctx context.Context) {
 	q := query.Status(model.AlertStatusResolved)
-	for _, alert := range n.db.QueryAlerts(ctx, q) {
+	for _, alert := range n.bus.DB().QueryAlerts(ctx, q) {
 		if alert.LastNotifyTime.Before(alert.EndTime) {
 			n.notifyAlert(ctx, alert)
 		}
@@ -85,9 +81,13 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 
 	a.LastNotifyTime = time.Now()
 
-	for _, n := range notifiers {
-		n.Notify(ctx, a) //nolint
+	for _, notifier := range notifiers {
+		if err := notifier.Notify(ctx, a); err != nil {
+			n.bus.Logger("notify").Err(err).Msg("failed to notify for alert")
+		}
 	}
 
-	n.broadcaster.BroadcastAlerts(ctx, a) //nolint
+	if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
+		n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
+	}
 }

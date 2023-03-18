@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"runtime"
 	"sync"
-	"time"
 
 	_ "net/http/pprof"
 
@@ -17,47 +16,11 @@ import (
 	"github.com/sinkingpoint/kiora/internal/clustering/serf"
 	"github.com/sinkingpoint/kiora/internal/kiora/pipeline"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
-	"github.com/sinkingpoint/kiora/internal/server/services"
+	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
+	"github.com/sinkingpoint/kiora/internal/services/timeout"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
-
-// TLSPair is a pair of paths representing the path to a certificate and private key.
-type TLSPair struct {
-	// CertPath is the path to the certificate.
-	CertPath string
-
-	// KeyPath is the path to the private key.
-	KeyPath string
-}
-
-type serverConfig struct {
-	// HTTPListenAddress is the address for the server to listen on. Defaults to localhost:4278.
-	HTTPListenAddress string
-
-	ClusterListenAddress string
-	BootstrapPeers       []string
-	NotifierConfig       notify.NotifierConfig
-
-	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
-	ReadTimeout time.Duration
-
-	// WriteTimeout is the maximum amount of time the server will spend writing requests to clients. Defaults to 60 seconds.
-	WriteTimeout time.Duration
-
-	// TLS is an optional pair of cert and key files that will be used to serve TLS connections.
-	TLS *TLSPair
-}
-
-// NewServerConfig constructs a serverConfig with all the defaults set.
-func NewServerConfig() serverConfig {
-	return serverConfig{
-		HTTPListenAddress: "localhost:4278",
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		TLS:               nil,
-	}
-}
 
 // KioraServer is a server that serves the main Kiora API.
 type KioraServer struct {
@@ -65,9 +28,8 @@ type KioraServer struct {
 
 	httpServer *http.Server
 
-	broadcaster clustering.Broadcaster
-	db          kioradb.DB
-	clusterer   clustering.Clusterer
+	bus       services.Bus
+	clusterer clustering.Clusterer
 
 	backgroundServices *services.BackgroundServices
 
@@ -95,14 +57,16 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
 	}
 
+	bus := NewKioraBus(db, broadcaster)
+
 	services := services.NewBackgroundServices()
 	services.RegisterService(broadcaster)
-	services.RegisterService(notify.NewNotifyService(notify.NewClusterNotifier(ringClusterer, conf.NotifierConfig), db, broadcaster))
+	services.RegisterService(notify.NewNotifyService(notify.NewClusterNotifier(ringClusterer, conf.NotifierConfig), bus))
+	services.RegisterService(timeout.NewTimeoutService(bus))
 
 	return &KioraServer{
-		db:                 db,
 		serverConfig:       conf,
-		broadcaster:        broadcaster,
+		bus:                NewKioraBus(db, broadcaster),
 		clusterer:          ringClusterer,
 		backgroundServices: services,
 	}, nil
@@ -151,7 +115,7 @@ func (k *KioraServer) ListenAndServe() error {
 }
 
 func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
-	apiv1.Register(r, k.db, k.broadcaster, k.clusterer)
+	apiv1.Register(r, k.bus.DB(), k.bus.Broadcaster(), k.clusterer)
 
 	runtime.SetMutexProfileFraction(5)
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
