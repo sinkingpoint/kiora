@@ -18,6 +18,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
+	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 	"github.com/sinkingpoint/kiora/internal/services/timeout"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
@@ -61,7 +62,7 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 
 	services := services.NewBackgroundServices()
 	services.RegisterService(broadcaster)
-	services.RegisterService(notify.NewNotifyService(notify.NewClusterNotifier(ringClusterer, conf.NotifierConfig), bus))
+	services.RegisterService(notify.NewNotifyService(notify_config.NewClusterNotifier(ringClusterer, conf.NotifierConfig), bus))
 	services.RegisterService(timeout.NewTimeoutService(bus))
 
 	return &KioraServer{

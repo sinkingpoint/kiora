@@ -3,7 +3,7 @@ package server
 import (
 	"time"
 
-	"github.com/sinkingpoint/kiora/internal/services/notify"
+	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 )
 
 // TLSPair is a pair of paths representing the path to a certificate and private key.
@@ -21,7 +21,7 @@ type serverConfig struct {
 
 	ClusterListenAddress string
 	BootstrapPeers       []string
-	NotifierConfig       notify.NotifierConfig
+	NotifierConfig       notify_config.Config
 
 	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
 	ReadTimeout time.Duration

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/services"
+	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
+	"github.com/sinkingpoint/kiora/internal/stubs"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
@@ -18,11 +20,11 @@ const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
 
 // NotifyService is a background service that scans the db for alerts to send notifications for.
 type NotifyService struct {
-	config NotifierConfig
+	config notify_config.Config
 	bus    services.Bus
 }
 
-func NewNotifyService(config NotifierConfig, bus services.Bus) *NotifyService {
+func NewNotifyService(config notify_config.Config, bus services.Bus) *NotifyService {
 	return &NotifyService{
 		config: config,
 		bus:    bus,
@@ -49,7 +51,7 @@ outer:
 }
 
 func (n *NotifyService) notifyFiring(ctx context.Context) {
-	q := query.All(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL)))
+	q := query.All(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(stubs.Time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL)))
 
 	for _, a := range n.bus.DB().QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
@@ -66,7 +68,6 @@ func (n *NotifyService) notifyResolved(ctx context.Context) {
 }
 
 // notifyAlert sends a notification for the given alert.
-// TODO(cdouch): Handle errors here.
 func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	ctx, span := otel.Tracer("").Start(ctx, "NotifyService.notifyAlert")
 	defer span.End()
@@ -79,7 +80,7 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 		return
 	}
 
-	a.LastNotifyTime = time.Now()
+	a.LastNotifyTime = stubs.Time.Now()
 
 	for _, notifier := range notifiers {
 		if err := notifier.Notify(ctx, a); err != nil {

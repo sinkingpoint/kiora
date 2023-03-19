@@ -109,7 +109,19 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if a.Status == AlertStatusResolved && a.EndTime.IsZero() {
+	if rawAlert.StartTime.IsZero() {
+		a.StartTime = time.Now()
+	} else {
+		a.StartTime = rawAlert.StartTime
+	}
+
+	if rawAlert.TimeOutDeadline.IsZero() {
+		a.TimeOutDeadline = a.StartTime.Add(DEFAULT_TIMEOUT_INTERVAL)
+	} else {
+		a.TimeOutDeadline = rawAlert.TimeOutDeadline
+	}
+
+	if rawAlert.Status == AlertStatusResolved && rawAlert.EndTime.IsZero() {
 		a.EndTime = time.Now()
 	} else {
 		a.EndTime = rawAlert.EndTime
@@ -118,8 +130,6 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Labels = rawAlert.Labels
 	a.Annotations = rawAlert.Annotations
 	a.Status = rawAlert.Status
-	a.StartTime = rawAlert.StartTime
-	a.TimeOutDeadline = rawAlert.TimeOutDeadline
 
 	return a.validate()
 }

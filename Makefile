@@ -42,6 +42,7 @@ generate:
 	mockgen -source ./lib/kiora/kioradb/db.go > mocks/mock_kioradb/db.go
 	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
 	mockgen -source ./internal/services/bus.go > mocks/mock_services/bus.go
+	mockgen -source ./internal/services/notify/notify_config/config.go > mocks/mock_notify_config/config.go
 
 .PHONY: generate-clean
 generate-clean:

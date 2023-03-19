@@ -1,4 +1,4 @@
-package notify
+package notify_config
 
 import (
 	"context"
@@ -12,8 +12,8 @@ type Notifier interface {
 	Notify(ctx context.Context, alerts ...model.Alert) error
 }
 
-// NotifierConfig represents a configuration that can return a list of notifiers for a given alert.
-type NotifierConfig interface {
+// Config represents a configuration that can return a list of notifiers for a given alert.
+type Config interface {
 	// Returns the notifiers that should be invoked for the given alert. If the response is nil,
 	// then the notifier should do nothing, as opposed to an empty array that represents that the alert
 	// should be processed as if it should be considered to be properly notified.
@@ -23,10 +23,10 @@ type NotifierConfig interface {
 // ClusterNotifier binds a notifier and a clusterer, returning no notifiers if this node isn't responsible for the alert.
 type ClusterNotifier struct {
 	clusterer clustering.Clusterer
-	conf      NotifierConfig
+	conf      Config
 }
 
-func NewClusterNotifier(clusterer clustering.Clusterer, notifier NotifierConfig) *ClusterNotifier {
+func NewClusterNotifier(clusterer clustering.Clusterer, notifier Config) *ClusterNotifier {
 	return &ClusterNotifier{
 		clusterer: clusterer,
 		conf:      notifier,
