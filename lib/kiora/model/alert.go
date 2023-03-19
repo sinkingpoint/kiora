@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/sinkingpoint/kiora/internal/stubs"
 )
 
 // DEFAULT_TIMEOUT_INTERVAL is the length of time after first seeing an alert that we time out the alert
@@ -110,7 +112,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	}
 
 	if rawAlert.StartTime.IsZero() {
-		a.StartTime = time.Now()
+		a.StartTime = stubs.Time.Now()
 	} else {
 		a.StartTime = rawAlert.StartTime
 	}
@@ -122,7 +124,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	}
 
 	if rawAlert.Status == AlertStatusResolved && rawAlert.EndTime.IsZero() {
-		a.EndTime = time.Now()
+		a.EndTime = stubs.Time.Now()
 	} else {
 		a.EndTime = rawAlert.EndTime
 	}
