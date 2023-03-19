@@ -30,9 +30,6 @@ const (
 
 	// AlertStatusSilenced marks alerts that have been silenced by one or more silences.
 	AlertStatusSilenced AlertStatus = "silenced"
-
-	// AlertStatusSilenced marks alerts that are in the process of refiring.
-	AlertStatusRefiring AlertStatus = "refiring"
 )
 
 func (s AlertStatus) isValid() bool {
