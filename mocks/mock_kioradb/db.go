@@ -50,6 +50,20 @@ func (mr *MockDBMockRecorder) QueryAlerts(ctx, query interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAlerts", reflect.TypeOf((*MockDB)(nil).QueryAlerts), ctx, query)
 }
 
+// StoreAlertAcknowledgements mocks base method.
+func (m *MockDB) StoreAlertAcknowledgements(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreAlertAcknowledgements", ctx, alertID, ack)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreAlertAcknowledgements indicates an expected call of StoreAlertAcknowledgements.
+func (mr *MockDBMockRecorder) StoreAlertAcknowledgements(ctx, alertID, ack interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreAlertAcknowledgements", reflect.TypeOf((*MockDB)(nil).StoreAlertAcknowledgements), ctx, alertID, ack)
+}
+
 // StoreAlerts mocks base method.
 func (m *MockDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	m.ctrl.T.Helper()

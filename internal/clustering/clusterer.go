@@ -29,4 +29,7 @@ type EventDelegate interface {
 	// ProcessAlert is called when a new alert comes in. There are no guarantees that this alert isn't one
 	// we haven't seen before - it might be an update on status etc.
 	ProcessAlert(ctx context.Context, alert model.Alert)
+
+	// ProcessAlertAcknowledgement is called when a new alert acknowledgement comes in.
+	ProcessAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement)
 }

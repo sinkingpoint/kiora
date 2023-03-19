@@ -58,7 +58,7 @@ func TestInMemoryDB(t *testing.T) {
 			assert.Equal(t, "baz", alert.Labels["bar"])
 			assert.Equal(t, model.AlertStatusFiring, alert.Status)
 		} else {
-			t.Errorf("unexpected alert: %q", alert)
+			t.Errorf("unexpected alert: %v", alert)
 		}
 	}
 
@@ -83,7 +83,7 @@ func TestInMemoryDB(t *testing.T) {
 			assert.Equal(t, "baz", alert.Labels["bar"])
 			assert.Equal(t, model.AlertStatusResolved, alert.Status)
 		} else {
-			t.Errorf("unexpected alert: %q", alert)
+			t.Errorf("unexpected alert: %v", alert)
 		}
 	}
 }

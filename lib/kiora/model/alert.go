@@ -47,6 +47,9 @@ func (s AlertStatus) isValid() bool {
 // that are the values being transmitted, this struct contains all the state that might
 // be ascertained by Kiora through interactions with other models (e.g. silences).
 type Alert struct {
+	// ID is the unique ID of the alert.
+	ID string `json:"id,omitempty"`
+
 	// Labels defines the metadata on the alert that is used for deduplication purposes.
 	Labels Labels `json:"labels"`
 
@@ -57,7 +60,7 @@ type Alert struct {
 	Status AlertStatus `json:"status"`
 
 	// Acknowledgement is the details if this alert has fired and been acknowledged.
-	Acknowledgement *AlertAcknowledgement `json:"acknowledgement"`
+	Acknowledgement *AlertAcknowledgement `json:"acknowledgement,omitempty"`
 
 	// StartTime is when the alert first started firing.
 	StartTime time.Time `json:"startsAt"`
@@ -102,7 +105,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		Labels          Labels            `json:"labels"`
 		Annotations     map[string]string `json:"annotations"`
 		Status          AlertStatus       `json:"status"`
-		StartTime       time.Time         `json:"startTime"`
+		StartTime       time.Time         `json:"startsAt"`
 		EndTime         time.Time         `json:"endsAt"`
 		TimeOutDeadline time.Time         `json:"timeOutDeadline,omitempty"`
 	}{}
@@ -135,6 +138,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Labels = rawAlert.Labels
 	a.Annotations = rawAlert.Annotations
 	a.Status = rawAlert.Status
+	a.ID = fmt.Sprint(a.Labels.Hash())
 
 	return a.validate()
 }

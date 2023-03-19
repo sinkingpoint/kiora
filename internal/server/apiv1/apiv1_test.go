@@ -37,7 +37,15 @@ func (m *mockDB) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) err
 	return m.StoreAlerts(ctx, alerts...)
 }
 
+func (m *mockDB) BroadcastAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
+	return nil
+}
+
 func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
+	return nil
+}
+
+func (m *mockDB) StoreAlertAcknowledgements(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
 	return nil
 }
 

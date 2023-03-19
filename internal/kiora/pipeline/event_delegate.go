@@ -24,6 +24,8 @@ func NewDBEventDelegate(db kioradb.DB) *DBEventDelegate {
 
 func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 	currentAlerts := d.db.QueryAlerts(ctx, query.ExactLabelMatch(alert.Labels))
+
+	// Copy attributes from the current alert if it exists.
 	if len(currentAlerts) > 0 {
 		currentAlert := currentAlerts[0]
 		if alert.Status != model.AlertStatusResolved && alert.Status != model.AlertStatusTimedOut {
@@ -35,4 +37,9 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 
 	// TODO(cdouch): Handle errors here.
 	d.db.StoreAlerts(ctx, alert) // nolint
+}
+
+func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) {
+	// TODO(cdouch): Handle errors here.
+	d.db.StoreAlertAcknowledgements(ctx, alertID, ack) // nolint
 }

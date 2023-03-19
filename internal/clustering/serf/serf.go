@@ -161,6 +161,8 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 	switch msg := msg.(type) {
 	case *messages.Alert:
 		s.conf.EventDelegate.ProcessAlert(ctx, msg.Alert)
+	case *messages.Acknowledgement:
+		s.conf.EventDelegate.ProcessAlertAcknowledgement(ctx, msg.AlertID, msg.Acknowledgement)
 	default:
 		log.Error().Str("message name", u.Name).Msg("unhandled message type")
 		return
@@ -169,6 +171,19 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 	if err != nil {
 		log.Error().Str("message name", u.Name).Msg("failed to process message")
 	}
+}
+
+func (s *SerfBroadcaster) broadcast(ctx context.Context, msg messages.Message) error {
+	bytes, err := msgpack.Marshal(&msg)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal alerts")
+	}
+
+	if err := s.serf.UserEvent(msg.Name(), bytes, false); err != nil {
+		return errors.Wrap(err, "failed to send broadcast")
+	}
+
+	return nil
 }
 
 // BroadcastAlerts sends alerts over the Serf gossip channel to the cluster.
@@ -181,15 +196,19 @@ func (s *SerfBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.A
 			Alert: a,
 		}
 
-		bytes, err := msgpack.Marshal(&msg)
-		if err != nil {
-			broadcastError = multierror.Append(broadcastError, errors.Wrap(err, "failed to marshal alerts"))
-		}
-
-		if err := s.serf.UserEvent(msg.Name(), bytes, false); err != nil {
+		if err := s.broadcast(ctx, &msg); err != nil {
 			broadcastError = multierror.Append(broadcastError, err)
 		}
 	}
 
 	return broadcastError
+}
+
+func (s *SerfBroadcaster) BroadcastAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
+	msg := messages.Acknowledgement{
+		AlertID:         alertID,
+		Acknowledgement: ack,
+	}
+
+	return s.broadcast(ctx, &msg)
 }

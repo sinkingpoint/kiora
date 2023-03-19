@@ -199,6 +199,9 @@ func TestAlertUnmarshal(t *testing.T) {
 				t.Errorf("didn't expect an error, but got %q", err.Error())
 			}
 
+			// Skip the ID check because we don't know what it will be.
+			alert.ID = ""
+
 			if !tt.expectedFailure && tt.expectedAlert != nil {
 				assert.Equal(t, *tt.expectedAlert, alert)
 			}

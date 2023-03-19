@@ -146,3 +146,18 @@ func All(queries ...AlertQuery) *AllQuery {
 		queries: queries,
 	}
 }
+
+// IDQuery is a query that matches a specific alert by ID.
+type IDQuery struct {
+	ID string
+}
+
+func (i *IDQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	return alert.ID == i.ID
+}
+
+func ID(id string) *IDQuery {
+	return &IDQuery{
+		ID: id,
+	}
+}

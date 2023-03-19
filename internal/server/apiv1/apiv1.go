@@ -33,6 +33,7 @@ func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcas
 
 	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postAlerts), "POST api/v1/alerts"))
 	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
+	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.acknowledgeAlert), "POST /api/v1/alerts/ack"))
 	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getClusterStatus), "GET /api/v1/cluster/status"))
 }
 
@@ -79,6 +80,8 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// getAlerts returns all the alerts in the system as a JSON array.
+// TODO(cdouch): Take filters here rather than returning everything.
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
@@ -97,6 +100,7 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes) //nolint:errcheck
 }
 
+// getClusterStatus returns a JSON array of all the nodes in the cluster.
 func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
@@ -118,4 +122,31 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytes) // nolint:errcheck
+}
+
+func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
+	type ackRequest struct {
+		model.AlertAcknowledgement
+		AlertID string `json:"alertID"`
+	}
+
+	ack := ackRequest{}
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&ack); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	// TODO - validate this data.
+	if err := a.broadcaster.BroadcastAlertAcknowledgement(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("failed to broadcast alert acknowledgment"))
+		log.Err(err).Msg("failed to broadcast alert acknowledgment")
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"net/http"
@@ -189,9 +190,11 @@ func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model
 
 	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(alertBytes))
 	require.NoError(t, err)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
 	resp.Body.Close()
 
-	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+	require.Equal(t, http.StatusAccepted, resp.StatusCode, "body: %s", string(body))
 }
 
 // kioraInstanceName returns a 16 character long random string that will be used as the name of a KioraInstance.

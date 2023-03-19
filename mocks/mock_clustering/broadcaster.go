@@ -35,6 +35,20 @@ func (m *MockBroadcaster) EXPECT() *MockBroadcasterMockRecorder {
 	return m.recorder
 }
 
+// BroadcastAlertAcknowledgement mocks base method.
+func (m *MockBroadcaster) BroadcastAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BroadcastAlertAcknowledgement", ctx, alertID, ack)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BroadcastAlertAcknowledgement indicates an expected call of BroadcastAlertAcknowledgement.
+func (mr *MockBroadcasterMockRecorder) BroadcastAlertAcknowledgement(ctx, alertID, ack interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastAlertAcknowledgement", reflect.TypeOf((*MockBroadcaster)(nil).BroadcastAlertAcknowledgement), ctx, alertID, ack)
+}
+
 // BroadcastAlerts mocks base method.
 func (m *MockBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) error {
 	m.ctrl.T.Helper()

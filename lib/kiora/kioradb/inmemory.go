@@ -2,6 +2,7 @@ package kioradb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -51,4 +52,18 @@ func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertQuery) []mode
 		}
 		return alerts
 	}
+}
+
+func (m *inMemoryDB) StoreAlertAcknowledgements(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
+	alerts := m.QueryAlerts(ctx, query.ID(alertID))
+
+	if len(alerts) == 0 {
+		return fmt.Errorf("no such alert with ID %q", alertID)
+	}
+
+	alert := alerts[0]
+	alert.Acknowledgement = &ack
+	alert.Status = model.AlertStatusAcked
+
+	return m.StoreAlerts(ctx, alert)
 }
