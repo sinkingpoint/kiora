@@ -2,6 +2,8 @@ package model
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -138,7 +140,10 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Labels = rawAlert.Labels
 	a.Annotations = rawAlert.Annotations
 	a.Status = rawAlert.Status
-	a.ID = fmt.Sprint(a.Labels.Hash())
+
+	// AlertIDs are a bit arbitrary, but having them as a hash of the labels affords a few nice advantages.
+	// Namely, it means that any given alert has a consistant ID across all Kiora instances, and across time.
+	a.ID = alertID(a.Labels)
 
 	return a.validate()
 }
@@ -152,4 +157,11 @@ func (a *Alert) Acknowledge(ack *AlertAcknowledgement) error {
 	a.Status = AlertStatusAcked
 	a.Acknowledgement = ack
 	return nil
+}
+
+// alertID is a helper function to generate an AlertID from a labelset.
+func alertID(labels Labels) string {
+	bytes := make([]byte, 8) // 8 bytes in a uint64.
+	binary.LittleEndian.PutUint64(bytes, labels.Hash())
+	return hex.EncodeToString(bytes)
 }
