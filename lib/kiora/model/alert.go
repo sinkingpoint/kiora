@@ -36,7 +36,7 @@ const (
 
 func (s AlertStatus) isValid() bool {
 	switch s {
-	case AlertStatusFiring, AlertStatusAcked, AlertStatusResolved, AlertStatusTimedOut:
+	case AlertStatusFiring, AlertStatusAcked, AlertStatusResolved, AlertStatusTimedOut, AlertStatusSilenced:
 		return true
 	default:
 		return false
@@ -55,6 +55,9 @@ type Alert struct {
 
 	// Status is the status of the alert in the system.
 	Status AlertStatus `json:"status"`
+
+	// Acknowledgement is the details if this alert has fired and been acknowledged.
+	Acknowledgement *AlertAcknowledgement `json:"acknowledgement"`
 
 	// StartTime is when the alert first started firing.
 	StartTime time.Time `json:"startsAt"`
@@ -134,4 +137,15 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Status = rawAlert.Status
 
 	return a.validate()
+}
+
+// Acknowledge marks this alert as Acknowledged with the given metadata.
+func (a *Alert) Acknowledge(ack *AlertAcknowledgement) error {
+	if a.Status != AlertStatusFiring {
+		return errors.New("cannot acknowledge a non-firing alert")
+	}
+
+	a.Status = AlertStatusAcked
+	a.Acknowledgement = ack
+	return nil
 }
