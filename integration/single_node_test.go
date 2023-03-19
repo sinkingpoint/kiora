@@ -62,11 +62,10 @@ func TestKioraResolveResends(t *testing.T) {
 
 	kiora.SendAlert(t, context.Background(), resolved)
 	time.Sleep(1 * time.Second)
-	// TODO(cdouch): Check resolved notifications.
-	// assert.Contains(t, kiora.stdout.String(), "resolved")
-	assert.Equal(t, 1, strings.Count(kiora.Stdout(), "foo"))
+	assert.Contains(t, kiora.stdout.String(), "resolved")
+	assert.Equal(t, 2, strings.Count(kiora.Stdout(), "foo"))
 
 	kiora.SendAlert(t, context.Background(), alert)
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, 2, strings.Count(kiora.Stdout(), "foo"))
+	assert.Equal(t, 3, strings.Count(kiora.Stdout(), "foo"))
 }

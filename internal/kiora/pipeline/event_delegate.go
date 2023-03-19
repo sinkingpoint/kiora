@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
@@ -32,6 +33,11 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 			if alert.LastNotifyTime.IsZero() {
 				alert.LastNotifyTime = currentAlert.LastNotifyTime
 			}
+		}
+
+		// If we have an alert coming from resolved or timed out back to firing, reset the last notify time so it'll notify again.
+		if (currentAlert.Status == model.AlertStatusResolved || currentAlert.Status == model.AlertStatusTimedOut) && alert.Status == model.AlertStatusFiring {
+			alert.LastNotifyTime = time.Time{}
 		}
 	}
 

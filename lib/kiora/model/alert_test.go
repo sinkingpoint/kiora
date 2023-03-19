@@ -38,7 +38,7 @@ func TestAlertUnmarshal(t *testing.T) {
 				"annotations":{
 					"bar": "baz"
 				},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"status":"firing",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
 }`,
@@ -59,7 +59,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			name: "missing labels",
 			raw: `{
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"status":"firing",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
 }`,
@@ -69,7 +69,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			name: "missing annotations",
 			raw: `{
 				"labels":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"status":"firing",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
 }`,
@@ -80,13 +80,13 @@ func TestAlertUnmarshal(t *testing.T) {
 			raw: `{
 				"labels":{},
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
 }`,
 			expectedFailure: true,
 		},
 		{
-			name: "missing startTime",
+			name: "missing startsAt",
 			raw: `{
 				"labels":{},
 				"annotations":{},
@@ -100,7 +100,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			raw: `{
 				"labels":{},
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"endTime": "2022-12-21T21:32:27Z",
 				"status":"firing",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
@@ -112,7 +112,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			raw: `{
 				"labels":{},
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"endTime": "2022-12-20T21:32:27Z",
 				"status":"firing",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
@@ -124,7 +124,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			raw: `{
 				"labels":{},
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"status":"firing",
 				"foo":"bar",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
@@ -152,7 +152,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			raw: `{
 				"labels":{},
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"status":"resolved",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
 			}`,
@@ -171,7 +171,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			raw: `{
 				"labels":{},
 				"annotations":{},
-				"startTime": "2022-12-21T21:32:27Z",
+				"startsAt": "2022-12-21T21:32:27Z",
 				"status":"firing"
 			}`,
 			expectedFailure: false,

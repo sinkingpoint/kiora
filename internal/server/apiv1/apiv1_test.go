@@ -68,7 +68,7 @@ func TestPostAlerts(t *testing.T) {
 	"labels": {},
 	"annotations": {},
 	"status": "firing",
-	"startTime": "%s"
+	"startsAt": "%s"
 }]`, referenceTime.Format(time.RFC3339))),
 		},
 	}
