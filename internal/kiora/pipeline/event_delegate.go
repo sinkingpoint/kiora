@@ -39,6 +39,10 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 		if (currentAlert.Status == model.AlertStatusResolved || currentAlert.Status == model.AlertStatusTimedOut) && alert.Status == model.AlertStatusFiring {
 			alert.LastNotifyTime = time.Time{}
 		}
+
+		if currentAlert.Acknowledgement != nil {
+			alert.Acknowledgement = currentAlert.Acknowledgement
+		}
 	}
 
 	// TODO(cdouch): Handle errors here.
