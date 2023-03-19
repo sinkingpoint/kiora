@@ -14,7 +14,4 @@ type DB interface {
 
 	// QueryAlerts queries the database for alerts matching the given query.
 	QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert
-
-	// StoreAlertAcknowledgements stores the given AlertAcknowledgement in the database.
-	StoreAlertAcknowledgements(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error
 }

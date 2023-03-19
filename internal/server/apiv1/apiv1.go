@@ -136,14 +136,14 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 
 	if err := decoder.Decode(&ack); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		w.Write([]byte(err.Error())) // nolint:errcheck
 		return
 	}
 
 	// TODO - validate this data.
 	if err := a.broadcaster.BroadcastAlertAcknowledgement(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to broadcast alert acknowledgment"))
+		w.Write([]byte("failed to broadcast alert acknowledgment")) // nolint:errcheck
 		log.Err(err).Msg("failed to broadcast alert acknowledgment")
 		return
 	}

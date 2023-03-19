@@ -45,10 +45,6 @@ func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []mode
 	return nil
 }
 
-func (m *mockDB) StoreAlertAcknowledgements(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error {
-	return nil
-}
-
 func TestPostAlerts(t *testing.T) {
 	// Construct a referenceTime that is used for each alert, and is expected to be found in the db.
 	referenceTime, err := time.Parse(time.RFC3339, "2022-12-13T21:55:12Z")

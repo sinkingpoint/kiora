@@ -199,7 +199,6 @@ func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model
 
 // kioraInstanceName returns a 16 character long random string that will be used as the name of a KioraInstance.
 func kioraInstanceName() string {
-	rand.Seed(time.Now().UnixNano())
 	n := 16
 	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, n)

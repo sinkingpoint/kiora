@@ -50,6 +50,16 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 }
 
 func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) {
+	alerts := d.db.QueryAlerts(ctx, query.ID(alertID))
+	if len(alerts) == 0 {
+		// TODO(cdouch): Handle errors here.
+		return
+	}
+
+	alert := alerts[0]
+	alert.Acknowledgement = &ack
+	alert.Status = model.AlertStatusAcked
+
 	// TODO(cdouch): Handle errors here.
-	d.db.StoreAlertAcknowledgements(ctx, alertID, ack) // nolint
+	d.db.StoreAlerts(ctx, alert) // nolint
 }
