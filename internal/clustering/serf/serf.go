@@ -159,7 +159,7 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 
 	var err error
 	switch msg := msg.(type) {
-	case *messages.AlertMessage:
+	case *messages.Alert:
 		s.conf.EventDelegate.ProcessAlert(ctx, msg.Alert)
 	default:
 		log.Error().Str("message name", u.Name).Msg("unhandled message type")
@@ -177,7 +177,7 @@ func (s *SerfBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.A
 
 	// Note: We break the alerts into individual messages in order to attempt to avoid Serf message size limits.
 	for _, a := range alerts {
-		msg := messages.AlertMessage{
+		msg := messages.Alert{
 			Alert: a,
 		}
 
