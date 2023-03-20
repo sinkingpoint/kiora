@@ -106,7 +106,7 @@ func TestConfigAckFilter(t *testing.T) {
 			cfg, err := config.LoadConfigFile(file.Name())
 			require.NoError(t, err)
 
-			acceptable := cfg.AlertAcknowledgementIsValid(context.TODO(), tt.alert, tt.ack)
+			acceptable := cfg.AlertAcknowledgementIsValid(context.TODO(), tt.ack)
 			assert.Equal(t, tt.expectSuccess, acceptable)
 		})
 	}

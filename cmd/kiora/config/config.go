@@ -58,67 +58,20 @@ func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) [
 	return leaves
 }
 
-// searchForAckNode returns true if we can follow its link, obeying filters, and get the the `acks` node.
-func (c *ConfigFile) searchForAckNode(ctx context.Context, nodeName string, alert *model.Alert, ack *model.AlertAcknowledgement) bool {
-	if nodeName == ACK_LEAF {
-		return true
-	}
-
-	for _, link := range c.links[nodeName] {
-		if !link.incomingFilter.Filter(ctx, ack) {
-			continue
-		}
-
-		if c.searchForAckNode(ctx, link.to, alert, ack) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // AlertAcknowledgementIsValid returns true if we can find a path to the acks node from the roots of the graph.
-func (c *ConfigFile) AlertAcknowledgementIsValid(ctx context.Context, alert *model.Alert, ack *model.AlertAcknowledgement) bool {
-	roots := c.calculateAckRoots() // TODO(cdouch): memoize this.
+func (c *ConfigFile) AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) bool {
+	roots := calculateRootsFrom(c, ACK_LEAF) // TODO(cdouch): memoize this.
 	if len(roots) == 0 {
 		return true
 	}
 
 	for root := range roots {
-		node := root
-		if c.searchForAckNode(ctx, node, alert, ack) {
+		if searchForNode(ctx, c, root, ACK_LEAF, ack) {
 			return true
 		}
 	}
 
 	return false
-}
-
-// calculateAckRoots starts at the `acks` node, and works backwards to find the leaves of the acks tree.
-func (c *ConfigFile) calculateAckRoots() HashSet {
-	roots := HashSet{}
-	visited := HashSet{}
-
-	stack := []string{ACK_LEAF}
-	for len(stack) > 0 {
-		nodeName := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		if _, ok := visited[nodeName]; ok {
-			continue
-		}
-
-		visited[nodeName] = struct{}{}
-
-		if len(c.reverseLinks[nodeName]) == 0 {
-			roots[nodeName] = struct{}{}
-		} else {
-			for _, link := range c.reverseLinks[nodeName] {
-				stack = append(stack, link.to)
-			}
-		}
-	}
-
-	return roots
 }
 
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.
