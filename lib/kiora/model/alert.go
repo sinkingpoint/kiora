@@ -107,6 +107,7 @@ func (a *Alert) validate() error {
 
 func (a *Alert) UnmarshalJSON(b []byte) error {
 	rawAlert := struct {
+		ID              string            `json:"id"`
 		Labels          Labels            `json:"labels"`
 		Annotations     map[string]string `json:"annotations"`
 		Status          AlertStatus       `json:"status"`
