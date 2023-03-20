@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"sort"
 
 	"github.com/cespare/xxhash"
 )
@@ -23,11 +24,18 @@ func (s Labels) Hash() LabelsHash {
 }
 
 func (s Labels) Bytes() []byte {
+	keys := []string{}
+	for k := range s {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
 	buf := bytes.Buffer{}
-	for k, v := range s {
+	for _, k := range keys {
 		buf.Write([]byte(k))
 		buf.Write(hashSep)
-		buf.Write([]byte(v))
+		buf.Write([]byte(s[k]))
 	}
 
 	return buf.Bytes()
