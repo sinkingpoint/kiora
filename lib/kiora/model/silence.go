@@ -50,6 +50,7 @@ func (s *Silence) validate() error {
 
 func (s *Silence) UnmarshalJSON(b []byte) error {
 	rawSilence := struct {
+		ID        string    `json:"id"`
 		Creator   string    `json:"creator"`
 		Comment   string    `json:"comment"`
 		Matchers  []Matcher `json:"matchers"`

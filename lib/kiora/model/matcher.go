@@ -3,7 +3,9 @@ package model
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"regexp"
+	"strings"
 )
 
 type Matcher struct {
@@ -38,6 +40,36 @@ func LabelValueEqualMatcher(label string, value string) Matcher {
 func (m *Matcher) Negate() *Matcher {
 	m.IsNegative = !m.IsNegative
 	return m
+}
+
+func (m *Matcher) UnmarshalText(raw string) error {
+	var parts []string
+
+	if strings.Contains(raw, "=~") {
+		parts = strings.Split(raw, "=~")
+		m.IsRegex = true
+		m.IsNegative = false
+	} else if strings.Contains(raw, "!~") {
+		parts = strings.Split(raw, "!~")
+		m.IsRegex = true
+		m.IsNegative = true
+	} else if strings.Contains(raw, "!=") {
+		parts = strings.Split(raw, "!=")
+		m.IsRegex = false
+		m.IsNegative = true
+	} else {
+		parts = strings.Split(raw, "=")
+		m.IsRegex = false
+		m.IsNegative = false
+	}
+
+	if len(parts) != 2 {
+		return errors.New("invalid matcher")
+	}
+
+	m.Label = parts[0]
+	m.Value = parts[1]
+	return nil
 }
 
 func (m *Matcher) UnmarshalJSON(b []byte) error {

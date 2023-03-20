@@ -87,3 +87,40 @@ func (k *KioraInstance) PostAlerts(alerts []model.Alert) error {
 
 	return nil
 }
+
+func (k *KioraInstance) PostSilence(silence model.Silence) (*model.Silence, error) {
+	body, err := json.Marshal(silence)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal silence")
+	}
+
+	req, err := k.getRequest(http.MethodPost, "silences", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := k.HTTPClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute request")
+	}
+
+	defer resp.Body.Close()
+
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("unexpected status code: %d (%q)", resp.StatusCode, string(body))
+	}
+
+	silence = model.Silence{}
+	if err := json.Unmarshal(body, &silence); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	return &silence, nil
+}
