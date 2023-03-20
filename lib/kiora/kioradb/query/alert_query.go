@@ -7,20 +7,14 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
-// Query is a query that can be run against a DB to pull things out of it.
+// AlertQuery is a query that can be run against a DB to pull things out of it.
 type AlertQuery interface {
 	MatchesAlert(ctx context.Context, alert *model.Alert) bool
 }
 
-// AlertQueryFunc provides a wrapper around an anonymous function to make it into an AlertQuery.
-type AlertQueryFunc func(ctx context.Context, alert *model.Alert) bool
-
-func (a AlertQueryFunc) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
-	if a != nil {
-		return a(ctx, alert)
-	}
-
-	return false
+// SilenceQuery is a query that can be run against a DB to pull things out of it.
+type SilenceQuery interface {
+	MatchesSilence(ctx context.Context, alert *model.Silence) bool
 }
 
 // PartialLabelMatchQuery is an AlertQuery that matches alerts that contain the given labels (but may have extras on top of these).
@@ -73,6 +67,10 @@ func MatchAll() AlertQuery {
 }
 
 func (a *AllMatchQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	return true
+}
+
+func (a *AllMatchQuery) MatchesSilence(ctx context.Context, silence *model.Silence) bool {
 	return true
 }
 
@@ -154,6 +152,10 @@ type IDQuery struct {
 
 func (i *IDQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return alert.ID == i.ID
+}
+
+func (i *IDQuery) MatchesSilence(ctx context.Context, silence *model.Silence) bool {
+	return silence.ID == i.ID
 }
 
 func ID(id string) *IDQuery {
