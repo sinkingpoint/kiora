@@ -20,7 +20,13 @@ func (a AlertQueryFunc) MatchesAlert(ctx context.Context, alert *model.Alert) bo
 
 // SilenceQuery is a query that can be run against a DB to pull things out of it.
 type SilenceQuery interface {
-	MatchesSilence(ctx context.Context, alert *model.Silence) bool
+	MatchesSilence(ctx context.Context, silence *model.Silence) bool
+}
+
+type SilenceQueryFunc func(ctx context.Context, alert *model.Silence) bool
+
+func (a SilenceQueryFunc) MatchesSilence(ctx context.Context, alert *model.Silence) bool {
+	return a(ctx, alert)
 }
 
 // PartialLabelMatchQuery is an AlertQuery that matches alerts that contain the given labels (but may have extras on top of these).
@@ -136,11 +142,12 @@ func LastNotifyTimeWithin(minTime, maxTime time.Time) *LastNotifyTimeRangeQuery 
 }
 
 type AllQuery struct {
-	queries []AlertQuery
+	alertQueries   []AlertQuery
+	silenceQueries []SilenceQuery
 }
 
 func (a *AllQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
-	for _, q := range a.queries {
+	for _, q := range a.alertQueries {
 		if !q.MatchesAlert(ctx, alert) {
 			return false
 		}
@@ -149,9 +156,25 @@ func (a *AllQuery) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return true
 }
 
-func All(queries ...AlertQuery) *AllQuery {
+func (a *AllQuery) MatchesSilence(ctx context.Context, silence *model.Silence) bool {
+	for _, q := range a.silenceQueries {
+		if !q.MatchesSilence(ctx, silence) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func AllAlerts(queries ...AlertQuery) *AllQuery {
 	return &AllQuery{
-		queries: queries,
+		alertQueries: queries,
+	}
+}
+
+func AllSilences(queries ...SilenceQuery) *AllQuery {
+	return &AllQuery{
+		silenceQueries: queries,
 	}
 }
 
@@ -172,4 +195,10 @@ func ID(id string) *IDQuery {
 	return &IDQuery{
 		ID: id,
 	}
+}
+
+func SilenceIsActive() SilenceQuery {
+	return SilenceQueryFunc(func(ctx context.Context, silence *model.Silence) bool {
+		return silence.IsActive()
+	})
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sinkingpoint/kiora/internal/stubs"
 )
 
 type Silence struct {
@@ -71,6 +72,10 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 	s.EndTime = rawSilence.EndTime
 
 	return s.validate()
+}
+
+func (s *Silence) IsActive() bool {
+	return s.StartTime.Before(stubs.Time.Now()) && (s.EndTime.IsZero() || s.EndTime.After(stubs.Time.Now()))
 }
 
 func (s *Silence) Matches(l Labels) bool {
