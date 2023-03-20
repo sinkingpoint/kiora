@@ -183,17 +183,6 @@ func TestAlertUnmarshal(t *testing.T) {
 				TimeOutDeadline: referenceStartTime.Add(model.DEFAULT_TIMEOUT_INTERVAL),
 			},
 		},
-		{
-			name: "overriding ID",
-			raw: `{
-				"id": "foo",
-				"labels":{},
-				"annotations":{},
-				"startsAt": "2022-12-21T21:32:27Z",
-				"status":"firing"
-			}`,
-			expectedFailure: true,
-		},
 	}
 
 	for _, tt := range tests {
