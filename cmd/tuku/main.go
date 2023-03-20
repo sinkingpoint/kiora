@@ -9,7 +9,7 @@ import (
 )
 
 var CLI struct {
-	Formatter string           `help:"the format to output the data in" default:"json"`
+	Formatter string           `help:"the format to output the data in" name:"fmt" default:"json"`
 	KioraURL  string           `help:"the URL of the Kiora instance to connect to" default:"http://localhost:4278"`
 	Alerts    alerts.AlertsCmd `cmd:"" help:"Manage alerts."`
 }
