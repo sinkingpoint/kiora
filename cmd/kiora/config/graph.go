@@ -63,6 +63,10 @@ func (c *configGraph) AddEdge(src, dst string, directed bool, attrs map[string]s
 		return errors.New("edges in the Config Graph must be directed")
 	}
 
+	for i := range attrs {
+		attrs[i] = strings.Trim(attrs[i], "\"")
+	}
+
 	c.edges = append(c.edges, edge{
 		from:  src,
 		to:    dst,

@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -30,7 +31,7 @@ func NewRegexFilter(attrs map[string]string) (config.Filter, error) {
 	}
 
 	regex, err := regexp.Compile(regexStr)
-	if err == nil {
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to compile regex")
 	}
 
@@ -50,4 +51,16 @@ func (r *RegexFilter) FilterAlert(a *model.Alert) bool {
 	}
 
 	return false
+}
+
+func (r *RegexFilter) FilterAlertAcknowledgement(alert *model.Alert, ack *model.AlertAcknowledgement) bool {
+	switch r.Label {
+	case "by", "from":
+		return r.Regex.MatchString(ack.By)
+	case "comment":
+		return r.Regex.MatchString(ack.Comment)
+	default:
+		log.Warn().Msgf("regex filter is being applied on field %q, which is not supported for alert acknowledgements", r.Label)
+		return false
+	}
 }
