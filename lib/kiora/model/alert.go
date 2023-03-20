@@ -90,12 +90,15 @@ func (a *Alert) validate() error {
 		return fmt.Errorf("invalid alert status in alert: %q", a.Status)
 	}
 
-	defaultTime := time.Time{}
-	if a.StartTime == defaultTime {
+	if a.StartTime.IsZero() {
 		return errors.New("missing start time in alert")
 	}
 
-	if a.TimeOutDeadline != defaultTime && !a.TimeOutDeadline.After(a.StartTime) {
+	if !a.EndTime.IsZero() && a.EndTime.Before(a.StartTime) {
+		return errors.New("end time is before start time")
+	}
+
+	if !a.TimeOutDeadline.IsZero() && a.TimeOutDeadline.Before(a.StartTime) {
 		return errors.New("timeout deadline is not after start time")
 	}
 
