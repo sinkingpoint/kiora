@@ -62,7 +62,7 @@ func (e *ExactLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.Al
 type AllMatchQuery struct {
 }
 
-func MatchAll() AlertQuery {
+func MatchAll() *AllMatchQuery {
 	return &AllMatchQuery{}
 }
 
@@ -79,7 +79,7 @@ type StatusQuery struct {
 	Status model.AlertStatus
 }
 
-func Status(s model.AlertStatus) AlertQuery {
+func Status(s model.AlertStatus) *StatusQuery {
 	return &StatusQuery{
 		Status: s,
 	}

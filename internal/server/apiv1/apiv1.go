@@ -36,6 +36,7 @@ func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcas
 	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.acknowledgeAlert), "POST /api/v1/alerts/ack"))
 	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getClusterStatus), "GET /api/v1/cluster/status"))
 	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postSilences), "POST /api/v1/silences"))
+	subRouter.Path("/silences").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getSilences), "GET /api/v1/silences"))
 }
 
 type apiv1 struct {
@@ -172,5 +173,14 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 	responseBytes, _ := json.Marshal(silence) // TODO(cdouch): Error checking.
 
 	w.WriteHeader(http.StatusCreated)
+	w.Write(responseBytes) // nolint:errcheck
+}
+
+func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
+	silences := a.db.QuerySilences(r.Context(), query.MatchAll())
+
+	responseBytes, _ := json.Marshal(silences) // TODO(cdouch): Error checking.
+
+	w.WriteHeader(http.StatusOK)
 	w.Write(responseBytes) // nolint:errcheck
 }
