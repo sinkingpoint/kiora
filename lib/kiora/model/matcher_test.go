@@ -58,7 +58,7 @@ func TestMatchers(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			match := tt.matcher.MatchesAlert(&model.Alert{Labels: tt.labels})
+			match := tt.matcher.Matches(tt.labels)
 			if tt.expectedMatch && !match {
 				t.Errorf("expected match, but it didn't")
 			} else if !tt.expectedMatch && match {

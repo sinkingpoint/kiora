@@ -71,16 +71,16 @@ func (m *Matcher) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (m *Matcher) MatchesAlert(alert *Alert) bool {
-	if _, ok := alert.Labels[m.Label]; !ok {
+func (m *Matcher) Matches(labels Labels) bool {
+	if _, ok := labels[m.Label]; !ok {
 		return false
 	}
 
 	result := false
 	if m.IsRegex {
-		result = m.regex.MatchString(alert.Labels[m.Label])
+		result = m.regex.MatchString(labels[m.Label])
 	} else {
-		result = alert.Labels[m.Label] == m.Value
+		result = labels[m.Label] == m.Value
 	}
 
 	if m.IsNegative {

@@ -43,6 +43,19 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 		if currentAlert.Acknowledgement != nil {
 			alert.Acknowledgement = currentAlert.Acknowledgement
 		}
+
+		if currentAlert.Status == model.AlertStatusSilenced && alert.Status == model.AlertStatusFiring {
+			alert.Status = model.AlertStatusSilenced
+		}
+	}
+
+	// If it's firing, silence it if there's a matching silence. We can't do this async in a service
+	// because that would cause a race condition where the alert could be fired before the silence is applied.
+	if alert.Status == model.AlertStatusFiring {
+		silences := d.db.QuerySilences(ctx, query.PartialLabelMatch(alert.Labels))
+		if len(silences) > 0 {
+			alert.Status = model.AlertStatusSilenced
+		}
 	}
 
 	// TODO(cdouch): Handle errors here.
@@ -65,5 +78,18 @@ func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alert
 }
 
 func (d *DBEventDelegate) ProcessSilence(ctx context.Context, silence model.Silence) {
+	existingSilence := d.db.QuerySilences(ctx, query.ID(silence.ID))
+	if len(existingSilence) == 0 {
+		// This is a new silence, so we need to apply it to all the alerts.
+		alerts := d.db.QueryAlerts(ctx, query.AlertQueryFunc(func(ctx context.Context, alert *model.Alert) bool {
+			return silence.Matches(alert.Labels)
+		}))
+
+		for _, alert := range alerts {
+			alert.Status = model.AlertStatusSilenced
+			// TODO(cdouch): Handle errors here.
+			d.db.StoreAlerts(ctx, alert) // nolint
+		}
+	}
 	d.db.StoreSilences(ctx, silence) // nolint
 }

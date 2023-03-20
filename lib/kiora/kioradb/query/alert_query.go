@@ -12,6 +12,12 @@ type AlertQuery interface {
 	MatchesAlert(ctx context.Context, alert *model.Alert) bool
 }
 
+type AlertQueryFunc func(ctx context.Context, alert *model.Alert) bool
+
+func (a AlertQueryFunc) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	return a(ctx, alert)
+}
+
 // SilenceQuery is a query that can be run against a DB to pull things out of it.
 type SilenceQuery interface {
 	MatchesSilence(ctx context.Context, alert *model.Silence) bool
@@ -22,7 +28,7 @@ type PartialLabelMatchQuery struct {
 	Labels model.Labels
 }
 
-func PartialLabelMatch(labels model.Labels) AlertQuery {
+func PartialLabelMatch(labels model.Labels) *PartialLabelMatchQuery {
 	return &PartialLabelMatchQuery{
 		Labels: labels,
 	}
@@ -36,6 +42,10 @@ func (p *PartialLabelMatchQuery) MatchesAlert(ctx context.Context, alert *model.
 	}
 
 	return true
+}
+
+func (p *PartialLabelMatchQuery) MatchesSilence(ctx context.Context, silence *model.Silence) bool {
+	return silence.Matches(p.Labels)
 }
 
 // ExactLabelMatchQuery is an AlertQuery that matches alerts that contain exactly the given labelset.

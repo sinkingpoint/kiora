@@ -72,3 +72,13 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 
 	return s.validate()
 }
+
+func (s *Silence) Matches(l Labels) bool {
+	for _, matcher := range s.Matchers {
+		if !matcher.Matches(l) {
+			return false
+		}
+	}
+
+	return true
+}
