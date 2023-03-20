@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"time"
@@ -55,7 +56,10 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 		EndTime   time.Time `json:"endsAt"`
 	}{}
 
-	if err := json.Unmarshal(b, &rawSilence); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&rawSilence); err != nil {
 		return err
 	}
 

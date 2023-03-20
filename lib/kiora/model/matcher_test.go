@@ -7,9 +7,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMatchers(t *testing.T) {
-	regexMatcher, err := model.LabelValueRegexMatcher("foo", "bar.+")
+func MustRegexMatcher(t *testing.T, label, regex string) model.Matcher {
+	m, err := model.LabelValueRegexMatcher(label, regex)
 	require.NoError(t, err)
+	return m
+}
+
+func ptrTo(m model.Matcher) *model.Matcher {
+	return &m
+}
+
+func TestMatchers(t *testing.T) {
 	testCases := []struct {
 		name          string
 		matcher       model.Matcher
@@ -17,28 +25,22 @@ func TestMatchers(t *testing.T) {
 		expectedMatch bool
 	}{
 		{
-			name: "exact match",
-			matcher: &model.LabelValueEqualMatcher{
-				Label: "foo",
-				Value: "bar",
-			},
+			name:    "exact match",
+			matcher: model.LabelValueEqualMatcher("foo", "bar"),
 			labels: model.Labels{
 				"foo": "bar",
 			},
 			expectedMatch: true,
 		},
 		{
-			name: "exact match without label",
-			matcher: &model.LabelValueEqualMatcher{
-				Label: "foo",
-				Value: "",
-			},
+			name:          "exact match without label",
+			matcher:       model.LabelValueEqualMatcher("foo", ""),
 			labels:        model.Labels{},
 			expectedMatch: false,
 		},
 		{
 			name:    "regex match",
-			matcher: regexMatcher,
+			matcher: MustRegexMatcher(t, "foo", "bar"),
 			labels: model.Labels{
 				"foo": "barrington",
 			},
@@ -46,7 +48,7 @@ func TestMatchers(t *testing.T) {
 		},
 		{
 			name:    "negative match",
-			matcher: model.NegativeMatcher(regexMatcher),
+			matcher: *ptrTo(MustRegexMatcher(t, "foo", "bar")).Negate(),
 			labels: model.Labels{
 				"foo": "barrington",
 			},
@@ -56,7 +58,7 @@ func TestMatchers(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			match := tt.matcher.Match(tt.labels)
+			match := tt.matcher.MatchesAlert(&model.Alert{Labels: tt.labels})
 			if tt.expectedMatch && !match {
 				t.Errorf("expected match, but it didn't")
 			} else if !tt.expectedMatch && match {
