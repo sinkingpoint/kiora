@@ -35,6 +35,7 @@ func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcas
 	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
 	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.acknowledgeAlert), "POST /api/v1/alerts/ack"))
 	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getClusterStatus), "GET /api/v1/cluster/status"))
+	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postSilences), "POST /api/v1/silences"))
 }
 
 type apiv1 struct {
@@ -149,4 +150,27 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
+	silence := model.Silence{}
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&silence); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error())) // nolint:errcheck
+		return
+	}
+
+	if err := a.broadcaster.BroadcastSilences(r.Context(), silence); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("failed to broadcast silence")) // nolint:errcheck
+		log.Err(err).Msg("failed to broadcast silence")
+		return
+	}
+
+	responseBytes, _ := json.Marshal(silence) // TODO(cdouch): Error checking.
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write(responseBytes) // nolint:errcheck
 }
