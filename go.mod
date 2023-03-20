@@ -15,8 +15,8 @@ require (
 	github.com/hashicorp/serf v0.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
+	github.com/sinkingpoint/msgpack/v5 v5.3.7
 	github.com/stretchr/testify v1.8.2
-	github.com/vmihailenco/msgpack/v5 v5.3.5
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0
@@ -43,6 +43,7 @@ require (
 	github.com/miekg/dns v1.1.41 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect

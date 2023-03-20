@@ -2,7 +2,6 @@ package timeout
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/services"
@@ -42,7 +41,6 @@ func (t *TimeoutService) timeoutAlerts(ctx context.Context) {
 	changed := []model.Alert{}
 	for _, a := range t.bus.DB().QueryAlerts(ctx, query) {
 		if a.TimeOutDeadline.Before(time.Now()) {
-			fmt.Println(a.TimeOutDeadline)
 			a.Status = model.AlertStatusTimedOut
 			changed = append(changed, a)
 		}

@@ -14,7 +14,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf/messages"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/sinkingpoint/msgpack/v5"
 )
 
 var _ = clustering.Broadcaster(&SerfBroadcaster{})
