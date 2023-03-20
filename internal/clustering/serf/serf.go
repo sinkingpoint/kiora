@@ -163,6 +163,8 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 		s.conf.EventDelegate.ProcessAlert(ctx, msg.Alert)
 	case *messages.Acknowledgement:
 		s.conf.EventDelegate.ProcessAlertAcknowledgement(ctx, msg.AlertID, msg.Acknowledgement)
+	case *messages.Silence:
+		s.conf.EventDelegate.ProcessSilence(ctx, msg.Silence)
 	default:
 		log.Error().Str("message name", u.Name).Msg("unhandled message type")
 		return

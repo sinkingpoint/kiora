@@ -17,7 +17,8 @@ type inMemoryDB struct {
 
 func NewInMemoryDB() *inMemoryDB {
 	return &inMemoryDB{
-		alerts: make(map[model.LabelsHash]model.Alert),
+		alerts:   make(map[model.LabelsHash]model.Alert),
+		silences: make(map[string]model.Silence),
 	}
 }
 
