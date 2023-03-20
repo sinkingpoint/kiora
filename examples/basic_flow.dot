@@ -1,0 +1,3 @@
+digraph config {
+    // This is an empty config. Alerts go no where, and there's no validation of anything.
+}

@@ -1,0 +1,5 @@
+digraph config {
+    // This uses the special "alerts" node that all alerts start at, and sends every alert to stdout.
+    console [type="stdout"];
+    alerts -> console;
+}

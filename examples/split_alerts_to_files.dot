@@ -1,0 +1,15 @@
+digraph config {
+    // This demonstrates how to use filters on links to split alerts.
+    // Note the "label" field on the links - you can use arbitrary GraphViz fields to mark up your configuration
+    // to make it as easy to follow as possible.
+
+    // First, we define two sinks, each with a different path.
+    sink_a [type="file" path="/tmp/sink_a.log"];
+    sink_b [type="file" path="/tmp/sink_b.log"];
+
+    // Only send alerts to sink_a if the destination matches the regex "sink_a".
+    alerts -> sink_a [label="destination is sink a" type="regex" field="dest" regex="sink_a"];
+
+    // Only send alerts to sink_b if the destination matches the regex "sink_b".
+    alerts -> sink_b [label="destination is sink b" type="regex" field="dest" regex="sink_b"];
+}
