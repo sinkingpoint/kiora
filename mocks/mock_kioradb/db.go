@@ -50,6 +50,20 @@ func (mr *MockDBMockRecorder) QueryAlerts(ctx, query interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAlerts", reflect.TypeOf((*MockDB)(nil).QueryAlerts), ctx, query)
 }
 
+// QuerySilences mocks base method.
+func (m *MockDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QuerySilences", ctx, query)
+	ret0, _ := ret[0].([]model.Silence)
+	return ret0
+}
+
+// QuerySilences indicates an expected call of QuerySilences.
+func (mr *MockDBMockRecorder) QuerySilences(ctx, query interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QuerySilences", reflect.TypeOf((*MockDB)(nil).QuerySilences), ctx, query)
+}
+
 // StoreAlerts mocks base method.
 func (m *MockDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	m.ctrl.T.Helper()
@@ -67,4 +81,23 @@ func (mr *MockDBMockRecorder) StoreAlerts(ctx interface{}, alerts ...interface{}
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, alerts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreAlerts", reflect.TypeOf((*MockDB)(nil).StoreAlerts), varargs...)
+}
+
+// StoreSilences mocks base method.
+func (m *MockDB) StoreSilences(ctx context.Context, silences ...model.Silence) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx}
+	for _, a := range silences {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StoreSilences", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreSilences indicates an expected call of StoreSilences.
+func (mr *MockDBMockRecorder) StoreSilences(ctx interface{}, silences ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx}, silences...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreSilences", reflect.TypeOf((*MockDB)(nil).StoreSilences), varargs...)
 }

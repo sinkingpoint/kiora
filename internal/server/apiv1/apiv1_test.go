@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -21,15 +20,12 @@ import (
 var _ kioradb.DB = &mockDB{}
 
 type mockDB struct {
-	alerts []model.Alert
+	alerts   []model.Alert
+	silences []model.Silence
 }
 
 func (m *mockDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	m.alerts = append(m.alerts, alerts...)
-	return nil
-}
-
-func (m *mockDB) RegisterEndpoints(ctx context.Context, router *mux.Router) error {
 	return nil
 }
 
@@ -42,6 +38,15 @@ func (m *mockDB) BroadcastAlertAcknowledgement(ctx context.Context, alertID stri
 }
 
 func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
+	return nil
+}
+
+func (m *mockDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
+	return nil
+}
+
+func (m *mockDB) StoreSilences(ctx context.Context, silences ...model.Silence) error {
+	m.silences = append(m.silences, silences...)
 	return nil
 }
 

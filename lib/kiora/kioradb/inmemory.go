@@ -11,7 +11,8 @@ var _ DB = &inMemoryDB{}
 
 // inMemoryDB is a DB that does not persist anything, just storing all data in memory.
 type inMemoryDB struct {
-	alerts map[model.LabelsHash]model.Alert
+	alerts   map[model.LabelsHash]model.Alert
+	silences map[string]model.Silence
 }
 
 func NewInMemoryDB() *inMemoryDB {
@@ -35,12 +36,12 @@ func (m *inMemoryDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) err
 
 func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertQuery) []model.Alert {
 	switch query := q.(type) {
+	// Short circuit exact matches because we can process them more efficiently by just looking up the hash.
 	case *query.ExactLabelMatchQuery:
 		if existingAlert, ok := m.alerts[query.Labels.Hash()]; ok {
 			return []model.Alert{existingAlert}
 		}
 
-		// Short circuit exact matches because we can process them more efficiently by just looking up the hash.
 		return []model.Alert{}
 	default:
 		alerts := []model.Alert{}
@@ -51,4 +52,23 @@ func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertQuery) []mode
 		}
 		return alerts
 	}
+}
+
+func (m *inMemoryDB) StoreSilences(ctx context.Context, silences ...model.Silence) error {
+	for i := range silences {
+		m.silences[silences[i].ID] = silences[i]
+	}
+
+	return nil
+}
+
+func (m *inMemoryDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
+	silences := []model.Silence{}
+	for _, silence := range m.silences {
+		if query.MatchesSilence(ctx, &silence) {
+			silences = append(silences, silence)
+		}
+	}
+
+	return silences
 }
