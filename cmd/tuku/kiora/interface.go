@@ -1,8 +1,10 @@
 package kiora
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -23,13 +25,13 @@ func NewKioraInstance(url string, apiVersion string) *KioraInstance {
 	}
 }
 
-func (k *KioraInstance) getRequest(method string, uri string) (*http.Request, error) {
+func (k *KioraInstance) getRequest(method string, uri string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s/api/%s/%s", k.URL, k.APIVersion, uri)
-	return http.NewRequest(method, url, nil)
+	return http.NewRequest(method, url, body)
 }
 
 func (k *KioraInstance) GetAlerts() ([]model.Alert, error) {
-	req, err := k.getRequest(http.MethodGet, "alerts")
+	req, err := k.getRequest(http.MethodGet, "alerts", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
 	}
@@ -52,4 +54,36 @@ func (k *KioraInstance) GetAlerts() ([]model.Alert, error) {
 	}
 
 	return alerts, nil
+}
+
+func (k *KioraInstance) PostAlerts(alerts []model.Alert) error {
+	body, err := json.Marshal(alerts)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal alerts")
+	}
+
+	req, err := k.getRequest(http.MethodPost, "alerts", bytes.NewBuffer(body))
+	if err != nil {
+		return errors.Wrap(err, "failed to create request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := k.HTTPClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute request")
+	}
+
+	defer resp.Body.Close()
+
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to read response body")
+	}
+
+	if resp.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("unexpected status code: %d (%q)", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
