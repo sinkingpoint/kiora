@@ -13,4 +13,7 @@ type Broadcaster interface {
 
 	// BroadcastAlertAcknowledgement broadcasts an AlertAcknowledgement of the given alert.
 	BroadcastAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) error
+
+	// BroadcastSilences broadcasts a group of silences to a cluster.
+	BroadcastSilences(ctx context.Context, silences ...model.Silence) error
 }

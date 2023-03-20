@@ -67,3 +67,22 @@ func (mr *MockBroadcasterMockRecorder) BroadcastAlerts(ctx interface{}, alerts .
 	varargs := append([]interface{}{ctx}, alerts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastAlerts", reflect.TypeOf((*MockBroadcaster)(nil).BroadcastAlerts), varargs...)
 }
+
+// BroadcastSilences mocks base method.
+func (m *MockBroadcaster) BroadcastSilences(ctx context.Context, silences ...model.Silence) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx}
+	for _, a := range silences {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "BroadcastSilences", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BroadcastSilences indicates an expected call of BroadcastSilences.
+func (mr *MockBroadcasterMockRecorder) BroadcastSilences(ctx interface{}, silences ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx}, silences...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastSilences", reflect.TypeOf((*MockBroadcaster)(nil).BroadcastSilences), varargs...)
+}

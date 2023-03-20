@@ -63,3 +63,7 @@ func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alert
 	// TODO(cdouch): Handle errors here.
 	d.db.StoreAlerts(ctx, alert) // nolint
 }
+
+func (d *DBEventDelegate) ProcessSilence(ctx context.Context, silence model.Silence) {
+	d.db.StoreSilences(ctx, silence) // nolint
+}

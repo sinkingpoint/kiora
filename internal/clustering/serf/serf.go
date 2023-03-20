@@ -212,3 +212,19 @@ func (s *SerfBroadcaster) BroadcastAlertAcknowledgement(ctx context.Context, ale
 
 	return s.broadcast(ctx, &msg)
 }
+
+func (s *SerfBroadcaster) BroadcastSilences(ctx context.Context, silences ...model.Silence) error {
+	var broadcastError error
+
+	for _, silence := range silences {
+		msg := messages.Silence{
+			Silence: silence,
+		}
+
+		if err := s.broadcast(ctx, &msg); err != nil {
+			broadcastError = multierror.Append(broadcastError, err)
+		}
+	}
+
+	return broadcastError
+}

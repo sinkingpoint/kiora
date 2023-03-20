@@ -32,4 +32,8 @@ type EventDelegate interface {
 
 	// ProcessAlertAcknowledgement is called when a new alert acknowledgement comes in.
 	ProcessAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement)
+
+	// ProcessSilence is called when a new silence comes in. There are no guarantees that this silence isn't one
+	// we haven't seen before - it might be an update on status etc.
+	ProcessSilence(ctx context.Context, silence model.Silence)
 }
