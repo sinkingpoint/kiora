@@ -1,6 +1,7 @@
 package regexfilter_test
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
@@ -60,7 +61,7 @@ func TestRegexFilter(t *testing.T) {
 				Regex: regex,
 			}
 
-			matches := match.FilterAlert(&tt.Alert)
+			matches := match.Filter(context.TODO(), &tt.Alert)
 			assert.Equal(t, tt.ShouldMatch, matches)
 		})
 	}

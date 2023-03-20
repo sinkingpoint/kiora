@@ -163,6 +163,14 @@ func (a *Alert) Acknowledge(ack *AlertAcknowledgement) error {
 	return nil
 }
 
+func (a *Alert) Field(name string) (string, error) {
+	if val, ok := a.Labels[name]; ok {
+		return val, nil
+	}
+
+	return "", fmt.Errorf("label %q doesn't exist", name)
+}
+
 // alertID is a helper function to generate an AlertID from a labelset.
 func alertID(labels Labels) string {
 	bytes := make([]byte, 8) // 8 bytes in a uint64.

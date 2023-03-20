@@ -1,8 +1,9 @@
 package nopfilter
 
 import (
+	"context"
+
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
-	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
 func init() {
@@ -20,10 +21,6 @@ func (n *NopFilter) Type() string {
 	return "nop"
 }
 
-func (n *NopFilter) FilterAlert(a *model.Alert) bool {
-	return true
-}
-
-func (n *NopFilter) FilterAlertAcknowledgement(alert *model.Alert, ack *model.AlertAcknowledgement) bool {
+func (n *NopFilter) Filter(ctx context.Context, _ config.Fielder) bool {
 	return true
 }

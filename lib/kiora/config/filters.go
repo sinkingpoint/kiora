@@ -1,23 +1,20 @@
 package config
 
 import (
-	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"context"
 )
 
 // Filter defines something that can filter models.
 type Filter interface {
 	// Type returns a string representation of the type of the filter.
 	Type() string
+
+	Filter(ctx context.Context, f Fielder) bool
 }
 
-// AlertFilter is a type of filter that can filter alerts.
-type AlertFilter interface {
-	FilterAlert(a *model.Alert) bool
-}
-
-// AlertAcknowledgementFilter is a type of filter that can filter alert acknowledgements.
-type AlertAcknowledgementFilter interface {
-	FilterAlertAcknowledgement(alert *model.Alert, ack *model.AlertAcknowledgement) bool
+// Fielder is a thing that has fields that can be filtered.
+type Fielder interface {
+	Field(name string) (string, error)
 }
 
 // FilterConstructor is a function that can construct a filter from a set of attributes.

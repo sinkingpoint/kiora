@@ -1,12 +1,11 @@
 package regexfilter
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
-	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
 func init() {
@@ -45,22 +44,11 @@ func (r *RegexFilter) Type() string {
 	return "regex"
 }
 
-func (r *RegexFilter) FilterAlert(a *model.Alert) bool {
-	if label, ok := a.Labels[r.Label]; ok {
-		return r.Regex.MatchString(label)
-	}
-
-	return false
-}
-
-func (r *RegexFilter) FilterAlertAcknowledgement(alert *model.Alert, ack *model.AlertAcknowledgement) bool {
-	switch r.Label {
-	case "by", "from":
-		return r.Regex.MatchString(ack.By)
-	case "comment":
-		return r.Regex.MatchString(ack.Comment)
-	default:
-		log.Warn().Msgf("regex filter is being applied on field %q, which is not supported for alert acknowledgements", r.Label)
+func (r *RegexFilter) Filter(ctx context.Context, f config.Fielder) bool {
+	label, err := f.Field(r.Label)
+	if err != nil {
 		return false
 	}
+
+	return r.Regex.MatchString(label)
 }

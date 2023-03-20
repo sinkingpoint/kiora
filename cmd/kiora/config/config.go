@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/awalterschulze/gographviz"
-	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -42,8 +41,8 @@ func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) [
 		stack = stack[:len(stack)-1]
 		for _, link := range c.links[nodeName] {
 			matchesFilter := true
-			if filter, ok := link.incomingFilter.(config.AlertFilter); ok && filter != nil {
-				matchesFilter = filter.FilterAlert(a)
+			if link.incomingFilter != nil {
+				matchesFilter = link.incomingFilter.Filter(ctx, a)
 			}
 
 			if link.incomingFilter == nil || matchesFilter {
@@ -66,12 +65,8 @@ func (c *ConfigFile) searchForAckNode(ctx context.Context, nodeName string, aler
 	}
 
 	for _, link := range c.links[nodeName] {
-		if filter, ok := link.incomingFilter.(config.AlertAcknowledgementFilter); ok {
-			if !filter.FilterAlertAcknowledgement(alert, ack) {
-				continue
-			}
-		} else {
-			log.Warn().Msgf("filter %q at %q is not an AlertAcknowledgementFilter", link.incomingFilter.Type(), nodeName)
+		if !link.incomingFilter.Filter(ctx, ack) {
+			continue
 		}
 
 		if c.searchForAckNode(ctx, link.to, alert, ack) {
