@@ -71,7 +71,10 @@ func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alert
 
 	alert := alerts[0]
 	alert.Acknowledgement = &ack
-	alert.Status = model.AlertStatusAcked
+
+	if alert.Status == model.AlertStatusFiring {
+		alert.Status = model.AlertStatusAcked
+	}
 
 	// TODO(cdouch): Handle errors here.
 	d.db.StoreAlerts(ctx, alert) // nolint
