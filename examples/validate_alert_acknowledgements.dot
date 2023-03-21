@@ -6,7 +6,7 @@ digraph config {
 
     // For example, if we want to enforce that all alert acknowlegments have a valid @example.com email,
     // and have a comment, we can set up a flow like this:
-    test_email -> test_comment [type="regex" field="from" regex=".+@example.com"]; // First check the email
+    test_email -> test_comment [type="regex" field="creator" regex=".+@example.com"]; // First check the email
     test_comment -> acks [type="regex" field="comment" regex=".+"]; // Then check the comment.
 
     // If there is any flow into the `acks` pseudonode that the acknowledgment can pass through, then it is accepted.
