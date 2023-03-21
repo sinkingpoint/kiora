@@ -106,7 +106,46 @@ func TestConfigAckFilter(t *testing.T) {
 			ack: &model.AlertAcknowledgement{
 				By: "colin@example.com",
 			},
-			expectError: []string{},
+			expectError: []string{
+				"field comment doesn't match",
+			},
+		},
+		{
+			name: "multiple paths",
+			config: `digraph config {
+				// Sometimes it's useful to have multiple potential validation paths. For example, we might have a bot account
+				// that should also be allowed to acknowledge alerts. To do this, we can specify multiple paths into the acks pseudonode.
+			
+				// First, the regular human path, which must have an email and a comment.
+				test_email -> test_comment [type="regex" field="from" regex=".+@example.com"]; // First check the email
+				test_comment -> acks [type="regex" field="comment" regex=".+"]; // Then check the comment.
+			
+				// And then a bot path where we don't need a comment, if the from is RespectTables:
+				test_respect_tables -> acks [type="regex" field="from" regex="RespectTables"];
+			}`,
+			ack: &model.AlertAcknowledgement{
+				By:      "colin@example.com",
+				Comment: "I'm a human, I promise!",
+			},
+			expectError: nil,
+		},
+		{
+			name: "multiple paths 2",
+			config: `digraph config {
+				// Sometimes it's useful to have multiple potential validation paths. For example, we might have a bot account
+				// that should also be allowed to acknowledge alerts. To do this, we can specify multiple paths into the acks pseudonode.
+			
+				// First, the regular human path, which must have an email and a comment.
+				test_email -> test_comment [type="regex" field="from" regex=".+@example.com"]; // First check the email
+				test_comment -> acks [type="regex" field="comment" regex=".+"]; // Then check the comment.
+			
+				// And then a bot path where we don't need a comment, if the from is RespectTables:
+				test_respect_tables -> acks [type="regex" field="from" regex="RespectTables"];
+			}`,
+			ack: &model.AlertAcknowledgement{
+				By: "RespectTables",
+			},
+			expectError: nil,
 		},
 	}
 

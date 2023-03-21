@@ -1,0 +1,13 @@
+digraph config {
+    // We can use the same configurations to validate data as it comes into the system, and reject
+    // it if it doesn't match some arbitrary criteria.
+    // To do this, we can specify flows _into_ a model pseudonode, for example the `acks` pseudonode
+    // which validates alert acknowledgements.
+
+    // For example, if we want to enforce that all alert acknowlegments have a valid @example.com email,
+    // and have a comment, we can set up a flow like this:
+    test_email -> test_comment [type="regex" field="from" regex=".+@example.com"]; // First check the email
+    test_comment -> acks [type="regex" field="comment" regex=".+"]; // Then check the comment.
+
+    // If there is any flow into the `acks` pseudonode that the acknowledgment can pass through, then it is accepted.
+}
