@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 	"github.com/sinkingpoint/kiora/internal/stubs"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/sinkingpoint/kiora/mocks/mock_clustering"
+	"github.com/sinkingpoint/kiora/mocks/mock_config"
 	"github.com/sinkingpoint/kiora/mocks/mock_kioradb"
-	"github.com/sinkingpoint/kiora/mocks/mock_notify_config"
 	"github.com/sinkingpoint/kiora/mocks/mock_services"
 )
 
@@ -82,13 +82,13 @@ func TestNotifyServiceFiring(t *testing.T) {
 
 			bus.EXPECT().Broadcaster().Return(mock_clustering.MockBroadcasterExpectingAlerts(ctrl, alerts)).AnyTimes()
 
-			notifier := mock_notify_config.NewMockNotifier(ctrl)
+			notifier := mock_config.NewMockNotifier(ctrl)
 			notifier.EXPECT().Notify(gomock.Any(), alerts).AnyTimes()
 
-			config := mock_notify_config.NewMockConfig(ctrl)
-			config.EXPECT().GetNotifiersForAlert(gomock.Any(), gomock.Any()).Return([]notify_config.Notifier{notifier}).AnyTimes()
+			conf := mock_config.NewMockConfig(ctrl)
+			conf.EXPECT().GetNotifiersForAlert(gomock.Any(), gomock.Any()).Return([]config.Notifier{notifier}).AnyTimes()
 
-			notifyService := NewNotifyService(config, bus)
+			notifyService := NewNotifyService(conf, bus)
 			notifyService.notifyFiring(context.TODO())
 			notifyService.notifyResolved(context.TODO())
 		})

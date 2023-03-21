@@ -8,7 +8,6 @@ import (
 
 	"github.com/awalterschulze/gographviz"
 	"github.com/hashicorp/go-multierror"
-	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -17,7 +16,7 @@ const ALERT_ROOT = "alerts"
 const SILENCES_ROOT = "silences"
 const ACK_LEAF = "acks"
 
-var _ = notify_config.Config(&ConfigFile{})
+var _ = config.Config(&ConfigFile{})
 
 // Link represents a connection between nodes, that may or may not have an attached filter.
 type Link struct {
@@ -31,8 +30,8 @@ type ConfigFile struct {
 	reverseLinks map[string][]Link
 }
 
-func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) []notify_config.Notifier {
-	leaves := []notify_config.Notifier{}
+func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) []config.Notifier {
+	leaves := []config.Notifier{}
 
 	// We expect here that the ConfigFile has been passed through `Validate` already, and thus
 	// is assumed to have no cycles.
@@ -51,7 +50,7 @@ func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) [
 			}
 		}
 
-		if node, ok := c.nodes[nodeName].(notify_config.Notifier); node != nil && ok {
+		if node, ok := c.nodes[nodeName].(config.Notifier); node != nil && ok {
 			leaves = append(leaves, node)
 		}
 	}

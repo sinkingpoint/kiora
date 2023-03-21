@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config/notifiers/filenotifier"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +25,7 @@ func TestFileNotifierNode(t *testing.T) {
 
 	require.NoError(t, err)
 
-	processor := node.(notify_config.Notifier)
+	processor := node.(config.Notifier)
 
 	assert.NoError(t, processor.Notify(context.Background(), model.Alert{
 		Labels: model.Labels{

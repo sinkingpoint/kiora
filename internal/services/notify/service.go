@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/services"
-	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 	"github.com/sinkingpoint/kiora/internal/stubs"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
@@ -20,11 +20,11 @@ const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
 
 // NotifyService is a background service that scans the db for alerts to send notifications for.
 type NotifyService struct {
-	config notify_config.Config
+	config config.Config
 	bus    services.Bus
 }
 
-func NewNotifyService(config notify_config.Config, bus services.Bus) *NotifyService {
+func NewNotifyService(config config.Config, bus services.Bus) *NotifyService {
 	return &NotifyService{
 		config: config,
 		bus:    bus,
