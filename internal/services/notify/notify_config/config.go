@@ -26,5 +26,5 @@ func (c *ClusterNotifier) GetNotifiersForAlert(ctx context.Context, alert *model
 		return nil
 	}
 
-	return c.GetNotifiersForAlert(ctx, alert)
+	return c.Config.GetNotifiersForAlert(ctx, alert)
 }

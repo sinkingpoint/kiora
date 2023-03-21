@@ -94,6 +94,20 @@ func TestConfigAckFilter(t *testing.T) {
 			},
 			expectError: nil,
 		},
+		{
+			name: "two step validation",
+			config: `digraph config {
+				console [type="stdout"];
+				alerts -> console;
+
+				test_email -> test_comment [type="regex" field="from" regex=".+@example.com"];
+				test_comment -> acks [type="regex" field="comment" regex=".+"];
+			}`,
+			ack: &model.AlertAcknowledgement{
+				By: "colin@example.com",
+			},
+			expectError: []string{},
+		},
 	}
 
 	for _, tt := range tests {

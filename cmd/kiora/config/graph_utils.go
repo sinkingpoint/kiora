@@ -54,7 +54,7 @@ func searchForNode(ctx context.Context, graph *ConfigFile, fromNode string, dest
 		if err := searchForNode(ctx, graph, link.to, destinationNode, ack); err == nil {
 			return nil
 		} else {
-			err = multierror.Append(allErrs, err)
+			allErrs = multierror.Append(allErrs, err)
 		}
 	}
 

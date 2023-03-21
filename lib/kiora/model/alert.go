@@ -107,13 +107,14 @@ func (a *Alert) validate() error {
 
 func (a *Alert) UnmarshalJSON(b []byte) error {
 	rawAlert := struct {
-		ID              string            `json:"id"`
-		Labels          Labels            `json:"labels"`
-		Annotations     map[string]string `json:"annotations"`
-		Status          AlertStatus       `json:"status"`
-		StartTime       time.Time         `json:"startsAt"`
-		EndTime         time.Time         `json:"endsAt"`
-		TimeOutDeadline time.Time         `json:"timeOutDeadline,omitempty"`
+		ID              string                `json:"id"`
+		Labels          Labels                `json:"labels"`
+		Annotations     map[string]string     `json:"annotations"`
+		Status          AlertStatus           `json:"status"`
+		StartTime       time.Time             `json:"startsAt"`
+		EndTime         time.Time             `json:"endsAt"`
+		TimeOutDeadline time.Time             `json:"timeOutDeadline,omitempty"`
+		Acknowledgement *AlertAcknowledgement `json:"acknowledgement,omitempty"`
 	}{}
 
 	decoder := json.NewDecoder(bytes.NewReader(b))
