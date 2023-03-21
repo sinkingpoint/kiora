@@ -1,0 +1,10 @@
+digraph config {
+    // Silences support a `duration` filter, that allows you to make decisions based on how long the silence it.
+
+    // e.g. we have this path that will only let silences through that have a JIRA ticket if they are longer 8h.
+    if_duration_longer_than_one_shift -> test_ticket [type="duration" field="duration" min="8h"]; // Only enter this branch for silences with a minimum duration of 8h.
+    test_ticket -> silences [type="regex" field="comment" regex="[A-Z]+-[0-9]+"]; // If they're longer than 8h, enforce a JIRA ticket.
+
+    // Alternatively, if they're a maximum of 8h long, let them through.
+    short_silences -> silences [type="duration" field="duration" max="8h"]; 
+}

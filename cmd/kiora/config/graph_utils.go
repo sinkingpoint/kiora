@@ -14,7 +14,7 @@ func calculateRootsFrom(graph *ConfigFile, nodeName string) HashSet {
 	roots := HashSet{}
 	visited := HashSet{}
 
-	stack := []string{ACK_LEAF}
+	stack := []string{nodeName}
 	for len(stack) > 0 {
 		nodeName := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]

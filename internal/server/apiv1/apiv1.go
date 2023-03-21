@@ -167,7 +167,9 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.bus.Config().ValidateData(r.Context(), &silence); err != nil {
-
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error())) // nolint:errcheck
+		return
 	}
 
 	if err := a.bus.Broadcaster().BroadcastSilences(r.Context(), silence); err != nil {
