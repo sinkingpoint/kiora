@@ -78,20 +78,6 @@ func (m *MockConfig) EXPECT() *MockConfigMockRecorder {
 	return m.recorder
 }
 
-// AlertAcknowledgementIsValid mocks base method.
-func (m *MockConfig) AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AlertAcknowledgementIsValid", ctx, ack)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AlertAcknowledgementIsValid indicates an expected call of AlertAcknowledgementIsValid.
-func (mr *MockConfigMockRecorder) AlertAcknowledgementIsValid(ctx, ack interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AlertAcknowledgementIsValid", reflect.TypeOf((*MockConfig)(nil).AlertAcknowledgementIsValid), ctx, ack)
-}
-
 // GetNotifiersForAlert mocks base method.
 func (m *MockConfig) GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []config.Notifier {
 	m.ctrl.T.Helper()
@@ -104,4 +90,18 @@ func (m *MockConfig) GetNotifiersForAlert(ctx context.Context, alert *model.Aler
 func (mr *MockConfigMockRecorder) GetNotifiersForAlert(ctx, alert interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotifiersForAlert", reflect.TypeOf((*MockConfig)(nil).GetNotifiersForAlert), ctx, alert)
+}
+
+// ValidateData mocks base method.
+func (m *MockConfig) ValidateData(ctx context.Context, data config.Fielder) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateData", ctx, data)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateData indicates an expected call of ValidateData.
+func (mr *MockConfigMockRecorder) ValidateData(ctx, data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateData", reflect.TypeOf((*MockConfig)(nil).ValidateData), ctx, data)
 }

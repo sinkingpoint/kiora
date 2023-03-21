@@ -140,7 +140,7 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.bus.Config().AlertAcknowledgementIsValid(r.Context(), &ack.AlertAcknowledgement); err != nil {
+	if err := a.bus.Config().ValidateData(r.Context(), &ack.AlertAcknowledgement); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error())) // nolint:errcheck
 		return

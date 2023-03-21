@@ -58,16 +58,15 @@ func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) [
 	return leaves
 }
 
-// AlertAcknowledgementIsValid returns true if we can find a path to the acks node from the roots of the graph.
-func (c *ConfigFile) AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) error {
-	roots := calculateRootsFrom(c, ACK_LEAF) // TODO(cdouch): memoize this.
+func (c *ConfigFile) validateData(ctx context.Context, leaf string, data config.Fielder) error {
+	roots := calculateRootsFrom(c, leaf) // TODO(cdouch): memoize this.
 	if len(roots) == 0 {
 		return nil
 	}
 
 	var allErrs error
 	for root := range roots {
-		if err := searchForNode(ctx, c, root, ACK_LEAF, ack); err == nil {
+		if err := searchForNode(ctx, c, root, leaf, data); err == nil {
 			return nil
 		} else {
 			allErrs = multierror.Append(allErrs, err)
@@ -75,6 +74,16 @@ func (c *ConfigFile) AlertAcknowledgementIsValid(ctx context.Context, ack *model
 	}
 
 	return allErrs
+}
+
+// AlertAcknowledgementIsValid returns true if we can find a path to the acks node from the roots of the graph.
+func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) error {
+	switch data.(type) {
+	case *model.AlertAcknowledgement:
+		return c.validateData(ctx, ACK_LEAF, data)
+	default:
+		panic("BUG: unhandled data validation")
+	}
 }
 
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.

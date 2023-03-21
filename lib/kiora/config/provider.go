@@ -18,7 +18,7 @@ type Config interface {
 	// should be processed as if it should be considered to be properly notified.
 	GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []Notifier
 
-	// AlertAcknowledgementIsValid returns an error that can be displayed to the user if the
-	// acknowledgement is invalid according to whatever rules the config has.
-	AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) error
+	// ValidateData returns an error that can be displayed to the user if the
+	// data is invalid according to whatever rules the config has.
+	ValidateData(ctx context.Context, data Fielder) error
 }

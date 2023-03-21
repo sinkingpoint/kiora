@@ -155,7 +155,7 @@ func TestConfigAckFilter(t *testing.T) {
 			cfg, err := config.LoadConfigFile(fileName)
 			require.NoError(t, err)
 
-			err = cfg.AlertAcknowledgementIsValid(context.TODO(), tt.ack)
+			err = cfg.ValidateData(context.TODO(), tt.ack)
 			if tt.expectError == nil && err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
