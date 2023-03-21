@@ -11,10 +11,10 @@ As of when I wrote this, these are some of the notable features implemented in K
  - Alert silencing
  - Alert acknowledging
  - Clustering/HA, with Hashicorp Serf
+ - Silence/Ack data validation
 
 Here's what I want to work on:
 
- - Silence/Ack data validation
  - Alert Statistics
  - Multi-Tenancy and Rate limiting
  - Alert Histories
@@ -39,6 +39,14 @@ Flags:
 ## Configuration
 
 All Kiora configurations are also valid [Graphviz Dot](https://graphviz.org/doc/info/lang.html) files, allowing you to define flows for alerts, silences, and any other model as it passes through the system. See the examples/ folder for more concrete examples.
+Alerts
+## Pseudo-Nodes
+
+Kiora works with the concept of "pseudo nodes". These are nodes in the graph that act as either sources or sinks of data. We currently have three pseudo-nodes:
+
+1. `alerts` - alerts that come into the system flow out of the `alerts` pseudo-node, following the graph and notifying any notifiers that they hit.
+2. `silences` - silences that come into the system are only accepted if they have a valid path _into_ the `silences` psuedo-node. See examples/silence_validation.dot for a more concrete example of this.
+3. `acks` - similar to silences, alert acknowledgements that come into the system are only accepted if the have a valid path into the `acks` pseudo-node.
 
 ### Starting Point
 
@@ -63,7 +71,7 @@ digraph config {
 
 This defines a notifier "console", that writes alerts to stdout. We then define a "link" from the alerts pseudo-node, to the console notifier. All alerts start at the "alerts" node, and make their way through the graph, notifying any notifiers as they go.
 
-### Filtering
+### Routing
 
 Sometime, you want to conditionally send alerts to places. You can do that with "filters" on the edges of your graph. For example, we could only send alerts that have a `destination` label containing "console" to the console notifier:
 
@@ -73,3 +81,15 @@ digraph config {
     alerts -> console [type="regex" field="destination" regex="console"];
 }
 ```
+
+## Data Validation
+
+In order to enforce business rules on silences / alert acknowledgements, you can provide filters on links into the relevant pseudo-nodes. For example, to enforce that all acknowledgements contain an email in the creator field:
+
+```
+digraph config {
+    test_email -> acks [type="regex" field="creator" regex=".+@example.com"]; // Check for an @example.com email
+}
+```
+
+Note how this flow works - acknowledgments start at the leaf nodes of the tree, and work their way through the filters. If there's a path into the `acks` node for which the acknowledgement passes all the filters, then the acknowledgement is accepted, otherwise it is rejected.
