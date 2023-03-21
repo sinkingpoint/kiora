@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -100,6 +101,12 @@ func (s *Silence) Field(name string) (any, error) {
 		return s.StartTime, nil
 	case "endsAt":
 		return s.EndTime, nil
+	case "duration":
+		if s.EndTime.IsZero() {
+			return time.Duration(math.MaxInt64), nil
+		}
+
+		return s.EndTime.Sub(s.StartTime), nil
 	}
 
 	return "", fmt.Errorf("silence %q doesn't exist", name)
