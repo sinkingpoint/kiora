@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/awalterschulze/gographviz"
+	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -59,19 +60,22 @@ func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) [
 }
 
 // AlertAcknowledgementIsValid returns true if we can find a path to the acks node from the roots of the graph.
-func (c *ConfigFile) AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) bool {
+func (c *ConfigFile) AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) error {
 	roots := calculateRootsFrom(c, ACK_LEAF) // TODO(cdouch): memoize this.
 	if len(roots) == 0 {
-		return true
+		return nil
 	}
 
+	var allErrs error
 	for root := range roots {
-		if searchForNode(ctx, c, root, ACK_LEAF, ack) {
-			return true
+		if err := searchForNode(ctx, c, root, ACK_LEAF, ack); err == nil {
+			return nil
+		} else {
+			allErrs = multierror.Append(allErrs, err)
 		}
 	}
 
-	return false
+	return allErrs
 }
 
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.

@@ -11,6 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func writeConfigFile(t *testing.T, config string) string {
+	t.Helper()
+	file, err := os.CreateTemp("", "kiora_test")
+	require.NoError(t, err)
+	_, err = file.Write([]byte(config))
+	require.NoError(t, err)
+	file.Close()
+	return file.Name()
+}
+
 func TestConfigLoad(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -37,14 +47,8 @@ func TestConfigLoad(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			file, err := os.CreateTemp("", "kiora_test")
-			require.NoError(t, err)
-			_, err = file.Write([]byte(tt.config))
-			require.NoError(t, err)
-			file.Close()
-
-			require.NoError(t, err)
-			_, err = config.LoadConfigFile(file.Name())
+			fileName := writeConfigFile(t, tt.config)
+			_, err := config.LoadConfigFile(fileName)
 			if tt.expectSuccess {
 				assert.NoError(t, err)
 			} else {
@@ -56,58 +60,60 @@ func TestConfigLoad(t *testing.T) {
 
 func TestConfigAckFilter(t *testing.T) {
 	tests := []struct {
-		name          string
-		config        string
-		alert         *model.Alert
-		ack           *model.AlertAcknowledgement
-		expectSuccess bool
+		name        string
+		config      string
+		ack         *model.AlertAcknowledgement
+		expectError []string
 	}{
 		{
 			name: "noop config",
 			config: `digraph Config {
 			}`,
-			alert:         &model.Alert{},
-			ack:           &model.AlertAcknowledgement{},
-			expectSuccess: true,
+			ack:         &model.AlertAcknowledgement{},
+			expectError: nil,
 		},
 		{
 			name: "bad email",
 			config: `digraph Config {
 				email_filter -> acks [type="regex" field="from" regex=".*@example.com"];
 			}`,
-			alert: &model.Alert{},
 			ack: &model.AlertAcknowledgement{
 				By: "colin@notanemail",
 			},
-			expectSuccess: false,
+			expectError: []string{
+				"field from doesn't match",
+			},
 		},
 		{
 			name: "good email",
 			config: `digraph Config {
 				email_filter -> acks [type="regex" field="from" regex=".*@example.com"];
 			}`,
-			alert: &model.Alert{},
 			ack: &model.AlertAcknowledgement{
 				By: "colin@example.com",
 			},
-			expectSuccess: true,
+			expectError: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			file, err := os.CreateTemp("", "kiora_test")
-			require.NoError(t, err)
-			_, err = file.Write([]byte(tt.config))
-			require.NoError(t, err)
-			file.Close()
-
-			require.NoError(t, err)
-			cfg, err := config.LoadConfigFile(file.Name())
+			fileName := writeConfigFile(t, tt.config)
+			cfg, err := config.LoadConfigFile(fileName)
 			require.NoError(t, err)
 
-			acceptable := cfg.AlertAcknowledgementIsValid(context.TODO(), tt.ack)
-			assert.Equal(t, tt.expectSuccess, acceptable)
+			err = cfg.AlertAcknowledgementIsValid(context.TODO(), tt.ack)
+			if tt.expectError == nil && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.expectError != nil && err == nil {
+				t.Fatal("expected error, got none")
+			}
+
+			for _, s := range tt.expectError {
+				assert.Contains(t, err.Error(), s, "expected error to contain %q", s)
+			}
 		})
 	}
 }

@@ -17,6 +17,10 @@ func NewNopFilter(attrs map[string]string) (config.Filter, error) {
 	return &NopFilter{}, nil
 }
 
+func (n *NopFilter) Describe() string {
+	panic("BUG: Describe() called on NopFilter which can never reject a model.")
+}
+
 func (n *NopFilter) Type() string {
 	return "nop"
 }

@@ -10,6 +10,9 @@ type Filter interface {
 	Type() string
 
 	Filter(ctx context.Context, f Fielder) bool
+
+	// Describe returns a human-readable description of the filter that can be displayed when it rejects a model.
+	Describe() string
 }
 
 // Fielder is a thing that has fields that can be filtered.

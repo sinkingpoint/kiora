@@ -44,6 +44,10 @@ func (r *RegexFilter) Type() string {
 	return "regex"
 }
 
+func (r *RegexFilter) Describe() string {
+	return "field " + r.Label + " doesn't match " + r.Regex.String()
+}
+
 func (r *RegexFilter) Filter(ctx context.Context, f config.Fielder) bool {
 	label, err := f.Field(r.Label)
 	if err != nil {
