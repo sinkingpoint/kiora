@@ -164,7 +164,7 @@ func (a *Alert) Acknowledge(ack *AlertAcknowledgement) error {
 	return nil
 }
 
-func (a *Alert) Field(name string) (string, error) {
+func (a *Alert) Field(name string) (any, error) {
 	if val, ok := a.Labels[name]; ok {
 		return val, nil
 	}

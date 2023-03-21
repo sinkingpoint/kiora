@@ -17,7 +17,7 @@ type Filter interface {
 
 // Fielder is a thing that has fields that can be filtered.
 type Fielder interface {
-	Field(name string) (string, error)
+	Field(name string) (any, error)
 }
 
 // FilterConstructor is a function that can construct a filter from a set of attributes.

@@ -8,7 +8,7 @@ type AlertAcknowledgement struct {
 	Comment string `json:"comment"`
 }
 
-func (a *AlertAcknowledgement) Field(name string) (string, error) {
+func (a *AlertAcknowledgement) Field(name string) (any, error) {
 	switch name {
 	case "creator":
 		return a.Creator, nil

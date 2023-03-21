@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 )
 
@@ -49,10 +50,15 @@ func (r *RegexFilter) Describe() string {
 }
 
 func (r *RegexFilter) Filter(ctx context.Context, f config.Fielder) bool {
-	label, err := f.Field(r.Label)
+	value, err := f.Field(r.Label)
 	if err != nil {
 		return false
 	}
 
-	return r.Regex.MatchString(label)
+	if label, ok := value.(string); ok {
+		return r.Regex.MatchString(label)
+	}
+
+	log.Warn().Str("field", r.Label).Interface("value", value).Msg("regex filter: field is not a string")
+	return false
 }
