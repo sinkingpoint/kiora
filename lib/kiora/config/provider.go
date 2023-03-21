@@ -17,4 +17,8 @@ type Config interface {
 	// then the notifier should do nothing, as opposed to an empty array that represents that the alert
 	// should be processed as if it should be considered to be properly notified.
 	GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []Notifier
+
+	// AlertAcknowledgementIsValid returns an error that can be displayed to the user if the
+	// acknowledgement is invalid according to whatever rules the config has.
+	AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) error
 }

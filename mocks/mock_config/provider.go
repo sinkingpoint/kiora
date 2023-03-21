@@ -78,6 +78,20 @@ func (m *MockConfig) EXPECT() *MockConfigMockRecorder {
 	return m.recorder
 }
 
+// AlertAcknowledgementIsValid mocks base method.
+func (m *MockConfig) AlertAcknowledgementIsValid(ctx context.Context, ack *model.AlertAcknowledgement) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AlertAcknowledgementIsValid", ctx, ack)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AlertAcknowledgementIsValid indicates an expected call of AlertAcknowledgementIsValid.
+func (mr *MockConfigMockRecorder) AlertAcknowledgementIsValid(ctx, ack interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AlertAcknowledgementIsValid", reflect.TypeOf((*MockConfig)(nil).AlertAcknowledgementIsValid), ctx, ack)
+}
+
 // GetNotifiersForAlert mocks base method.
 func (m *MockConfig) GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []config.Notifier {
 	m.ctrl.T.Helper()

@@ -10,14 +10,14 @@ import (
 
 // ClusterNotifier binds a notifier and a clusterer, returning no notifiers if this node isn't responsible for the alert.
 type ClusterNotifier struct {
+	config.Config
 	clusterer clustering.Clusterer
-	conf      config.Config
 }
 
-func NewClusterNotifier(clusterer clustering.Clusterer, notifier config.Config) *ClusterNotifier {
+func NewClusterNotifier(clusterer clustering.Clusterer, config config.Config) *ClusterNotifier {
 	return &ClusterNotifier{
+		Config:    config,
 		clusterer: clusterer,
-		conf:      notifier,
 	}
 }
 
@@ -26,5 +26,5 @@ func (c *ClusterNotifier) GetNotifiersForAlert(ctx context.Context, alert *model
 		return nil
 	}
 
-	return c.conf.GetNotifiersForAlert(ctx, alert)
+	return c.GetNotifiersForAlert(ctx, alert)
 }
