@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
-	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
+	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 
@@ -22,11 +22,10 @@ import (
 const CONTENT_TYPE_JSON = "application/json"
 const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
 
-func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcaster, clusterer clustering.Clusterer) {
+func Register(router *mux.Router, bus services.Bus, clusterer clustering.Clusterer) {
 	api := apiv1{
-		db:          db,
-		broadcaster: broadcaster,
-		clusterer:   clusterer,
+		bus:       bus,
+		clusterer: clusterer,
 	}
 
 	subRouter := router.PathPrefix("/api/v1").Subrouter()
@@ -40,9 +39,8 @@ func Register(router *mux.Router, db kioradb.DB, broadcaster clustering.Broadcas
 }
 
 type apiv1 struct {
-	db          kioradb.DB
-	broadcaster clustering.Broadcaster
-	clusterer   clustering.Clusterer
+	bus       services.Bus
+	clusterer clustering.Clusterer
 }
 
 // postAlerts handles the POST /alerts request, decoding a list of alerts
@@ -72,7 +70,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.broadcaster.BroadcastAlerts(r.Context(), alerts...); err != nil {
+	if err := a.bus.Broadcaster().BroadcastAlerts(r.Context(), alerts...); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process alerts")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,7 +85,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	alerts := a.db.QueryAlerts(r.Context(), query.MatchAll())
+	alerts := a.bus.DB().QueryAlerts(r.Context(), query.MatchAll())
 
 	bytes, err := json.Marshal(alerts)
 	if err != nil {
@@ -143,7 +141,7 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO - validate this data.
-	if err := a.broadcaster.BroadcastAlertAcknowledgement(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
+	if err := a.bus.Broadcaster().BroadcastAlertAcknowledgement(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to broadcast alert acknowledgment")) // nolint:errcheck
 		log.Err(err).Msg("failed to broadcast alert acknowledgment")
@@ -163,7 +161,7 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.broadcaster.BroadcastSilences(r.Context(), silence); err != nil {
+	if err := a.bus.Broadcaster().BroadcastSilences(r.Context(), silence); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to broadcast silence")) // nolint:errcheck
 		log.Err(err).Msg("failed to broadcast silence")
@@ -177,7 +175,7 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
-	silences := a.db.QuerySilences(r.Context(), query.MatchAll())
+	silences := a.bus.DB().QuerySilences(r.Context(), query.MatchAll())
 
 	responseBytes, _ := json.Marshal(silences) // TODO(cdouch): Error checking.
 

@@ -58,7 +58,7 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
 	}
 
-	bus := NewKioraBus(db, broadcaster, conf.ServiceConfig)
+	bus := services.NewKioraBus(db, broadcaster, conf.ServiceConfig)
 
 	services := services.NewBackgroundServices()
 	services.RegisterService(broadcaster)
@@ -116,7 +116,7 @@ func (k *KioraServer) ListenAndServe() error {
 }
 
 func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
-	apiv1.Register(r, k.bus.DB(), k.bus.Broadcaster(), k.clusterer)
+	apiv1.Register(r, k.bus, k.clusterer)
 
 	runtime.SetMutexProfileFraction(5)
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
