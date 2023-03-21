@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -87,4 +88,19 @@ func (s *Silence) Matches(l Labels) bool {
 	}
 
 	return true
+}
+
+func (s *Silence) Field(name string) (string, error) {
+	switch name {
+	case "creator":
+		return s.Creator, nil
+	case "comment":
+		return s.Comment, nil
+	case "startsAt":
+		return s.StartTime.Format(time.RFC3339), nil
+	case "endsAt":
+		return s.EndTime.Format(time.RFC3339), nil
+	}
+
+	return "", fmt.Errorf("silence %q doesn't exist", name)
 }

@@ -13,7 +13,7 @@ import (
 )
 
 const ALERT_ROOT = "alerts"
-const SILENCES_ROOT = "silences"
+const SILENCES_LEAF = "silences"
 const ACK_LEAF = "acks"
 
 var _ = config.Config(&ConfigFile{})
@@ -81,6 +81,8 @@ func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) erro
 	switch data.(type) {
 	case *model.AlertAcknowledgement:
 		return c.validateData(ctx, ACK_LEAF, data)
+	case *model.Silence:
+		return c.validateData(ctx, SILENCES_LEAF, data)
 	default:
 		panic("BUG: unhandled data validation")
 	}
@@ -211,8 +213,8 @@ func (c *ConfigFile) validateConfHasValidLeaves(leaves HashSet) error {
 
 // Validate returns nil if the config is valid, or an error to be displayed to the user if not.
 func (c *ConfigFile) Validate() error {
-	roots := toHashSet([]string{ALERT_ROOT, SILENCES_ROOT})
-	leaves := toHashSet([]string{ACK_LEAF})
+	roots := toHashSet([]string{ALERT_ROOT})
+	leaves := toHashSet([]string{ACK_LEAF, SILENCES_LEAF})
 
 	if err := c.validateConfIsAcyclic(roots); err != nil {
 		return err

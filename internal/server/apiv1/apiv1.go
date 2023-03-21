@@ -166,6 +166,10 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := a.bus.Config().ValidateData(r.Context(), &silence); err != nil {
+
+	}
+
 	if err := a.bus.Broadcaster().BroadcastSilences(r.Context(), silence); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to broadcast silence")) // nolint:errcheck
