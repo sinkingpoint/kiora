@@ -36,7 +36,7 @@ func main() {
 	serverConfig.HTTPListenAddress = CLI.HTTPListenAddress
 	serverConfig.ClusterListenAddress = CLI.ClusterListenAddress
 	serverConfig.BootstrapPeers = CLI.BootstrapPeers
-	serverConfig.NotifierConfig = config
+	serverConfig.ServiceConfig = config
 
 	tracingConfig := tracing.DefaultTracingConfiguration()
 	tracingConfig.ExporterType = "jaeger" // TODO(cdouch): Make this a CLI arg

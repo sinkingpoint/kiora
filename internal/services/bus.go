@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/clustering"
+	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
@@ -11,4 +12,5 @@ type Bus interface {
 	DB() kioradb.DB
 	Broadcaster() clustering.Broadcaster
 	Logger(serviceName string) *zerolog.Logger
+	Config() config.Config
 }

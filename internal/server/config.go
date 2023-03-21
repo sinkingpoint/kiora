@@ -21,7 +21,7 @@ type serverConfig struct {
 
 	ClusterListenAddress string
 	BootstrapPeers       []string
-	NotifierConfig       config.Config
+	ServiceConfig        config.Config
 
 	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
 	ReadTimeout time.Duration

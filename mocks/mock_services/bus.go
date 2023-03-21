@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	zerolog "github.com/rs/zerolog"
 	clustering "github.com/sinkingpoint/kiora/internal/clustering"
+	config "github.com/sinkingpoint/kiora/lib/kiora/config"
 	kioradb "github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 )
 
@@ -48,6 +49,20 @@ func (m *MockBus) Broadcaster() clustering.Broadcaster {
 func (mr *MockBusMockRecorder) Broadcaster() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcaster", reflect.TypeOf((*MockBus)(nil).Broadcaster))
+}
+
+// Config mocks base method.
+func (m *MockBus) Config() config.Config {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Config")
+	ret0, _ := ret[0].(config.Config)
+	return ret0
+}
+
+// Config indicates an expected call of Config.
+func (mr *MockBusMockRecorder) Config() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockBus)(nil).Config))
 }
 
 // DB mocks base method.
