@@ -130,3 +130,83 @@ func TestAcknowledgementGetsRegistered(t *testing.T) {
 	assert.Equal(t, "test_comment", alerts[0].Acknowledgement.Comment)
 	assert.Equal(t, model.AlertStatusAcked, alerts[0].Status)
 }
+
+// Test that we can add a silence, and that it prevents the alert from being sent.
+func TestSilencesSilence(t *testing.T) {
+	initT(t)
+
+	silencedAlert := dummyAlert()
+	nonSilencedAlert := dummyAlert()
+	silence := dummySilence()
+
+	silencedAlert.Labels["silenced"] = "true"
+	nonSilencedAlert.Labels["silenced"] = "false"
+	silence.Matchers = append(silence.Matchers, model.Matcher{
+		Label: "silenced",
+		Value: "true",
+	})
+
+	nodes := StartKioraCluster(t, 3)
+
+	// Send a silence.
+	nodes[0].SendSilence(t, context.TODO(), silence)
+	time.Sleep(2 * time.Second)
+
+	// Send in an alert that shouldn't be silenced.
+	nodes[0].SendAlert(t, context.TODO(), nonSilencedAlert)
+	// Send an alert that should be silenced.
+	nodes[0].SendAlert(t, context.TODO(), silencedAlert)
+	time.Sleep(2 * time.Second)
+
+	// Make sure the alert exists.
+	alerts := nodes[0].GetAlerts(t, context.TODO())
+	require.Len(t, alerts, 2)
+
+	foundSilenced := 0
+	for _, alert := range alerts {
+		if alert.Status == model.AlertStatusSilenced {
+			foundSilenced += 1
+			assert.Equal(t, "true", alert.Labels["silenced"])
+		} else {
+			assert.Equal(t, "false", alert.Labels["silenced"])
+		}
+	}
+
+	assert.Equal(t, 1, foundSilenced, "Expected one silenced alert")
+
+	foundAlerted := false
+	// Assert that no node sent the alert for the silenced alert.
+	for _, node := range nodes {
+		assert.NotContains(t, node.Stdout(), `"silenced":"true"`)
+
+		if strings.Contains(node.Stdout(), `"silenced":"false"`) {
+			if foundAlerted {
+				t.Fatal("Expected only one node to send the alert for the non-silenced alert")
+			}
+			foundAlerted = true
+		}
+	}
+
+	// Assert that one node sent the alert for the silenced alert.
+	assert.True(t, foundAlerted, "Expected one node to send the alert for the non-silenced alert")
+}
+
+// Test that if we send an alert, and then silence it, the alert status gets updated.
+func TestSilencesSilenceAfterAlert(t *testing.T) {
+	initT(t)
+	alert := dummyAlert()
+	silence := dummySilence()
+
+	nodes := StartKioraCluster(t, 3)
+	nodes[0].SendAlert(t, context.TODO(), alert)
+	time.Sleep(2 * time.Second)
+
+	// Send a silence.
+	nodes[0].SendSilence(t, context.TODO(), silence)
+	time.Sleep(2 * time.Second)
+
+	// Make sure the alert exists and is silenced.
+	alerts := nodes[0].GetAlerts(t, context.TODO())
+	require.Len(t, alerts, 1)
+	assert.Equal(t, model.AlertStatusSilenced, alerts[0].Status)
+}

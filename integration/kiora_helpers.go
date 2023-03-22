@@ -218,6 +218,21 @@ func (k *KioraInstance) SendAlertAcknowledgement(t *testing.T, ctx context.Conte
 	require.Equal(t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
 }
 
+func (k *KioraInstance) SendSilence(t *testing.T, ctx context.Context, silence model.Silence) {
+	requestURL := k.GetHTTPURL("/api/v1/silences")
+
+	silenceBytes, err := json.Marshal(silence)
+	require.NoError(t, err)
+
+	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(silenceBytes))
+	require.NoError(t, err)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	require.Equal(t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
+}
+
 func (k *KioraInstance) GetAlerts(t *testing.T, ctx context.Context) []model.Alert {
 	requestURL := k.GetHTTPURL("/api/v1/alerts")
 	resp, err := http.Get(requestURL)
