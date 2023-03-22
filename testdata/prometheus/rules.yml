@@ -1,0 +1,9 @@
+groups:
+- name: test
+  rules:
+  - alert: TestAlert
+    expr: up == 0
+    labels:
+      severity: page
+    annotations:
+      summary: High request latency

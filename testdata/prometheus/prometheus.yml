@@ -1,0 +1,16 @@
+global:
+  evaluation_interval: 5s
+rule_files:
+  - /etc/prometheus/rules.yml
+alerting:
+  alertmanagers:
+    - path_prefix: prom-compat
+      static_configs:
+        - targets:
+          - 0.0.0.0:4278
+scrape_configs:
+  - job_name: test
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+        - localhost:8123
