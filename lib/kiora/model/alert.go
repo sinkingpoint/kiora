@@ -124,34 +124,34 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if rawAlert.StartTime.IsZero() {
-		a.StartTime = stubs.Time.Now()
-	} else {
-		a.StartTime = rawAlert.StartTime
-	}
-
-	if rawAlert.TimeOutDeadline.IsZero() {
-		a.TimeOutDeadline = a.StartTime.Add(DEFAULT_TIMEOUT_INTERVAL)
-	} else {
-		a.TimeOutDeadline = rawAlert.TimeOutDeadline
-	}
-
-	if rawAlert.Status == AlertStatusResolved && rawAlert.EndTime.IsZero() {
-		a.EndTime = stubs.Time.Now()
-	} else {
-		a.EndTime = rawAlert.EndTime
-	}
-
 	a.Labels = rawAlert.Labels
 	a.Annotations = rawAlert.Annotations
 	a.Status = rawAlert.Status
+	a.StartTime = rawAlert.StartTime
+	a.EndTime = rawAlert.EndTime
 	a.Acknowledgement = rawAlert.Acknowledgement
+	a.TimeOutDeadline = rawAlert.TimeOutDeadline
+
+	a.Materialise()
+	return a.validate()
+}
+
+func (a *Alert) Materialise() {
+	if a.StartTime.IsZero() {
+		a.StartTime = stubs.Time.Now()
+	}
+
+	if a.Status == AlertStatusResolved && a.EndTime.IsZero() {
+		a.EndTime = stubs.Time.Now()
+	}
+
+	if a.TimeOutDeadline.IsZero() {
+		a.TimeOutDeadline = a.StartTime.Add(DEFAULT_TIMEOUT_INTERVAL)
+	}
 
 	// AlertIDs are a bit arbitrary, but having them as a hash of the labels affords a few nice advantages.
 	// Namely, it means that any given alert has a consistant ID across all Kiora instances, and across time.
 	a.ID = alertID(a.Labels)
-
-	return a.validate()
 }
 
 // Acknowledge marks this alert as Acknowledged with the given metadata.
