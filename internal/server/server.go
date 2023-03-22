@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf"
-	"github.com/sinkingpoint/kiora/internal/kiora/pipeline"
+	"github.com/sinkingpoint/kiora/internal/pipeline"
 	"github.com/sinkingpoint/kiora/internal/server/apiv1"
 	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
