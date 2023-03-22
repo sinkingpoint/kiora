@@ -132,11 +132,11 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Acknowledgement = rawAlert.Acknowledgement
 	a.TimeOutDeadline = rawAlert.TimeOutDeadline
 
-	a.Materialise()
-	return a.validate()
+	return a.Materialise()
 }
 
-func (a *Alert) Materialise() {
+// Materialise fills in any missing fields in the alert with sensible defaults.
+func (a *Alert) Materialise() error {
 	if a.StartTime.IsZero() {
 		a.StartTime = stubs.Time.Now()
 	}
@@ -152,6 +152,7 @@ func (a *Alert) Materialise() {
 	// AlertIDs are a bit arbitrary, but having them as a hash of the labels affords a few nice advantages.
 	// Namely, it means that any given alert has a consistant ID across all Kiora instances, and across time.
 	a.ID = alertID(a.Labels)
+	return a.validate()
 }
 
 // Acknowledge marks this alert as Acknowledged with the given metadata.

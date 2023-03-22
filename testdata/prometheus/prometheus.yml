@@ -4,7 +4,7 @@ rule_files:
   - /etc/prometheus/rules.yml
 alerting:
   alertmanagers:
-    - path_prefix: prom-compat
+    - path_prefix: api/prom-compat
       static_configs:
         - targets:
           - 0.0.0.0:4278

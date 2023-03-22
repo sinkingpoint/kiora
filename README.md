@@ -20,6 +20,19 @@ Here's what I want to work on:
  - Alert Histories
  - A UI
 
+## Prometheus Configuration
+
+Kiora provides a compatibility shim with the Prometheus Alertmanager API. Simply configure your Kiora instance as another Alertmanager, with the "api/prom-compat" path prefix:
+
+```
+alerting:
+  alertmanagers:
+    - path_prefix: api/prom-compat
+      static_configs:
+        - targets:
+          - 0.0.0.0:4278
+```
+
 ## Usage
 
 ```
