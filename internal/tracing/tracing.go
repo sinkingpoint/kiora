@@ -29,7 +29,7 @@ type TracingConfiguration struct {
 func DefaultTracingConfiguration() TracingConfiguration {
 	return TracingConfiguration{
 		ServiceName:  "kiora",
-		ExporterType: "console",
+		ExporterType: "noop",
 	}
 }
 

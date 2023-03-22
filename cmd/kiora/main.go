@@ -14,8 +14,9 @@ import (
 )
 
 var CLI struct {
-	HTTPListenAddress string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
-	ConfigFile        string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
+	tracing.TracingConfiguration ` prefix:"tracing."`
+	HTTPListenAddress            string `name:"web.listen-url" help:"the address to listen on" default:"localhost:4278"`
+	ConfigFile                   string `name:"config.file" short:"c" help:"the config file to load config from" default:"./kiora.dot"`
 
 	NodeName             string   `name:"cluster.node-name" help:"the name to join the cluster with"`
 	ClusterListenAddress string   `name:"cluster.listen-url" help:"the address to run cluster activities on" default:"localhost:4279"`
@@ -23,6 +24,7 @@ var CLI struct {
 }
 
 func main() {
+	CLI.TracingConfiguration = tracing.DefaultTracingConfiguration()
 	kong.Parse(&CLI, kong.Name("kiora"), kong.Description("An experimental Alertmanager"), kong.UsageOnError(), kong.ConfigureHelp(kong.HelpOptions{
 		Compact: true,
 	}))
@@ -38,9 +40,7 @@ func main() {
 	serverConfig.BootstrapPeers = CLI.BootstrapPeers
 	serverConfig.ServiceConfig = config
 
-	tracingConfig := tracing.DefaultTracingConfiguration()
-	tracingConfig.ExporterType = "jaeger" // TODO(cdouch): Make this a CLI arg
-	tp, err := tracing.InitTracing(tracingConfig)
+	tp, err := tracing.InitTracing(CLI.TracingConfiguration)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to start tracing")
 	}
