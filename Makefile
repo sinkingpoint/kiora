@@ -1,4 +1,4 @@
-.PHONY: test
+.PHONY: test-backend
 test:
 	mkdir -p artifacts/
 	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
@@ -11,13 +11,27 @@ integration:
 coverage: test
 	go tool cover -html=artifacts/cover.out
 
-.PHONY: lint
+.PHONY: lint-backend
 lint:
 	golangci-lint run ./...
 
-.PHONY: fmt
+.PHONY: fmt-backend
 fmt:
 	go fmt ./...
+
+.PHONY: fmt-frontend
+fmt-frontend:
+	cd frontend && npm run prettier --write ./src
+
+.PHONY: lint-frontend
+lint-frontend:
+	cd frontend && npm run lint
+
+.PHONY: lint
+lint: lint-backend lint-frontend
+
+.PHONY: fmt
+fmt: fmt-backend fmt-frontend
 
 .PHONY: ci
 ci: generate fmt lint test
