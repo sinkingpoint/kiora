@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sinkingpoint/kiora/internal/server/api"
 	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
@@ -82,7 +83,7 @@ func TestPostAlerts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &mockDB{}
-			api := apiv1{services.NewKioraBus(db, db, nil), nil}
+			api := apiv1{api.NewAPIImpl(services.NewKioraBus(db, db, nil), nil)}
 
 			request, err := http.NewRequest(http.MethodPost, "localhost/api/v1/alerts", bytes.NewReader(tt.body))
 			require.NoError(t, err)

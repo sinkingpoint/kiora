@@ -9,9 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
-	"github.com/sinkingpoint/kiora/internal/clustering"
-	"github.com/sinkingpoint/kiora/internal/services"
-	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
+	"github.com/sinkingpoint/kiora/internal/server/api"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -22,25 +20,23 @@ import (
 const CONTENT_TYPE_JSON = "application/json"
 const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
 
-func Register(router *mux.Router, bus services.Bus, clusterer clustering.Clusterer) {
-	api := apiv1{
-		bus:       bus,
-		clusterer: clusterer,
+func Register(router *mux.Router, api api.API) {
+	apiv1 := apiv1{
+		api: api,
 	}
 
 	subRouter := router.PathPrefix("/api/v1").Subrouter()
 
-	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postAlerts), "POST api/v1/alerts"))
-	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getAlerts), "GET /api/v1/alerts"))
-	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.acknowledgeAlert), "POST /api/v1/alerts/ack"))
-	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getClusterStatus), "GET /api/v1/cluster/status"))
-	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(api.postSilences), "POST /api/v1/silences"))
-	subRouter.Path("/silences").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(api.getSilences), "GET /api/v1/silences"))
+	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.postAlerts), "POST api/v1/alerts"))
+	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getAlerts), "GET /api/v1/alerts"))
+	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.acknowledgeAlert), "POST /api/v1/alerts/ack"))
+	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getClusterStatus), "GET /api/v1/cluster/status"))
+	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.postSilences), "POST /api/v1/silences"))
+	subRouter.Path("/silences").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getSilences), "GET /api/v1/silences"))
 }
 
 type apiv1 struct {
-	bus       services.Bus
-	clusterer clustering.Clusterer
+	api api.API
 }
 
 // postAlerts handles the POST /alerts request, decoding a list of alerts
@@ -70,8 +66,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.bus.Broadcaster().BroadcastAlerts(r.Context(), alerts...); err != nil {
-		span.RecordError(err)
+	if err := a.api.PostAlerts(r.Context(), alerts); err != nil {
 		span.SetStatus(codes.Error, "failed to process alerts")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,13 +80,16 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	alerts := a.bus.DB().QueryAlerts(r.Context(), query.MatchAll())
+	alerts, err := a.api.GetAlerts(r.Context())
+	if err != nil {
+		span.RecordError(err)
+		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
+		return
+	}
 
 	bytes, err := json.Marshal(alerts)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to marshal alerts")
-		log.Err(err).Msg("failed to get alerts")
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
 		return
 	}
@@ -104,16 +102,20 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	if a.clusterer == nil {
-		http.Error(w, "no clusterer configured", http.StatusNotFound)
+	clusterNodes, err := a.api.GetClusterStatus(r.Context())
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	clusterNodes := a.clusterer.Nodes()
+	if clusterNodes == nil {
+		http.Error(w, "no clusterer configured", http.StatusNotFound)
+	}
+
 	bytes, err := json.Marshal(clusterNodes)
 
 	if err != nil {
-		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to marshal cluster nodes")
 		log.Err(err).Msg("failed to marshal cluster nodes")
 		http.Error(w, "failed to marshal cluster nodes", http.StatusInternalServerError)
@@ -146,15 +148,9 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.bus.Config().ValidateData(r.Context(), &ack.AlertAcknowledgement); err != nil {
+	if err := a.api.AckAlert(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error())) // nolint:errcheck
-		return
-	}
-
-	if err := a.bus.Broadcaster().BroadcastAlertAcknowledgement(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to broadcast alert acknowledgment")) // nolint:errcheck
+		w.Write([]byte("failed to handle alert acknowledgement")) // nolint:errcheck
 		log.Err(err).Msg("failed to broadcast alert acknowledgment")
 		return
 	}
@@ -172,16 +168,10 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.bus.Config().ValidateData(r.Context(), &silence); err != nil {
+	if err := a.api.PostSilence(r.Context(), silence); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error())) // nolint:errcheck
-		return
-	}
-
-	if err := a.bus.Broadcaster().BroadcastSilences(r.Context(), silence); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to broadcast silence")) // nolint:errcheck
-		log.Err(err).Msg("failed to broadcast silence")
+		w.Write([]byte("failed to handle alert acknowledgement")) // nolint:errcheck
+		log.Err(err).Msg("failed to broadcast alert acknowledgment")
 		return
 	}
 
@@ -192,7 +182,13 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
-	silences := a.bus.DB().QuerySilences(r.Context(), query.MatchAll())
+	silences, err := a.api.GetSilences(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("failed to get silences")) // nolint:errcheck
+		log.Err(err).Msg("failed to get silences")
+		return
+	}
 
 	responseBytes, _ := json.Marshal(silences) // TODO(cdouch): Error checking.
 
