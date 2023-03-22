@@ -140,6 +140,12 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if ack.AlertID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("alertID is required")) // nolint:errcheck
+		return
+	}
+
 	if err := a.bus.Config().ValidateData(r.Context(), &ack.AlertAcknowledgement); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error())) // nolint:errcheck

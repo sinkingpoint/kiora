@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -92,4 +93,40 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 	assert.Equal(t, 1, found, "Expected only one notification")
 	assert.Equal(t, 1, totalFound, "Expected only one notification")
 	assert.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
+}
+
+// Tests that we can fire alert, acknowledge it, and get the acknowledgement back.
+func TestAcknowledgementGetsRegistered(t *testing.T) {
+	initT(t)
+
+	// Send an alert.
+	alert := dummyAlert()
+	nodes := StartKioraCluster(t, 3)
+	nodes[0].SendAlert(t, context.TODO(), alert)
+
+	time.Sleep(2 * time.Second)
+
+	// Make sure the alert exists.
+	alerts := nodes[0].GetAlerts(t, context.TODO())
+	require.Len(t, alerts, 1)
+
+	// Send an acknowledgement for that alert.
+	nodes[0].SendAlertAcknowledgement(t, context.TODO(), ackRequest{
+		AlertAcknowledgement: model.AlertAcknowledgement{
+			Creator: "test_creator",
+			Comment: "test_comment",
+		},
+		AlertID: alerts[0].ID,
+	})
+
+	time.Sleep(2 * time.Second)
+
+	// Get the alerts again and make sure our acknowledgement is there.
+	alerts = nodes[0].GetAlerts(t, context.TODO())
+	require.Len(t, alerts, 1)
+
+	assert.NotNil(t, alerts[0].Acknowledgement)
+	assert.Equal(t, "test_creator", alerts[0].Acknowledgement.Creator)
+	assert.Equal(t, "test_comment", alerts[0].Acknowledgement.Comment)
+	assert.Equal(t, model.AlertStatusAcked, alerts[0].Status)
 }

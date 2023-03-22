@@ -114,7 +114,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 		StartTime       time.Time             `json:"startsAt"`
 		EndTime         time.Time             `json:"endsAt"`
 		TimeOutDeadline time.Time             `json:"timeOutDeadline,omitempty"`
-		Acknowledgement *AlertAcknowledgement `json:"acknowledgement,omitempty"`
+		Acknowledgement *AlertAcknowledgement `json:"acknowledgement"`
 	}{}
 
 	decoder := json.NewDecoder(bytes.NewReader(b))
@@ -145,6 +145,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	a.Labels = rawAlert.Labels
 	a.Annotations = rawAlert.Annotations
 	a.Status = rawAlert.Status
+	a.Acknowledgement = rawAlert.Acknowledgement
 
 	// AlertIDs are a bit arbitrary, but having them as a hash of the labels affords a few nice advantages.
 	// Namely, it means that any given alert has a consistant ID across all Kiora instances, and across time.

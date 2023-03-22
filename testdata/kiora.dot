@@ -1,7 +1,4 @@
 digraph config {
     console [type="stdout"];
     alerts -> console;
-
-    test_email -> test_comment [type="regex" field="creator" regex=".+@example.com"];
-    test_comment -> acks [type="regex" field="comment" regex=".+"];
 }

@@ -22,6 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO(cdouch): Move this somewhere in the lib so we don't have to redefine it here and in the API.
+type ackRequest struct {
+	model.AlertAcknowledgement
+	AlertID string `json:"alertID"`
+}
+
 // KioraInstance wraps an instance of Kiora started as a seperate process as a black box.
 type KioraInstance struct {
 	// The cluster name of this instance.
@@ -195,6 +201,36 @@ func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model
 	resp.Body.Close()
 
 	require.Equal(t, http.StatusAccepted, resp.StatusCode, "body: %s", string(body))
+}
+
+func (k *KioraInstance) SendAlertAcknowledgement(t *testing.T, ctx context.Context, ack ackRequest) {
+	requestURL := k.GetHTTPURL("/api/v1/alerts/ack")
+
+	ackBytes, err := json.Marshal(ack)
+	require.NoError(t, err)
+
+	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(ackBytes))
+	require.NoError(t, err)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	require.Equal(t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
+}
+
+func (k *KioraInstance) GetAlerts(t *testing.T, ctx context.Context) []model.Alert {
+	requestURL := k.GetHTTPURL("/api/v1/alerts")
+	resp, err := http.Get(requestURL)
+	require.NoError(t, err)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode, "body: %s", string(body))
+	alerts := []model.Alert{}
+	err = json.Unmarshal(body, &alerts)
+	require.NoError(t, err)
+	return alerts
 }
 
 // kioraInstanceName returns a 16 character long random string that will be used as the name of a KioraInstance.
