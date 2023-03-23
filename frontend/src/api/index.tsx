@@ -20,4 +20,4 @@ class APIV1Impl implements IAPI {
   }
 }
 
-export default new APIV1Impl("localhost:4278");
+export default new APIV1Impl("http://localhost:4278");
