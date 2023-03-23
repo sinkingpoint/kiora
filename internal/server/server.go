@@ -9,6 +9,7 @@ import (
 
 	_ "net/http/pprof"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -129,7 +130,7 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 		Addr:         k.HTTPListenAddress,
 		ReadTimeout:  k.ReadTimeout,
 		WriteTimeout: k.WriteTimeout,
-		Handler:      r,
+		Handler:      handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(r),
 	}
 
 	var err error
