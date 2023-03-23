@@ -1,6 +1,7 @@
 import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import api from "../../api";
+import Single from "./single";
 
 interface AlertViewState {
   alerts: Alert[];
@@ -21,26 +22,14 @@ interface SuccessViewProps {
 }
 
 const SuccessView = (props: SuccessViewProps) => {
-  return <>
-    {props.alerts.map((alert) => {
-        return (
-          <div>
-            <div>
-              {alert.id} {alert.labels["alertname"]}
-            </div>
-            <div>
-              {Object.keys(alert.labels).map((key) => {
-                return (
-                  <span>
-                    {key}: {alert.labels[key]}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+  return (
+    <>
+      {(props.alerts.length > 0 &&
+        props.alerts.map((alert) => {
+          return <Single alert={alert} />;
+        })) || <div>No alerts</div>}
     </>
+  );
 };
 
 const AlertView = () => {
