@@ -1,4 +1,4 @@
-import { h } from "preact";
+import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import api from "../../api";
 
@@ -21,9 +21,8 @@ interface SuccessViewProps {
 }
 
 const SuccessView = (props: SuccessViewProps) => {
-  return (
-    <div>
-      {props.alerts.map((alert) => {
+  return <>
+    {props.alerts.map((alert) => {
         return (
           <div>
             <div>
@@ -41,8 +40,7 @@ const SuccessView = (props: SuccessViewProps) => {
           </div>
         );
       })}
-    </div>
-  );
+    </>
 };
 
 const AlertView = () => {
@@ -76,16 +74,13 @@ const AlertView = () => {
     }
   }, [alerts]);
 
-  let view: JSX.Element;
   if (alerts.loading) {
-    view = <div>Loading...</div>;
+    return <div>Loading...</div>;
   } else if (alerts.error) {
-    view = <ErrorView error={alerts.error} />;
+    return <ErrorView error={alerts.error} />;
   } else {
-    view = <SuccessView alerts={alerts.alerts} />;
+    return <SuccessView alerts={alerts.alerts} />;
   }
-
-  return <div>{view}</div>;
 };
 
 export default AlertView;

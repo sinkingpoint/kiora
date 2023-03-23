@@ -2,3 +2,6 @@
 .vscode/
 /kiora
 /tuku
+/frontend/build
+/frontend/size-plugin.json
+/frontend/node_modules/.cache

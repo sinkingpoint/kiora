@@ -3,14 +3,6 @@ test:
 	mkdir -p artifacts/
 	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
 
-.PHONY: integration
-integration:
-	go test -timeout=1m -count=1 ./integration
-
-.PHONY: coverage
-coverage: test
-	go tool cover -html=artifacts/cover.out
-
 .PHONY: lint-backend
 lint:
 	golangci-lint run ./...
@@ -19,19 +11,27 @@ lint:
 fmt:
 	go fmt ./...
 
-.PHONY: fmt-frontend
-fmt-frontend:
-	cd frontend && npm run prettier --write ./src
-
 .PHONY: lint-frontend
 lint-frontend:
 	cd frontend && npm run lint
+
+.PHONY: fmt-frontend
+fmt-frontend:
+	cd frontend && npm run prettier --write ./src
 
 .PHONY: lint
 lint: lint-backend lint-frontend
 
 .PHONY: fmt
 fmt: fmt-backend fmt-frontend
+
+.PHONY: integration
+integration:
+	go test -timeout=1m -count=1 ./integration
+
+.PHONY: coverage
+coverage: test
+	go tool cover -html=artifacts/cover.out
 
 .PHONY: ci
 ci: generate fmt lint test
@@ -41,6 +41,7 @@ build: generate ci build-unchecked
 
 .PHONY: build-unchecked
 build-unchecked:
+	cd frontend && npm run build
 	go build -o ./artifacts/kiora ./cmd/kiora
 
 .PHONY: run
@@ -58,6 +59,7 @@ generate:
 	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
 	mockgen -source ./internal/services/bus.go > mocks/mock_services/bus.go
 
-.PHONY: generate-clean
-generate-clean:
-	rm $(PROTO_OUTPUTS)
+.PHONY: clean
+clean:
+	rm -rf ./artifacts
+	rm -rf ./frontend/build
