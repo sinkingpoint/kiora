@@ -32,7 +32,7 @@ const SuccessView = (props: SuccessViewProps) => {
   );
 };
 
-const AlertView = () => {
+const AlertList = () => {
   const [alerts, setAlerts] = useState<AlertViewState>({
     alerts: [],
     loading: true,
@@ -72,4 +72,4 @@ const AlertView = () => {
   }
 };
 
-export default AlertView;
+export default AlertList;

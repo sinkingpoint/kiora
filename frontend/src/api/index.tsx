@@ -13,8 +13,16 @@ class APIV1Impl implements IAPI {
     return this.apiBase + path;
   }
 
-  getAlerts(): Promise<Alert[]> {
-    return fetch(this.url("/api/v1/alerts")).then((response) =>
+  getAlerts(query?: AlertQuery): Promise<Alert[]> {
+    const params = new URLSearchParams();
+
+    if (query !== undefined) {
+      if (query.id !== undefined) {
+        params.append("id", query.id);
+      }
+    }
+
+    return fetch(this.url("/api/v1/alerts" + params)).then((response) =>
       response.json()
     );
   }

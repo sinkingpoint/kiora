@@ -1,10 +1,10 @@
 import { h } from "preact";
-import AlertView from "../../components/alertview";
+import AlertList from "../../components/alertlist";
 
 const Home = () => {
   return (
     <div>
-      <AlertView />
+      <AlertList />
     </div>
   );
 };

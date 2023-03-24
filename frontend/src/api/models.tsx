@@ -15,3 +15,7 @@ interface Alert {
   timeOutDeadline: string;
   acknowledgement?: AlertAcknowledgement;
 }
+
+interface AlertQuery {
+  id?: string;
+}
