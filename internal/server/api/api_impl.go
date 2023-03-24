@@ -10,8 +10,10 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
+var _ = API(&APIImpl{})
+
 type API interface {
-	GetAlerts(ctx context.Context) ([]model.Alert, error)
+	GetAlerts(ctx context.Context, q query.AlertQuery) ([]model.Alert, error)
 	PostAlerts(ctx context.Context, alerts []model.Alert) error
 	GetSilences(ctx context.Context) ([]model.Silence, error)
 	PostSilence(ctx context.Context, silences model.Silence) error
@@ -31,8 +33,8 @@ func NewAPIImpl(bus services.Bus, clusterer clustering.Clusterer) *APIImpl {
 	}
 }
 
-func (a *APIImpl) GetAlerts(ctx context.Context) ([]model.Alert, error) {
-	return a.bus.DB().QueryAlerts(ctx, query.MatchAll()), nil
+func (a *APIImpl) GetAlerts(ctx context.Context, q query.AlertQuery) ([]model.Alert, error) {
+	return a.bus.DB().QueryAlerts(ctx, q), nil
 }
 
 func (a *APIImpl) PostAlerts(ctx context.Context, alerts []model.Alert) error {

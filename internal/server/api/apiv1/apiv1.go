@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/server/api"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -80,7 +81,7 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	alerts, err := a.api.GetAlerts(r.Context())
+	alerts, err := a.api.GetAlerts(r.Context(), query.MatchAll())
 	if err != nil {
 		span.RecordError(err)
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
