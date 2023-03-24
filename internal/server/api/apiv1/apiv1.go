@@ -81,7 +81,19 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	alerts, err := a.api.GetAlerts(r.Context(), query.MatchAll())
+	var queries []query.AlertQuery
+	if id := r.URL.Query().Get("id"); id != "" {
+		queries = append(queries, query.ID(id))
+	}
+
+	var q query.AlertQuery
+	if len(queries) == 0 {
+		q = query.MatchAll()
+	} else {
+		q = query.AllAlerts(queries...)
+	}
+
+	alerts, err := a.api.GetAlerts(r.Context(), q)
 	if err != nil {
 		span.RecordError(err)
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
