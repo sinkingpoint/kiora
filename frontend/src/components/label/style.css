@@ -1,0 +1,10 @@
+.label {
+	border: solid #2d2d2d;
+	margin: 5px 10px 5px -5px;
+	padding: 5px 5px 5px 5px;
+	border-radius: 5px;
+}
+
+.label:hover {
+	background: #2d2d2d;
+}

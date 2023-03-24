@@ -1,75 +1,76 @@
 import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { Alert } from "src/api/models";
 import api from "../../api";
 import Single from "./single";
 
 interface AlertViewState {
-  alerts: Alert[];
-  error?: string;
-  loading: boolean;
+	alerts: Alert[];
+	error?: string;
+	loading: boolean;
 }
 
 interface ErrorViewProps {
-  error: string;
+	error: string;
 }
 
 const ErrorView = (props: ErrorViewProps) => {
-  return <div>{props.error}</div>;
+	return <div>{props.error}</div>;
 };
 
 interface SuccessViewProps {
-  alerts: Alert[];
+	alerts: Alert[];
 }
 
 const SuccessView = (props: SuccessViewProps) => {
-  return (
-    <>
-      {(props.alerts.length > 0 &&
-        props.alerts.map((alert) => {
-          return <Single alert={alert} />;
-        })) || <div>No alerts</div>}
-    </>
-  );
+	return (
+		<>
+			{(props.alerts.length > 0 &&
+				props.alerts.map((alert) => {
+					return <Single alert={alert} />;
+				})) || <div>No alerts</div>}
+		</>
+	);
 };
 
 const AlertList = () => {
-  const [alerts, setAlerts] = useState<AlertViewState>({
-    alerts: [],
-    loading: true,
-  });
+	const [alerts, setAlerts] = useState<AlertViewState>({
+		alerts: [],
+		loading: true,
+	});
 
-  const fetchAlerts = async () => {
-    await api
-      .getAlerts()
-      .then((newAlerts) => {
-        setAlerts({
-          ...alerts,
-          alerts: newAlerts,
-          loading: false,
-        });
-      })
-      .catch((error) => {
-        setAlerts({
-          ...alerts,
-          error: error.toString(),
-          loading: false,
-        });
-      });
-  };
+	const fetchAlerts = async () => {
+		await api
+			.getAlerts()
+			.then((newAlerts) => {
+				setAlerts({
+					...alerts,
+					alerts: newAlerts,
+					loading: false,
+				});
+			})
+			.catch((error) => {
+				setAlerts({
+					...alerts,
+					error: error.toString(),
+					loading: false,
+				});
+			});
+	};
 
-  useEffect(() => {
-    if (alerts.loading) {
-      fetchAlerts();
-    }
-  }, [alerts]);
+	useEffect(() => {
+		if (alerts.loading) {
+			fetchAlerts();
+		}
+	}, [alerts]);
 
-  if (alerts.loading) {
-    return <div>Loading...</div>;
-  } else if (alerts.error) {
-    return <ErrorView error={alerts.error} />;
-  } else {
-    return <SuccessView alerts={alerts.alerts} />;
-  }
+	if (alerts.loading) {
+		return <div>Loading...</div>;
+	} else if (alerts.error) {
+		return <ErrorView error={alerts.error} />;
+	} else {
+		return <SuccessView alerts={alerts.alerts} />;
+	}
 };
 
 export default AlertList;
