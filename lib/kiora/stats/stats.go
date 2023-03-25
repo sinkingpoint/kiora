@@ -19,9 +19,9 @@ func NewStats(bus services.Bus) *Stats {
 	}
 }
 
-// ExecuteAlertQuery executes an AlertQuery and returns the results.
-func (s *Stats) ExecuteAlertQuery(ctx context.Context, aq AlertQuery) ([]StatsResult, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "Stats.ExecuteAlertQuery")
+// ExecuteAlertFilter executes an AlertFilter and returns the results.
+func (s *Stats) ExecuteAlertFilter(ctx context.Context, aq AlertFilter) ([]StatsResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Stats.ExecuteAlertFilter")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("query", aq.Name()))

@@ -16,6 +16,6 @@ export interface Alert {
 	acknowledgement?: AlertAcknowledgement;
 }
 
-export interface AlertQuery {
+export interface AlertFilter {
 	id?: string;
 }

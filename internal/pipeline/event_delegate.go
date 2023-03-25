@@ -84,7 +84,7 @@ func (d *DBEventDelegate) ProcessSilence(ctx context.Context, silence model.Sile
 	existingSilence := d.db.QuerySilences(ctx, query.AllSilences(query.ID(silence.ID), query.SilenceIsActive()))
 	if len(existingSilence) == 0 && silence.IsActive() {
 		// This is a new silence, so we need to apply it to all the alerts.
-		alerts := d.db.QueryAlerts(ctx, query.AlertQueryFunc(func(ctx context.Context, alert *model.Alert) bool {
+		alerts := d.db.QueryAlerts(ctx, query.AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
 			return silence.Matches(alert.Labels) && (alert.Status == model.AlertStatusFiring || alert.Status == model.AlertStatusAcked)
 		}))
 

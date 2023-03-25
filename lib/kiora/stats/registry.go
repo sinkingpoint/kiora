@@ -1,13 +1,13 @@
 package stats
 
-type AlertQueryConstructor func(attrs map[string]string) AlertQuery
+type AlertFilterConstructor func(attrs map[string]string) AlertFilter
 
-var alertQueryRegistry = make(map[string]AlertQueryConstructor)
+var alertQueryRegistry = make(map[string]AlertFilterConstructor)
 
-func RegisterAlertQuery(name string, q AlertQueryConstructor) {
+func RegisterAlertFilter(name string, q AlertFilterConstructor) {
 	alertQueryRegistry[name] = q
 }
 
-func LookupAlertQuery(name string, attrs map[string]string) AlertQuery {
+func LookupAlertFilter(name string, attrs map[string]string) AlertFilter {
 	return alertQueryRegistry[name](attrs)
 }

@@ -81,12 +81,12 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	var queries []query.AlertQuery
+	var queries []query.AlertFilter
 	if id := r.URL.Query().Get("id"); id != "" {
 		queries = append(queries, query.ID(id))
 	}
 
-	var q query.AlertQuery
+	var q query.AlertFilter
 	if len(queries) == 0 {
 		q = query.MatchAll()
 	} else {

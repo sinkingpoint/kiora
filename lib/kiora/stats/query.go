@@ -8,10 +8,10 @@ import (
 )
 
 func init() {
-	RegisterAlertQuery("AlertStatusQuery", AlertStatusQuery)
+	RegisterAlertFilter("AlertStatusQuery", AlertStatusQuery)
 }
 
-var _ = AlertQuery(&alertStatusQuery{})
+var _ = AlertFilter(&alertStatusQuery{})
 
 // StatsResult is a single result from a StatsQuery.
 type StatsResult struct {
@@ -26,23 +26,23 @@ type Query interface {
 	Gather(ctx context.Context) ([]StatsResult, error)
 }
 
-// AlertQuery is an interface for querying statistics about alerts in the database.
-type AlertQuery interface {
+// AlertFilter is an interface for querying statistics about alerts in the database.
+type AlertFilter interface {
 	Query
 
 	// Query returns a query to use to find the alerts to send through the Ingest method.
-	Query(ctx context.Context) query.AlertQuery
+	Query(ctx context.Context) query.AlertFilter
 
 	// Ingest is called for each alert that matches the query. It should update the internal state of the query.
 	Ingest(ctx context.Context, f *model.Alert) error
 }
 
-// alertStatusQuery is an AlertQuery that counts the number of alerts with each status.
+// alertStatusQuery is an AlertFilter that counts the number of alerts with each status.
 type alertStatusQuery struct {
 	counts map[model.AlertStatus]int
 }
 
-func AlertStatusQuery(attrs map[string]string) AlertQuery {
+func AlertStatusQuery(attrs map[string]string) AlertFilter {
 	return &alertStatusQuery{
 		counts: make(map[model.AlertStatus]int),
 	}
@@ -60,7 +60,7 @@ func (q *alertStatusQuery) Gather(ctx context.Context) ([]StatsResult, error) {
 	return results, nil
 }
 
-func (q *alertStatusQuery) Query(ctx context.Context) query.AlertQuery {
+func (q *alertStatusQuery) Query(ctx context.Context) query.AlertFilter {
 	return query.MatchAll()
 }
 

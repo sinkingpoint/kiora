@@ -1,4 +1,4 @@
-import { Alert, AlertQuery } from "./models";
+import { Alert, AlertFilter } from "./models";
 
 interface IAPI {
 	getAlerts(): Promise<Alert[]>;
@@ -15,7 +15,7 @@ class APIV1Impl implements IAPI {
 		return this.apiBase + path;
 	}
 
-	getAlerts(query?: AlertQuery): Promise<Alert[]> {
+	getAlerts(query?: AlertFilter): Promise<Alert[]> {
 		const params = new URLSearchParams();
 
 		if (query !== undefined) {

@@ -45,12 +45,12 @@ func (m *inMemoryDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) err
 	return nil
 }
 
-func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertQuery) []model.Alert {
+func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertFilter) []model.Alert {
 	m.aLock.RLock()
 	defer m.aLock.RUnlock()
 	switch query := q.(type) {
 	// Short circuit exact matches because we can process them more efficiently by just looking up the hash.
-	case *query.ExactLabelMatchQuery:
+	case *query.ExactLabelMatchFilter:
 		if existingAlert, ok := m.alerts[query.Labels.Hash()]; ok {
 			return []model.Alert{existingAlert}
 		}
@@ -77,7 +77,7 @@ func (m *inMemoryDB) StoreSilences(ctx context.Context, silences ...model.Silenc
 	return nil
 }
 
-func (m *inMemoryDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
+func (m *inMemoryDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
 	m.sLock.RLock()
 	defer m.sLock.RUnlock()
 	silences := []model.Silence{}

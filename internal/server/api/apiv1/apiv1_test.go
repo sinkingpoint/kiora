@@ -43,11 +43,11 @@ func (m *mockDB) BroadcastSilences(ctx context.Context, silences ...model.Silenc
 	return nil
 }
 
-func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
+func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertFilter) []model.Alert {
 	return nil
 }
 
-func (m *mockDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
+func (m *mockDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
 	return nil
 }
 
