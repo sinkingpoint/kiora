@@ -2,10 +2,59 @@ package query
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
+
+// AlertFilterConstructor is a function that can construct an AlertFilter from a set of arguments.
+type AlertFilterConstructor func(args map[string]string) AlertFilter
+
+var alertFilterRegistry = map[string]AlertFilterConstructor{}
+
+func RegisterAlertFilter(name string, constructor AlertFilterConstructor) {
+	alertFilterRegistry[name] = constructor
+}
+
+// UnmarshalAlertFilter unmarshals an AlertFilter from a set of arguments.
+func UnmarshalAlertFilter(args map[string]string) (AlertFilter, error) {
+	name, ok := args["type"]
+	if !ok {
+		return nil, errors.New("missing filter type")
+	}
+	delete(args, "type")
+
+	constructor, ok := alertFilterRegistry[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown filter type %q", name)
+	}
+
+	return constructor(args), nil
+}
+
+func init() {
+	RegisterAlertFilter("exact", func(args map[string]string) AlertFilter {
+		return ExactLabelMatch(model.Labels(args))
+	})
+
+	RegisterAlertFilter("partial", func(args map[string]string) AlertFilter {
+		return PartialLabelMatch(model.Labels(args))
+	})
+
+	RegisterAlertFilter("status", func(args map[string]string) AlertFilter {
+		status, ok := args["status"]
+		if !ok {
+			return nil
+		}
+		return Status(model.AlertStatus(status))
+	})
+
+	RegisterAlertFilter("all", func(args map[string]string) AlertFilter {
+		return MatchAll()
+	})
+}
 
 // AlertFilter is a query that can be run against a DB to pull things out of it.
 type AlertFilter interface {
