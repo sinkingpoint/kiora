@@ -20,11 +20,11 @@ func RegisterAlertFilter(name string, constructor AlertFilterConstructor) {
 
 // UnmarshalAlertFilter unmarshals an AlertFilter from a set of arguments.
 func UnmarshalAlertFilter(args map[string]string) (AlertFilter, error) {
-	name, ok := args["type"]
+	name, ok := args["filter_type"]
 	if !ok {
 		return nil, errors.New("missing filter type")
 	}
-	delete(args, "type")
+	delete(args, "filter_type")
 
 	constructor, ok := alertFilterRegistry[name]
 	if !ok {
