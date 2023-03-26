@@ -27,7 +27,7 @@ body {
 	padding-top: 3.5rem;
 	margin: 0 auto;
 	min-height: calc(100vh - 3.5rem);
-	max-width: 1280px;
+	max-width: 1000px;
 	align-items: center;
 	justify-content: center;
 }

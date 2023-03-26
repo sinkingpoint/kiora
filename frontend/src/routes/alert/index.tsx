@@ -1,7 +1,7 @@
 import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { Alert } from "src/api/models";
-import Label from "../../components/label";
+import { Alert } from "../..//api/models";
+import LabelList from "../../components/alertcard/labels";
 import api from "../../api";
 import style from "./styles.css";
 
@@ -38,12 +38,7 @@ const SuccessView = (props: SuccessViewProps) => {
 			)}
 
 			<span class={style["alert-row"]}>
-				{Object.keys(props.alert.labels).map((key) => {
-					if (key === "alertname") {
-						return;
-					}
-					return <Label labelName={key} labelValue={props.alert.labels[key]} />;
-				})}
+				<LabelList alert={props.alert} />
 			</span>
 
 			<span class={style["alert-row"]}>

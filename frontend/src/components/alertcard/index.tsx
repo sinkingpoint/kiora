@@ -1,6 +1,7 @@
 import { h } from "preact";
 import { Alert } from "src/api/models";
 import Label from "../label";
+import Labels from "./labels";
 import style from "./styles.css";
 
 interface CardProps {
@@ -21,14 +22,8 @@ export default ({ alert }: CardProps) => {
 						)}
 					</span>
 				</div>
-				<div class={style.labels}>
-					{Object.keys(alert.labels).map((key) => {
-						if (key === "alertname") {
-							return;
-						}
-						return <Label labelName={key} labelValue={alert.labels[key]} />;
-					})}
-				</div>
+				
+				<Labels alert={alert} />
 			</div>
 		</a>
 	);
