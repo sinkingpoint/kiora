@@ -171,6 +171,22 @@ func (a *Alert) Field(name string) (any, error) {
 		return val, nil
 	}
 
+	// Special case non-label fields to allow filtering, and sorting on them.
+	switch name {
+	case "__id__":
+		return a.ID, nil
+	case "__status__":
+		return a.Status, nil
+	case "__starts_at__":
+		return a.StartTime, nil
+	case "__ends_at__":
+		return a.EndTime, nil
+	case "__timeout_deadline__":
+		return a.TimeOutDeadline, nil
+	case "__last_notify_time__":
+		return a.LastNotifyTime, nil
+	}
+
 	return "", fmt.Errorf("label %q doesn't exist", name)
 }
 

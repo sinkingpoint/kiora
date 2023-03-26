@@ -2,6 +2,7 @@ package kioradb
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
@@ -48,10 +49,10 @@ func (m *inMemoryDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) err
 func (m *inMemoryDB) QueryAlerts(ctx context.Context, q *query.AlertQuery) []model.Alert {
 	m.aLock.RLock()
 	defer m.aLock.RUnlock()
-	switch query := q.Filter.(type) {
+	switch filter := q.Filter.(type) {
 	// Short circuit exact matches because we can process them more efficiently by just looking up the hash.
 	case *query.ExactLabelMatchFilter:
-		if existingAlert, ok := m.alerts[query.Labels.Hash()]; ok {
+		if existingAlert, ok := m.alerts[filter.Labels.Hash()]; ok {
 			return []model.Alert{existingAlert}
 		}
 
@@ -59,10 +60,16 @@ func (m *inMemoryDB) QueryAlerts(ctx context.Context, q *query.AlertQuery) []mod
 	default:
 		alerts := []model.Alert{}
 		for _, alert := range m.alerts {
-			if query.MatchesAlert(ctx, &alert) {
+			if filter.MatchesAlert(ctx, &alert) {
 				alerts = append(alerts, alert)
 			}
 		}
+
+		sort.Stable(query.SortAlertsByFields(alerts, q.OrderBy, q.Order))
+		if q.Limit > 0 && len(alerts) > q.Limit {
+			alerts = alerts[:q.Limit]
+		}
+
 		return alerts
 	}
 }

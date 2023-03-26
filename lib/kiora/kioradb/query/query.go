@@ -2,6 +2,11 @@ package query
 
 type Order string
 
+const (
+	OrderAsc  Order = "ASC"
+	OrderDesc Order = "DESC"
+)
+
 type Query struct {
 	Order   Order
 	OrderBy []string
