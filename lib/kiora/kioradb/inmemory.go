@@ -60,7 +60,7 @@ func (m *inMemoryDB) QueryAlerts(ctx context.Context, q *query.AlertQuery) []mod
 	default:
 		alerts := []model.Alert{}
 		for _, alert := range m.alerts {
-			if filter.MatchesAlert(ctx, &alert) {
+			if filter == nil || filter.MatchesAlert(ctx, &alert) {
 				alerts = append(alerts, alert)
 			}
 		}

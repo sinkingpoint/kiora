@@ -20,6 +20,9 @@ type API interface {
 	// PostAlerts stores the given alerts in the database, updating any existing alerts with the same labels.
 	PostAlerts(ctx context.Context, alerts []model.Alert) error
 
+	// QueryAlertStats executes the given stats query, returning the resulting frames.
+	QueryAlertStats(ctx context.Context, q query.AlertStatsQuery) ([]query.StatsResult, error)
+
 	// GetSilences returns a list of silences matching the given query.
 	GetSilences(ctx context.Context) ([]model.Silence, error)
 
@@ -51,6 +54,10 @@ func (a *APIImpl) GetAlerts(ctx context.Context, q *query.AlertQuery) ([]model.A
 
 func (a *APIImpl) PostAlerts(ctx context.Context, alerts []model.Alert) error {
 	return a.bus.Broadcaster().BroadcastAlerts(ctx, alerts...)
+}
+
+func (a *APIImpl) QueryAlertStats(ctx context.Context, q query.AlertStatsQuery) ([]query.StatsResult, error) {
+	return a.bus.DB().QueryAlertStats(ctx, q)
 }
 
 func (a *APIImpl) GetSilences(ctx context.Context) ([]model.Silence, error) {

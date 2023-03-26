@@ -31,6 +31,7 @@ func Register(router *mux.Router, api api.API) {
 
 	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.postAlerts), "POST api/v1/alerts"))
 	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getAlerts), "GET /api/v1/alerts"))
+	subRouter.Path("/alerts/stats").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.queryAlertStats), "GET /api/v1/alerts/stats"))
 	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.acknowledgeAlert), "POST /api/v1/alerts/ack"))
 	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getClusterStatus), "GET /api/v1/cluster/status"))
 	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.postSilences), "POST /api/v1/silences"))
@@ -137,6 +138,39 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.RecordError(err)
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes) //nolint:errcheck
+}
+
+func (a *apiv1) queryAlertStats(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+
+	args := make(map[string]string)
+	for k, v := range r.URL.Query() {
+		args[k] = v[0]
+	}
+
+	q, err := query.UnmarshalAlertStatsQuery(args)
+	if err != nil {
+		span.RecordError(err)
+		http.Error(w, "failed to unmarshal query", http.StatusBadRequest)
+		return
+	}
+
+	stats, err := a.api.QueryAlertStats(r.Context(), q)
+	if err != nil {
+		span.RecordError(err)
+		http.Error(w, "failed to query alert stats", http.StatusInternalServerError)
+		return
+	}
+
+	bytes, err := json.Marshal(stats)
+	if err != nil {
+		span.RecordError(err)
+		http.Error(w, "failed to marshal alert stats", http.StatusInternalServerError)
 		return
 	}
 
