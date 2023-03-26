@@ -15,6 +15,9 @@ type DB interface {
 	// QueryAlerts queries the database for alerts matching the given query.
 	QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert
 
+	// QueryAlertStats queries alerts and returns aggregated statistics about them.
+	QueryAlertStats(ctx context.Context, statsQuery query.AlertStatsQuery) ([]query.StatsResult, error)
+
 	// StoreSilences stores the given silences in the database, updating any existing silences with the same ID.
 	StoreSilences(ctx context.Context, silences ...model.Silence) error
 

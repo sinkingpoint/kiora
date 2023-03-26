@@ -36,6 +36,21 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 	return m.recorder
 }
 
+// QueryAlertStats mocks base method.
+func (m *MockDB) QueryAlertStats(ctx context.Context, statsQuery query.AlertStatsQuery) ([]query.StatsResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueryAlertStats", ctx, statsQuery)
+	ret0, _ := ret[0].([]query.StatsResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// QueryAlertStats indicates an expected call of QueryAlertStats.
+func (mr *MockDBMockRecorder) QueryAlertStats(ctx, statsQuery interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAlertStats", reflect.TypeOf((*MockDB)(nil).QueryAlertStats), ctx, statsQuery)
+}
+
 // QueryAlerts mocks base method.
 func (m *MockDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
 	m.ctrl.T.Helper()
