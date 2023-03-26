@@ -3,6 +3,7 @@ package alerts
 import (
 	"math/rand"
 	"strconv"
+	"time"
 
 	"github.com/sinkingpoint/kiora/cmd/tuku/commands"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -75,6 +76,23 @@ func (a *AlertsTestCmd) generateAlerts() []model.Alert {
 
 func (a *AlertsTestCmd) Run(ctx *commands.Context) error {
 	alerts := a.generateAlerts()
+
+	startTime := time.Now()
+
+	for i := 0; i < len(alerts); i += 100 {
+		end := i + 100
+		if end > len(alerts) {
+			end = len(alerts)
+		}
+
+		for j := i; j < end; j++ {
+			alerts[j].StartTime = startTime.Add(time.Duration(i+j) * time.Second)
+		}
+
+		if err := ctx.Kiora.PostAlerts(alerts[i:end]); err != nil {
+			return err
+		}
+	}
 
 	return ctx.Kiora.PostAlerts(alerts)
 }
