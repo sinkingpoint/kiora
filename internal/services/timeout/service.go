@@ -37,7 +37,7 @@ func (t *TimeoutService) Run(ctx context.Context) error {
 }
 
 func (t *TimeoutService) timeoutAlerts(ctx context.Context) {
-	query := query.Status(model.AlertStatusFiring)
+	query := query.NewAlertQuery(query.Status(model.AlertStatusFiring))
 	changed := []model.Alert{}
 	for _, a := range t.bus.DB().QueryAlerts(ctx, query) {
 		if a.TimeOutDeadline.Before(time.Now()) {

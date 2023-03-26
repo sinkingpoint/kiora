@@ -37,7 +37,7 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 }
 
 // QueryAlerts mocks base method.
-func (m *MockDB) QueryAlerts(ctx context.Context, query query.AlertFilter) []model.Alert {
+func (m *MockDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QueryAlerts", ctx, query)
 	ret0, _ := ret[0].([]model.Alert)

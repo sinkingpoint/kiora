@@ -13,10 +13,10 @@ import (
 func MockDBWithAlerts(ctrl *gomock.Controller, alerts ...[]model.Alert) *MockDB {
 	db := NewMockDB(ctrl)
 	for _, alerts := range alerts {
-		db.EXPECT().QueryAlerts(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, query query.AlertFilter) []model.Alert {
+		db.EXPECT().QueryAlerts(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, query *query.AlertQuery) []model.Alert {
 			ret := []model.Alert{}
 			for _, alert := range alerts {
-				if query.MatchesAlert(ctx, &alert) {
+				if query.Filter.MatchesAlert(ctx, &alert) {
 					ret = append(ret, alert)
 				}
 			}

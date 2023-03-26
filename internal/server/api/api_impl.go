@@ -13,7 +13,7 @@ import (
 var _ = API(&APIImpl{})
 
 type API interface {
-	GetAlerts(ctx context.Context, q query.AlertFilter) ([]model.Alert, error)
+	GetAlerts(ctx context.Context, q *query.AlertQuery) ([]model.Alert, error)
 	PostAlerts(ctx context.Context, alerts []model.Alert) error
 	GetSilences(ctx context.Context) ([]model.Silence, error)
 	PostSilence(ctx context.Context, silences model.Silence) error
@@ -33,7 +33,7 @@ func NewAPIImpl(bus services.Bus, clusterer clustering.Clusterer) *APIImpl {
 	}
 }
 
-func (a *APIImpl) GetAlerts(ctx context.Context, q query.AlertFilter) ([]model.Alert, error) {
+func (a *APIImpl) GetAlerts(ctx context.Context, q *query.AlertQuery) ([]model.Alert, error) {
 	return a.bus.DB().QueryAlerts(ctx, q), nil
 }
 

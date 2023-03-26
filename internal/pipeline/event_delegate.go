@@ -24,7 +24,7 @@ func NewDBEventDelegate(db kioradb.DB) *DBEventDelegate {
 }
 
 func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
-	currentAlerts := d.db.QueryAlerts(ctx, query.ExactLabelMatch(alert.Labels))
+	currentAlerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.ExactLabelMatch(alert.Labels)))
 
 	// Copy attributes from the current alert if it exists.
 	if len(currentAlerts) > 0 {
@@ -63,7 +63,7 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 }
 
 func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) {
-	alerts := d.db.QueryAlerts(ctx, query.ID(alertID))
+	alerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.ID(alertID)))
 	if len(alerts) == 0 {
 		// TODO(cdouch): Handle errors here.
 		return
@@ -84,9 +84,9 @@ func (d *DBEventDelegate) ProcessSilence(ctx context.Context, silence model.Sile
 	existingSilence := d.db.QuerySilences(ctx, query.AllSilences(query.ID(silence.ID), query.SilenceIsActive()))
 	if len(existingSilence) == 0 && silence.IsActive() {
 		// This is a new silence, so we need to apply it to all the alerts.
-		alerts := d.db.QueryAlerts(ctx, query.AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
+		alerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
 			return silence.Matches(alert.Labels) && (alert.Status == model.AlertStatusFiring || alert.Status == model.AlertStatusAcked)
-		}))
+		})))
 
 		for _, alert := range alerts {
 			alert.Status = model.AlertStatusSilenced

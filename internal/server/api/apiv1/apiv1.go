@@ -93,7 +93,7 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 		q = query.AllAlerts(queries...)
 	}
 
-	alerts, err := a.api.GetAlerts(r.Context(), q)
+	alerts, err := a.api.GetAlerts(r.Context(), query.NewAlertQuery(q))
 	if err != nil {
 		span.RecordError(err)
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)

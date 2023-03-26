@@ -24,7 +24,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts := db.QueryAlerts(context.TODO(), query.MatchAll())
+	alerts := db.QueryAlerts(context.TODO(), query.NewAlertQuery(query.MatchAll()))
 
 	assert.Len(t, alerts, 1)
 	alert := alerts[0]
@@ -47,7 +47,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts = db.QueryAlerts(context.TODO(), query.MatchAll())
+	alerts = db.QueryAlerts(context.TODO(), query.NewAlertQuery(query.MatchAll()))
 	require.Len(t, alerts, 2)
 
 	for _, alert := range alerts {
@@ -72,7 +72,7 @@ func TestInMemoryDB(t *testing.T) {
 		},
 	}...))
 
-	alerts = db.QueryAlerts(context.TODO(), query.MatchAll())
+	alerts = db.QueryAlerts(context.TODO(), query.NewAlertQuery(query.MatchAll()))
 	require.Len(t, alerts, 2)
 
 	for _, alert := range alerts {

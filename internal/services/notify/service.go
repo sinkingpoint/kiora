@@ -51,7 +51,7 @@ outer:
 }
 
 func (n *NotifyService) notifyFiring(ctx context.Context) {
-	q := query.AllAlerts(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(stubs.Time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL)))
+	q := query.NewAlertQuery(query.AllAlerts(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(stubs.Time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL))))
 
 	for _, a := range n.bus.DB().QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
@@ -60,7 +60,7 @@ func (n *NotifyService) notifyFiring(ctx context.Context) {
 
 func (n *NotifyService) notifyResolved(ctx context.Context) {
 	q := query.Status(model.AlertStatusResolved)
-	for _, alert := range n.bus.DB().QueryAlerts(ctx, q) {
+	for _, alert := range n.bus.DB().QueryAlerts(ctx, query.NewAlertQuery(q)) {
 		if alert.LastNotifyTime.Before(alert.EndTime) {
 			n.notifyAlert(ctx, alert)
 		}
