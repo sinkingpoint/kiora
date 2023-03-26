@@ -112,7 +112,7 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 
 	if sort := r.URL.Query()["sort"]; len(sort) > 0 {
 		order := query.OrderAsc
-		if r.URL.Query().Get("order") == "desc" {
+		if r.URL.Query().Get("order") == string(query.OrderDesc) {
 			order = query.OrderDesc
 		}
 

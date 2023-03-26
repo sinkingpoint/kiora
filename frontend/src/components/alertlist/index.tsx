@@ -41,7 +41,7 @@ const AlertList = () => {
 
 	const fetchAlerts = async () => {
 		await api
-			.getAlerts()
+			.getAlerts({}, { order: "DESC", orderBy: ["__starts_at__"], limit: 100, offset: 0 })
 			.then((newAlerts) => {
 				setAlerts({
 					...alerts,
