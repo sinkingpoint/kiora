@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -86,6 +87,38 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 		queries = append(queries, query.ID(id))
 	}
 
+	opts := []query.QueryOp{}
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			span.RecordError(err)
+			http.Error(w, "invalid limit", http.StatusBadRequest)
+			return
+		}
+
+		opts = append(opts, query.Limit(limit))
+	}
+
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			span.RecordError(err)
+			http.Error(w, "invalid offset", http.StatusBadRequest)
+			return
+		}
+
+		opts = append(opts, query.Offset(offset))
+	}
+
+	if sort := r.URL.Query()["sort"]; len(sort) > 0 {
+		order := query.OrderAsc
+		if r.URL.Query().Get("order") == "desc" {
+			order = query.OrderDesc
+		}
+
+		opts = append(opts, query.OrderBy(sort, order))
+	}
+
 	var q query.AlertFilter
 	if len(queries) == 0 {
 		q = query.MatchAll()
@@ -93,7 +126,7 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 		q = query.AllAlerts(queries...)
 	}
 
-	alerts, err := a.api.GetAlerts(r.Context(), query.NewAlertQuery(q))
+	alerts, err := a.api.GetAlerts(r.Context(), query.NewAlertQuery(q, opts...))
 	if err != nil {
 		span.RecordError(err)
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)

@@ -12,12 +12,24 @@ import (
 
 var _ = API(&APIImpl{})
 
+// API defines an interface that represents all the operations that can be performed on the kiora API.
 type API interface {
+	// GetAlerts returns a list of alerts matching the given query.
 	GetAlerts(ctx context.Context, q *query.AlertQuery) ([]model.Alert, error)
+
+	// PostAlerts stores the given alerts in the database, updating any existing alerts with the same labels.
 	PostAlerts(ctx context.Context, alerts []model.Alert) error
+
+	// GetSilences returns a list of silences matching the given query.
 	GetSilences(ctx context.Context) ([]model.Silence, error)
+
+	// PostSilences stores the given silences in the database, updating any existing silences with the same ID.
 	PostSilence(ctx context.Context, silences model.Silence) error
+
+	// AckAlert acknowledges the given alert with the given acknowledgement.
 	AckAlert(ctx context.Context, alertID string, alertAck model.AlertAcknowledgement) error
+
+	// GetClusterStatus returns the status of the nodes in the cluster.
 	GetClusterStatus(ctx context.Context) ([]any, error)
 }
 
