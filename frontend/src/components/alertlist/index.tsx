@@ -2,7 +2,7 @@ import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { Alert } from "src/api/models";
 import api from "../../api";
-import Single from "./single";
+import Single from "../alertcard";
 
 interface AlertViewState {
 	alerts: Alert[];

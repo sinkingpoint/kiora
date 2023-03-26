@@ -3,12 +3,12 @@ import { Alert } from "src/api/models";
 import Label from "../label";
 import style from "./styles.css";
 
-interface SingleProps {
+interface CardProps {
 	alert: Alert;
 }
 
-export default ({ alert }: SingleProps) => {
-	const startTime = new Date(Date.parse(alert.startsAt)).toLocaleString();
+export default ({ alert }: CardProps) => {
+	const startTime = new Date(alert.startsAt).toLocaleString();
 
 	return (
 		<a href={`/alerts/${alert.id}`} class={style["alert-link"]}>
