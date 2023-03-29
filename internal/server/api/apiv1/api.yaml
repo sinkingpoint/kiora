@@ -1,0 +1,207 @@
+openapi: 3.0.0
+info:
+  title: V1 of Kiora's API
+  version: "1.0.0"
+paths:
+  /alerts:
+    get:
+      summary: Get alerts details
+      description: |
+        Takes an optional filter, limit, ordering, and fields and returns alerts based on those
+      parameters:
+        - in: query
+          name: limit
+          description: The maximum number of results to return
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          description: The offset into the results to return. Used for pagination
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          description: The fields to sort the results by
+          schema:
+            type: string
+        - in: query
+          name: order
+          description: The order of the results. Only valid if `sort` is also specified.
+          schema:
+            type: string
+            enum:
+             - ASC
+             - DESC
+      responses:
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Backing DB failed
+        '200':
+          description: Got alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alert'
+    post:
+      summary: Add, or update alerts
+      requestBody:
+        required: true
+        $ref: '#/components/requestBodies/Alerts'
+      responses:
+        '400':
+          description: Alerts are invalid
+        '500':
+          description: Sending the alerts to the cluster failed
+        '202':
+          description: Alerts accepted for addition, or updating
+  /alerts/stats:
+    get:
+      summary: Query aggregated stats about alerts in the system
+      parameters:
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: args
+          required: true
+          description: The arguments to the query, depending on the query type.
+          schema:
+            type: object
+            example:
+              filter_type: status
+              status: firing
+      responses:
+        '400':
+          description: The arguments provided were invalid for the query type
+        '500':
+          description: The underlying database failed when querying alerts
+        '200':
+          description: Sucessfully queried stats
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/StatsResult'
+  /alerts/ack:
+    post:
+      summary: Acknowledge an alert
+      requestBody:
+        required: true
+        $ref: '#/components/requestBodies/AlertAcknowledgment'
+      responses:
+        '400':
+          description: Some data was missing from the acknowledgment
+        '500':
+          description: Broadcasting the acknowledgment failed
+        '201':
+          description: The alert was sucessfully acknowledged
+  
+
+components:
+  requestBodies:
+    Alerts:
+      description: Alerts to add, or update in the system.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              type: object
+              required:
+                - labels
+              properties:
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: string
+                annotations:
+                  type: object
+                  additionalProperties:
+                    type: string
+                startsAt:
+                  type: string
+                  format: date-time
+                endsAt:
+                  type: string
+                  format: date-time
+    AlertAcknowledgment:
+      description: Metadata when acknowledging an alert
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              alertID:
+                type: string
+              creator:
+                type: string
+              comment:
+                type: string
+  schemas:
+    StatsResult:
+      type: object
+      required:
+        - labels
+        - frames
+      properties:
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        frames:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+              format: float
+    Acknowledgement:
+      type: object
+      properties:
+        creator:
+          type: string
+        comment:
+          type: string
+    Alert:
+      type: object
+      required:
+        - id
+        - labels
+        - annotations
+        - status
+        - startsAt
+        - timeoutDeadline
+      properties:
+        id:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
+        status:
+          type: string
+          enum:
+            - firing
+            - acked
+            - resolved
+            - timed out
+            - silenced
+        acknowlegment:
+          $ref: '#/components/schemas/Acknowledgement'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        timeoutDeadline:
+          type: string
+          format: date-time

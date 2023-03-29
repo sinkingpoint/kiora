@@ -229,7 +229,7 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.api.AckAlert(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to handle alert acknowledgement")) // nolint:errcheck
 		log.Err(err).Msg("failed to broadcast alert acknowledgment")
 		return
