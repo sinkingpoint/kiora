@@ -1,7 +1,6 @@
 import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { Alert } from "src/api/models";
-import api from "../../api";
+import { Alert, DefaultService } from "../../api";
 import Single from "../alertcard";
 
 interface AlertViewState {
@@ -40,8 +39,7 @@ const AlertList = () => {
 	});
 
 	const fetchAlerts = async () => {
-		await api
-			.getAlerts({}, { order: "DESC", orderBy: ["__starts_at__"], limit: 100, offset: 0 })
+		await DefaultService.getAlerts(100, 0, ["__starts_at__"], "DESC")
 			.then((newAlerts) => {
 				setAlerts({
 					...alerts,

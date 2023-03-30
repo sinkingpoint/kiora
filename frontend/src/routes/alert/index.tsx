@@ -1,8 +1,7 @@
 import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { Alert } from "../..//api/models";
 import LabelList from "../../components/alertcard/labels";
-import api from "../../api";
+import { Alert, DefaultService } from "../../api";
 import style from "./styles.css";
 
 interface AlertState {
@@ -83,9 +82,7 @@ export default ({ id }: AlertProps) => {
 			return;
 		}
 
-		api
-			.getAlerts({ id: id })
-			.then((alerts) => {
+		DefaultService.getAlerts(null, null, null, null, id).then((alerts) => {
 				if (alerts.length === 0) {
 					return;
 				}

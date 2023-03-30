@@ -18,14 +18,16 @@ export class DefaultService {
      * @param offset The offset into the results to return. Used for pagination
      * @param sort The fields to sort the results by
      * @param order The order of the results. Only valid if `sort` is also specified.
+     * @param id Get only the given alert by ID
      * @returns Alert Got alerts
      * @throws ApiError
      */
     public static getAlerts(
         limit?: number,
         offset?: number,
-        sort?: string,
+        sort?: Array<string>,
         order?: 'ASC' | 'DESC',
+        id?: string,
     ): CancelablePromise<Array<Alert>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -35,6 +37,7 @@ export class DefaultService {
                 'offset': offset,
                 'sort': sort,
                 'order': order,
+                'id': id,
             },
             errors: {
                 400: `Invalid query parameters`,

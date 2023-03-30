@@ -9,7 +9,7 @@ export type Alert = {
     labels: Record<string, string>;
     annotations: Record<string, string>;
     status: Alert.status;
-    acknowlegment?: Acknowledgement;
+    acknowledgement?: Acknowledgement;
     startsAt: string;
     endsAt?: string;
     timeoutDeadline: string;

@@ -23,7 +23,9 @@ paths:
           name: sort
           description: The fields to sort the results by
           schema:
-            type: string
+            type: array
+            items:
+              type: string
         - in: query
           name: order
           description: The order of the results. Only valid if `sort` is also specified.
@@ -32,6 +34,11 @@ paths:
             enum:
              - ASC
              - DESC
+        - in: query
+          name: id
+          description: Get only the given alert by ID
+          schema:
+            type: string
       responses:
         '400':
           description: Invalid query parameters
@@ -194,7 +201,7 @@ components:
             - resolved
             - timed out
             - silenced
-        acknowlegment:
+        acknowledgement:
           $ref: '#/components/schemas/Acknowledgement'
         startsAt:
           type: string

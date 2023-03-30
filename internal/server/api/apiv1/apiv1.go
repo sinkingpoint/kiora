@@ -141,6 +141,7 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytes) //nolint:errcheck
 }
@@ -174,6 +175,7 @@ func (a *apiv1) queryAlertStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytes) //nolint:errcheck
 }
@@ -202,6 +204,7 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusOK)
 	w.Write(bytes) // nolint:errcheck
 }
@@ -257,6 +260,7 @@ func (a *apiv1) postSilences(w http.ResponseWriter, r *http.Request) {
 
 	responseBytes, _ := json.Marshal(silence) // TODO(cdouch): Error checking.
 
+	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(responseBytes) // nolint:errcheck
 }
@@ -272,6 +276,7 @@ func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
 
 	responseBytes, _ := json.Marshal(silences) // TODO(cdouch): Error checking.
 
+	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusOK)
 	w.Write(responseBytes) // nolint:errcheck
 }
