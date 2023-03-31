@@ -1,7 +1,7 @@
 import { h } from "preact";
-import { Alert } from "src/api/models";
 import Label from "../label";
 import style from "./styles.css";
+import { Alert } from "../../api";
 
 interface LabelViewProps {
     alert: Alert;
