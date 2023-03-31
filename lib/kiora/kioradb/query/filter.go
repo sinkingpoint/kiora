@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -58,10 +59,15 @@ func init() {
 
 // AlertFilter is a query that can be run against a DB to pull things out of it.
 type AlertFilter interface {
+	Type() string
 	MatchesAlert(ctx context.Context, alert *model.Alert) bool
 }
 
 type AlertFilterFunc func(ctx context.Context, alert *model.Alert) bool
+
+func (a AlertFilterFunc) Type() string {
+	return "func"
+}
 
 func (a AlertFilterFunc) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return a(ctx, alert)
@@ -87,6 +93,10 @@ func PartialLabelMatch(labels model.Labels) *PartialLabelMatchFilter {
 	return &PartialLabelMatchFilter{
 		Labels: labels,
 	}
+}
+
+func (p *PartialLabelMatchFilter) Type() string {
+	return "partial"
 }
 
 func (p *PartialLabelMatchFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
@@ -115,6 +125,10 @@ func ExactLabelMatch(labels model.Labels) AlertFilter {
 	}
 }
 
+func (e *ExactLabelMatchFilter) Type() string {
+	return "exact"
+}
+
 func (e *ExactLabelMatchFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	if e.labelsHash == 0 {
 		e.labelsHash = e.Labels.Hash()
@@ -129,6 +143,10 @@ type AllMatchFilter struct {
 
 func MatchAll() *AllMatchFilter {
 	return &AllMatchFilter{}
+}
+
+func (a *AllMatchFilter) Type() string {
+	return "all"
 }
 
 func (a *AllMatchFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
@@ -150,6 +168,10 @@ func Status(s model.AlertStatus) *StatusFilter {
 	}
 }
 
+func (s *StatusFilter) Type() string {
+	return "status"
+}
+
 func (s *StatusFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	return alert.Status == s.Status
 }
@@ -157,6 +179,10 @@ func (s *StatusFilter) MatchesAlert(ctx context.Context, alert *model.Alert) boo
 type LastNotifyTimeRangeFilter struct {
 	MinTime time.Time
 	MaxTime time.Time
+}
+
+func (l *LastNotifyTimeRangeFilter) Type() string {
+	return "last_notify_time"
 }
 
 func (l *LastNotifyTimeRangeFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
@@ -195,6 +221,15 @@ type AllFilter struct {
 	silenceQueries []SilenceFilter
 }
 
+func (a *AllFilter) Type() string {
+	alertTypes := []string{}
+	for _, q := range a.alertQueries {
+		alertTypes = append(alertTypes, q.Type())
+	}
+
+	return fmt.Sprintf("all(%s)", strings.Join(alertTypes, ","))
+}
+
 func (a *AllFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
 	for _, q := range a.alertQueries {
 		if !q.MatchesAlert(ctx, alert) {
@@ -230,6 +265,10 @@ func AllSilences(queries ...SilenceFilter) *AllFilter {
 // IDFilter is a query that matches a specific alert by ID.
 type IDFilter struct {
 	ID string
+}
+
+func (i *IDFilter) Type() string {
+	return "id"
 }
 
 func (i *IDFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {

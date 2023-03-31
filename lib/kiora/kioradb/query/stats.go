@@ -31,7 +31,7 @@ type AlertStatsQuery interface {
 	Gather(ctx context.Context) []StatsResult
 }
 
-type alertStatsQueryConstructor func(args map[string]string) AlertStatsQuery
+type alertStatsQueryConstructor func(args map[string]string) (AlertStatsQuery, error)
 
 var alertStatsQueryRegistry = map[string]alertStatsQueryConstructor{}
 
@@ -53,11 +53,12 @@ func UnmarshalAlertStatsQuery(args map[string]string) (AlertStatsQuery, error) {
 		return nil, ErrStatsQueryFilterDoesntExist
 	}
 
-	return constructor(args), nil
+	return constructor(args)
 }
 
 func init() {
 	RegisterAlertStatsQuery("count", NewAlertCountQuery)
+	RegisterAlertStatsQuery("status_count", NewAlertStatusCountQuery)
 }
 
 // AlertCountQuery counts the number of alerts that match the filter.
@@ -66,19 +67,19 @@ type AlertCountQuery struct {
 	count  int
 }
 
-func NewAlertCountQuery(args map[string]string) AlertStatsQuery {
+func NewAlertCountQuery(args map[string]string) (AlertStatsQuery, error) {
+	query := &AlertCountQuery{}
+
 	if _, ok := args["filter_type"]; ok {
 		filter, err := UnmarshalAlertFilter(args)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
-		return &AlertCountQuery{
-			filter: filter,
-		}
+		query.filter = filter
 	}
 
-	return &AlertCountQuery{}
+	return query, nil
 }
 
 func (q *AlertCountQuery) Filter() AlertFilter {
@@ -97,4 +98,47 @@ func (q *AlertCountQuery) Gather(ctx context.Context) []StatsResult {
 			Frames: [][]float64{{float64(q.count)}},
 		},
 	}
+}
+
+// AlertStatusCountQuery counts the number of alerts, grouped by status.
+type AlertStatusCountQuery struct {
+	filter AlertFilter
+	counts map[model.AlertStatus]int
+}
+
+func NewAlertStatusCountQuery(args map[string]string) (AlertStatsQuery, error) {
+	query := &AlertStatusCountQuery{
+		counts: map[model.AlertStatus]int{},
+	}
+
+	if _, ok := args["filter_type"]; ok {
+		filter, err := UnmarshalAlertFilter(args)
+		if err != nil {
+			return nil, err
+		}
+
+		query.filter = filter
+	}
+
+	return query, nil
+}
+
+func (q *AlertStatusCountQuery) Filter() AlertFilter {
+	return q.filter
+}
+
+func (q *AlertStatusCountQuery) Process(ctx context.Context, alert *model.Alert) error {
+	q.counts[alert.Status] += 1
+	return nil
+}
+
+func (q *AlertStatusCountQuery) Gather(ctx context.Context) []StatsResult {
+	results := make([]StatsResult, 0, len(q.counts))
+	for status, count := range q.counts {
+		results = append(results, StatsResult{
+			Labels: map[string]string{"status": string(status)},
+			Frames: [][]float64{{float64(count)}},
+		})
+	}
+	return results
 }

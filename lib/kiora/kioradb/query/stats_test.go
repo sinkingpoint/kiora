@@ -75,3 +75,61 @@ func TestAlertCountQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestAlertStatusCountQuery(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   map[string]string
+		alerts []model.Alert
+		want   map[string]float64
+	}{
+		{
+			name: "test alert status count query",
+			args: map[string]string{
+				"type": "status_count",
+			},
+			alerts: []model.Alert{
+				{
+					Labels: model.Labels{
+						"foo": "bar",
+					},
+					Status: model.AlertStatusFiring,
+				},
+				{
+					Labels: model.Labels{
+						"foo": "baz",
+					},
+					Status: model.AlertStatusFiring,
+				},
+				{
+					Labels: model.Labels{
+						"foo": "qux",
+					},
+					Status: model.AlertStatusResolved,
+				},
+			},
+			want: map[string]float64{
+				"firing":   2,
+				"resolved": 1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			q, err := query.UnmarshalAlertStatsQuery(tt.args)
+			require.NoError(t, err, "unmarshal alert stats query failed")
+			require.NotNil(t, q, "unmarshal alert stats query failed")
+
+			for _, alert := range tt.alerts {
+				require.NoError(t, q.Process(context.TODO(), &alert), "process alert failed")
+			}
+
+			got := q.Gather(context.TODO())
+			assert.Len(t, got, len(tt.want), "gather returned wrong number of results")
+			for _, result := range got {
+				assert.Equal(t, tt.want[result.Labels["status"]], result.Frames[0][0], "gather returned wrong value")
+			}
+		})
+	}
+}
