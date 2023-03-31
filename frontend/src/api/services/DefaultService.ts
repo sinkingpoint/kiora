@@ -82,7 +82,7 @@ export class DefaultService {
     public static getAlertsStats(
         type: string,
         args: any,
-    ): CancelablePromise<StatsResult> {
+    ): CancelablePromise<Array<StatsResult>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/alerts/stats',

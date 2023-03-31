@@ -156,6 +156,7 @@ func (a *apiv1) queryAlertStats(w http.ResponseWriter, r *http.Request) {
 
 	q, err := query.UnmarshalAlertStatsQuery(args)
 	if err != nil {
+		log.Warn().Msg(err.Error())
 		span.RecordError(err)
 		http.Error(w, "failed to unmarshal query", http.StatusBadRequest)
 		return

@@ -3,20 +3,20 @@ package query
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
 var ErrMissingType = errors.New("missing filter type")
-var ErrStatsQueryFilterDoesntExist = errors.New("alert stats query filter doesn't exist")
 
 // StatsResult is a single result from a StatsQuery.
 type StatsResult struct {
 	// Labels are the labels that apply to this result.
-	Labels map[string]string
+	Labels map[string]string `json:"labels"`
 
 	// Frames are the data frames that apply to this result.
-	Frames [][]float64
+	Frames [][]float64 `json:"frames"`
 }
 
 // AlertStatsQuery is a query that can be run against a DB to pull aggregated numbers out of it.
@@ -50,7 +50,7 @@ func UnmarshalAlertStatsQuery(args map[string]string) (AlertStatsQuery, error) {
 
 	constructor, ok := alertStatsQueryRegistry[name]
 	if !ok {
-		return nil, ErrStatsQueryFilterDoesntExist
+		return nil, fmt.Errorf("unknown stats query type %q", name)
 	}
 
 	return constructor(args)

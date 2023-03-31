@@ -1,5 +1,5 @@
 import { h } from "preact";
-import Label from "../label";
+import Label from "../labelcard";
 import style from "./styles.css";
 import { Alert } from "../../api";
 
