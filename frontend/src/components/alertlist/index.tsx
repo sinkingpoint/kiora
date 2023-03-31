@@ -13,19 +13,19 @@ interface ErrorViewProps {
 	error: string;
 }
 
-const ErrorView = (props: ErrorViewProps) => {
-	return <div>{props.error}</div>;
+const ErrorView = ({error}: ErrorViewProps) => {
+	return <div>{error}</div>;
 };
 
 interface SuccessViewProps {
 	alerts: Alert[];
 }
 
-const SuccessView = (props: SuccessViewProps) => {
+const SuccessView = ({alerts}: SuccessViewProps) => {
 	return (
 		<>
-			{(props.alerts.length > 0 &&
-				props.alerts.map((alert) => {
+			{(alerts.length > 0 &&
+				alerts.map((alert) => {
 					return <Single alert={alert} />;
 				})) || <div>No alerts</div>}
 		</>

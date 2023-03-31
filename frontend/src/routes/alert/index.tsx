@@ -18,34 +18,34 @@ interface SuccessViewProps {
 	alert: Alert;
 }
 
-const SuccessView = (props: SuccessViewProps) => {
-	const startTime = new Date(props.alert.startsAt);
-	const endTime = new Date(props.alert.endsAt);
+const SuccessView = ({alert}: SuccessViewProps) => {
+	const startTime = new Date(alert.startsAt);
+	const endTime = new Date(alert.endsAt);
 
 	return (
 		<div class={style["alert-view"]}>
 			<span class={style["alert-row"]}>
-				<h1>{props.alert.labels["alertname"] || <i>No Alert Name</i>}</h1>
+				<h1>{alert.labels["alertname"] || <i>No Alert Name</i>}</h1>
 			</span>
 
-			{props.alert.acknowledgement !== undefined && (
+			{alert.acknowledgement !== undefined && (
 				<span>
 					<span class={style["alert-row"]}>
-						Acknowledged by {props.alert.acknowledgement.creator}
+						Acknowledged by {alert.acknowledgement.creator}
 					</span>
 				</span>
 			)}
 
 			<span class={style["alert-row"]}>
-				<LabelList alert={props.alert} />
+				<LabelList alert={alert} />
 			</span>
 
 			<span class={style["alert-row"]}>
-				<label>Status:</label> {props.alert.status}
+				<label>Status:</label> {alert.status}
 			</span>
 
 			<span class={style["alert-row"]}>
-				<label>ID:</label> {props.alert.id}
+				<label>ID:</label> {alert.id}
 			</span>
 
 			<span class={style["alert-row"]}>
@@ -61,10 +61,10 @@ const SuccessView = (props: SuccessViewProps) => {
 			<span>
 				<h3>Annotations:</h3>
 			</span>
-			{Object.keys(props.alert.annotations).map((key) => {
+			{Object.keys(alert.annotations).map((key) => {
 				return (
 					<span>
-						<label>{key}:</label> {props.alert.annotations[key]}
+						<label>{key}:</label> {alert.annotations[key]}
 					</span>
 				);
 			})}
