@@ -1,7 +1,7 @@
 import { h } from "preact";
 import style from "./styles.css";
 
-export default () => {
+const Header = () => {
 	return (
 		<header>
 			<a href="/" class={style.logo}>
@@ -10,3 +10,5 @@ export default () => {
 		</header>
 	);
 };
+
+export default Header;

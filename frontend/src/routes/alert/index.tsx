@@ -1,4 +1,4 @@
-import { h, Fragment } from "preact";
+import { h } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import LabelList from "../../components/alertcard/labels";
 import { Alert, DefaultService } from "../../api";
@@ -18,7 +18,7 @@ interface SuccessViewProps {
 	alert: Alert;
 }
 
-const SuccessView = ({alert}: SuccessViewProps) => {
+const SuccessView = ({ alert }: SuccessViewProps) => {
 	const startTime = new Date(alert.startsAt);
 	const endTime = new Date(alert.endsAt);
 
@@ -30,9 +30,7 @@ const SuccessView = ({alert}: SuccessViewProps) => {
 
 			{alert.acknowledgement !== undefined && (
 				<span>
-					<span class={style["alert-row"]}>
-						Acknowledged by {alert.acknowledgement.creator}
-					</span>
+					<span class={style["alert-row"]}>Acknowledged by {alert.acknowledgement.creator}</span>
 				</span>
 			)}
 
@@ -63,7 +61,7 @@ const SuccessView = ({alert}: SuccessViewProps) => {
 			</span>
 			{Object.keys(alert.annotations).map((key) => {
 				return (
-					<span>
+					<span key={key}>
 						<label>{key}:</label> {alert.annotations[key]}
 					</span>
 				);
@@ -72,7 +70,7 @@ const SuccessView = ({alert}: SuccessViewProps) => {
 	);
 };
 
-export default ({ id }: AlertProps) => {
+const AlertView = ({ id }: AlertProps) => {
 	const [state, setState] = useState<AlertState>({
 		loading: true,
 	});
@@ -82,7 +80,8 @@ export default ({ id }: AlertProps) => {
 			return;
 		}
 
-		DefaultService.getAlerts(null, null, null, null, id).then((alerts) => {
+		DefaultService.getAlerts(null, null, null, null, id)
+			.then((alerts) => {
 				if (alerts.length === 0) {
 					return;
 				}
@@ -98,7 +97,7 @@ export default ({ id }: AlertProps) => {
 					error: error.toString(),
 				});
 			});
-	}, [state]);
+	}, [state, id]);
 
 	if (state.loading) {
 		return <div>Loading...</div>;
@@ -107,6 +106,6 @@ export default ({ id }: AlertProps) => {
 	} else if (state.alert) {
 		return <SuccessView alert={state.alert} />;
 	}
-
-	return <div></div>;
 };
+
+export default AlertView;

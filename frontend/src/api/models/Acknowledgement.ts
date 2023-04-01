@@ -3,7 +3,6 @@
 /* eslint-disable */
 
 export type Acknowledgement = {
-    creator?: string;
-    comment?: string;
+	creator?: string;
+	comment?: string;
 };
-

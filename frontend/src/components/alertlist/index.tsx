@@ -13,7 +13,7 @@ interface ErrorViewProps {
 	error: string;
 }
 
-const ErrorView = ({error}: ErrorViewProps) => {
+const ErrorView = ({ error }: ErrorViewProps) => {
 	return <div>{error}</div>;
 };
 
@@ -21,12 +21,12 @@ interface SuccessViewProps {
 	alerts: Alert[];
 }
 
-const SuccessView = ({alerts}: SuccessViewProps) => {
+const SuccessView = ({ alerts }: SuccessViewProps) => {
 	return (
 		<>
 			{(alerts.length > 0 &&
 				alerts.map((alert) => {
-					return <Single alert={alert} />;
+					return <Single key={alert.id} alert={alert} />;
 				})) || <div>No alerts</div>}
 		</>
 	);
@@ -38,25 +38,25 @@ const AlertList = () => {
 		loading: true,
 	});
 
-	const fetchAlerts = async () => {
-		await DefaultService.getAlerts(100, 0, ["__starts_at__"], "DESC")
-			.then((newAlerts) => {
-				setAlerts({
-					...alerts,
-					alerts: newAlerts,
-					loading: false,
-				});
-			})
-			.catch((error) => {
-				setAlerts({
-					...alerts,
-					error: error.toString(),
-					loading: false,
-				});
-			});
-	};
-
 	useEffect(() => {
+		const fetchAlerts = async () => {
+			await DefaultService.getAlerts(100, 0, ["__starts_at__"], "DESC")
+				.then((newAlerts) => {
+					setAlerts({
+						...alerts,
+						alerts: newAlerts,
+						loading: false,
+					});
+				})
+				.catch((error) => {
+					setAlerts({
+						...alerts,
+						error: error.toString(),
+						loading: false,
+					});
+				});
+		};
+
 		if (alerts.loading) {
 			fetchAlerts();
 		}
@@ -66,9 +66,9 @@ const AlertList = () => {
 		return <div>Loading...</div>;
 	} else if (alerts.error) {
 		return <ErrorView error={alerts.error} />;
-	} else {
-		return <SuccessView alerts={alerts.alerts} />;
 	}
+
+	return <SuccessView alerts={alerts.alerts} />;
 };
 
 export default AlertList;

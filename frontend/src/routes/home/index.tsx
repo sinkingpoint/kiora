@@ -27,38 +27,36 @@ const StatsRow = () => {
 	});
 
 	const fetchStats = async () => {
-		await DefaultService.getAlertsStats("status_count", {}).then((result) => {
-			const newStats = {
-				...stats,
-				loading: false,
-			};
+		await DefaultService.getAlertsStats("status_count", {})
+			.then((result) => {
+				const newStats = {
+					...stats,
+					loading: false,
+				};
 
-			result.forEach((stat) => {
-				if(stat.labels.status === "firing") {
-					newStats.firingAlerts = stat.frames[0][0];
-				}
-				else if(stat.labels.status === "silenced") {
-					newStats.silencedAlerts = stat.frames[0][0];
-				}
-				else if(stat.labels.status === "acked") {
-					newStats.ackedAlerts = stat.frames[0][0];
-				}
-				else if(stat.labels.status === "resolved") {
-					newStats.resolvedAlerts = stat.frames[0][0];
-				}
-				else if(stat.labels.status === "timed out") {
-					newStats.timedOutAlerts = stat.frames[0][0];
-				}
-			});
+				result.forEach((stat) => {
+					if (stat.labels.status === "firing") {
+						newStats.firingAlerts = stat.frames[0][0];
+					} else if (stat.labels.status === "silenced") {
+						newStats.silencedAlerts = stat.frames[0][0];
+					} else if (stat.labels.status === "acked") {
+						newStats.ackedAlerts = stat.frames[0][0];
+					} else if (stat.labels.status === "resolved") {
+						newStats.resolvedAlerts = stat.frames[0][0];
+					} else if (stat.labels.status === "timed out") {
+						newStats.timedOutAlerts = stat.frames[0][0];
+					}
+				});
 
-			setStats(newStats);
-		}).catch((error) => {
-			setStats({
-				...stats,
-				error: error.toString(),
-				loading: false,
+				setStats(newStats);
+			})
+			.catch((error) => {
+				setStats({
+					...stats,
+					error: error.toString(),
+					loading: false,
+				});
 			});
-		});
 	};
 
 	useEffect(() => {
@@ -84,9 +82,9 @@ const StatsRow = () => {
 			<SingleStatPanel title="Timed Out Alerts" value={stats.timedOutAlerts.toString()} />
 		</div>
 	);
-}
+};
 
-export default () => {
+const Home = () => {
 	return (
 		<div>
 			<StatsRow />
@@ -94,3 +92,5 @@ export default () => {
 		</div>
 	);
 };
+
+export default Home;

@@ -7,7 +7,7 @@ interface CardProps {
 	alert: Alert;
 }
 
-export default ({ alert }: CardProps) => {
+const AlertCard = ({ alert }: CardProps) => {
 	const startTime = new Date(alert.startsAt).toLocaleString();
 
 	return (
@@ -16,14 +16,16 @@ export default ({ alert }: CardProps) => {
 				<div>
 					<span class={style["single-top"]}>{startTime}</span>
 					<span class={style["single-top"]}>
-						{(alert.labels["alertname"] && 'alertname="' + alert.labels["alertname"] + '"') || (
+						{(alert.labels["alertname"] && `'alertname="'${alert.labels["alertname"]}'"' `) || (
 							<i>No Alert Name</i>
 						)}
 					</span>
 				</div>
-				
+
 				<Labels alert={alert} />
 			</div>
 		</a>
 	);
 };
+
+export default AlertCard;

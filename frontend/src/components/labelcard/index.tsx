@@ -6,10 +6,12 @@ interface LabelProps {
 	labelValue: string;
 }
 
-export default ({ labelName, labelValue }: LabelProps) => {
+const LabelCard = ({ labelName, labelValue }: LabelProps) => {
 	return (
 		<span class={style.label}>
 			{labelName}="{labelValue}"
 		</span>
 	);
 };
+
+export default LabelCard;

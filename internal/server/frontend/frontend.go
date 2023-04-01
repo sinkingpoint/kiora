@@ -9,7 +9,7 @@ import (
 )
 
 //go:generate npm --prefix ../../../frontend run build
-//go:generate rm -r assets
+//go:generate rm -rf assets
 //go:generate mkdir -p assets
 //go:generate cp -r ../../../frontend/build assets
 //go:embed assets/build/*

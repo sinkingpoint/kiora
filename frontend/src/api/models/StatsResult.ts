@@ -3,7 +3,6 @@
 /* eslint-disable */
 
 export type StatsResult = {
-    labels: Record<string, string>;
-    frames: Array<Array<number>>;
+	labels: Record<string, string>;
+	frames: Array<Array<number>>;
 };
-
