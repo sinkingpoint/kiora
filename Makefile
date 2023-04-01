@@ -41,6 +41,7 @@ build: generate ci build-unchecked
 
 .PHONY: build-unchecked
 build-unchecked:
+	go build -o ./artifacts/tuku ./cmd/tuku
 	go build -o ./artifacts/kiora ./cmd/kiora
 
 .PHONY: run
