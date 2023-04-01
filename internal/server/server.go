@@ -19,6 +19,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/server/api"
 	"github.com/sinkingpoint/kiora/internal/server/api/apiv1"
 	"github.com/sinkingpoint/kiora/internal/server/api/promcompat"
+	"github.com/sinkingpoint/kiora/internal/server/frontend"
 	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
 	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
@@ -122,6 +123,7 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	api := api.NewAPIImpl(k.bus, k.clusterer)
 	apiv1.Register(r, api)
 	promcompat.Register(r, api)
+	frontend.Register(r)
 
 	runtime.SetMutexProfileFraction(5)
 	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)

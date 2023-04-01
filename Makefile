@@ -41,7 +41,6 @@ build: generate ci build-unchecked
 
 .PHONY: build-unchecked
 build-unchecked:
-	cd frontend && npm run build
 	go build -o ./artifacts/kiora ./cmd/kiora
 
 .PHONY: run
@@ -58,6 +57,7 @@ generate:
 	mockgen -source ./lib/kiora/config/provider.go > mocks/mock_config/provider.go
 	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
 	mockgen -source ./internal/services/bus.go > mocks/mock_services/bus.go
+	go generate ./...
 
 .PHONY: clean
 clean:

@@ -5,3 +5,4 @@
 /frontend/build
 /frontend/size-plugin.json
 /frontend/node_modules/.cache
+/internal/server/frontend/assets
