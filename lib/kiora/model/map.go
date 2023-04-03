@@ -40,3 +40,17 @@ func (s Labels) Bytes() []byte {
 
 	return buf.Bytes()
 }
+
+func (s Labels) Equal(other Labels) bool {
+	if len(s) != len(other) {
+		return false
+	}
+
+	for k, v := range s {
+		if other[k] != v {
+			return false
+		}
+	}
+
+	return true
+}

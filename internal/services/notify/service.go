@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/services"
@@ -18,16 +19,29 @@ var _ = services.Service(&NotifyService{})
 
 const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
 
+// groupMeta is a helper struct to track groups of alerts that should be notified together.
+type groupMeta struct {
+	// The group key is
+	GroupLabels model.Labels
+	Timeout     time.Time
+	Notifier    config.NotifierSettings
+	Alerts      []model.Alert
+}
+
 // NotifyService is a background service that scans the db for alerts to send notifications for.
 type NotifyService struct {
 	config config.Config
 	bus    services.Bus
+
+	groupMutex    sync.Mutex
+	pendingGroups map[string][]groupMeta
 }
 
 func NewNotifyService(config config.Config, bus services.Bus) *NotifyService {
 	return &NotifyService{
-		config: config,
-		bus:    bus,
+		config:        config,
+		bus:           bus,
+		pendingGroups: make(map[string][]groupMeta),
 	}
 }
 
@@ -43,6 +57,7 @@ outer:
 		case <-ticker.C:
 			n.notifyFiring(ctx)
 			n.notifyResolved(ctx)
+			n.notifyGroup(ctx)
 		case <-ctx.Done():
 			break outer
 		}
@@ -67,6 +82,66 @@ func (n *NotifyService) notifyResolved(ctx context.Context) {
 	}
 }
 
+// notifyGroup will notify all groups that have timed out. This locks the groupMutex for the duration of the function
+// which is super expensive and will block all other notifications. This is fine for now, but we should probably
+// find a better way to do this.
+func (n *NotifyService) notifyGroup(ctx context.Context) {
+	n.groupMutex.Lock()
+	defer n.groupMutex.Unlock()
+
+	for key, groups := range n.pendingGroups {
+		stillWaitingGroups := []groupMeta{}
+		for _, g := range groups {
+			if g.Timeout.Before(stubs.Time.Now()) {
+				if err := g.Notifier.Notify(ctx, g.Alerts...); err != nil {
+					n.bus.Logger("notify").Err(err).Msg("failed to notify for alert")
+				}
+			} else {
+				stillWaitingGroups = append(stillWaitingGroups, g)
+			}
+		}
+
+		if len(stillWaitingGroups) == 0 {
+			delete(n.pendingGroups, key)
+		} else {
+			n.pendingGroups[key] = stillWaitingGroups
+		}
+	}
+}
+
+func (n *NotifyService) groupAlert(ctx context.Context, notifier config.NotifierSettings, a model.Alert) {
+	_, span := otel.Tracer("").Start(ctx, "NotifyService.groupAlert")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("alert", fmt.Sprintf("%+v", a)))
+
+	key := map[string]string{}
+	for _, l := range notifier.GroupLabels {
+		key[l] = a.Labels[l]
+	}
+
+	n.groupMutex.Lock()
+	groups, ok := n.pendingGroups[notifier.Name()]
+	if !ok {
+		groups = append(groups, groupMeta{
+			GroupLabels: key,
+			Timeout:     stubs.Time.Now().Add(notifier.GroupWait),
+			Notifier:    notifier,
+			Alerts:      []model.Alert{a},
+		})
+	} else {
+		for i, g := range groups {
+			if g.GroupLabels.Equal(key) {
+				groups[i].Alerts = append(groups[i].Alerts, a)
+				break
+			}
+		}
+	}
+
+	n.pendingGroups[notifier.Name()] = groups
+	n.groupMutex.Unlock()
+}
+
 // notifyAlert sends a notification for the given alert.
 func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	ctx, span := otel.Tracer("").Start(ctx, "NotifyService.notifyAlert")
@@ -83,6 +158,12 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	a.LastNotifyTime = stubs.Time.Now()
 
 	for _, notifier := range notifiers {
+		if notifier.GroupWait != 0 {
+			// If we have a GroupWait, we need to add this alert to a group.
+			n.groupAlert(ctx, notifier, a)
+			continue
+		}
+
 		if err := notifier.Notify(ctx, a); err != nil {
 			n.bus.Logger("notify").Err(err).Msg("failed to notify for alert")
 		}

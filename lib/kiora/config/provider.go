@@ -14,6 +14,10 @@ const DEFAULT_GROUP_WAIT = 10 * time.Second
 
 // Notifier represents something that can send a notification about an alert.
 type Notifier interface {
+	// Name returns the name of the notifier.
+	Name() string
+
+	// Notify sends a notification about the given alerts.
 	Notify(ctx context.Context, alerts ...model.Alert) error
 }
 
@@ -33,8 +37,8 @@ type Config interface {
 type NotifierSettings struct {
 	Notifier
 
-	// GroupKeys is a list of label names that should be used to group alerts together.
-	GroupKeys []string
+	// GroupLabels is a list of label names that should be used to group alerts together.
+	GroupLabels []string
 
 	// GroupWait is the amount of time to wait before sending a notification for a group of alerts, to give time for more alerts to be added to the group.
 	GroupWait time.Duration
@@ -43,8 +47,8 @@ type NotifierSettings struct {
 // NewNotifier creates a new NotifierSettings with the given Notifier, and default settings.
 func NewNotifier(n Notifier) NotifierSettings {
 	return NotifierSettings{
-		Notifier:  n,
-		GroupKeys: []string{"alertname"},
-		GroupWait: DEFAULT_GROUP_WAIT,
+		Notifier:    n,
+		GroupLabels: []string{"alertname"},
+		GroupWait:   DEFAULT_GROUP_WAIT,
 	}
 }

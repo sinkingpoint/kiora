@@ -27,6 +27,7 @@ const DEFAULT_ENCODING = "json"
 
 // FileNotifierNode represents a node that can output alerts to a Writer.
 type FileNotifierNode struct {
+	name    string
 	encoder encoding.Encoder
 	file    io.WriteCloser
 }
@@ -45,11 +46,13 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 	switch attrs["type"] {
 	case "stdout":
 		return &FileNotifierNode{
+			name:    name,
 			encoder: encoder,
 			file:    os.Stdout,
 		}, nil
 	case "stderr":
 		return &FileNotifierNode{
+			name:    name,
 			encoder: encoder,
 			file:    os.Stderr,
 		}, nil
@@ -65,12 +68,17 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 		}
 
 		return &FileNotifierNode{
+			name:    name,
 			encoder: encoder,
 			file:    file,
 		}, nil
 	default:
 		return nil, fmt.Errorf("invalid type for file node: %q", attrs["type"])
 	}
+}
+
+func (f *FileNotifierNode) Name() string {
+	return f.name
 }
 
 func (f *FileNotifierNode) Type() string {
