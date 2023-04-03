@@ -79,10 +79,10 @@ func (m *MockConfig) EXPECT() *MockConfigMockRecorder {
 }
 
 // GetNotifiersForAlert mocks base method.
-func (m *MockConfig) GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []config.Notifier {
+func (m *MockConfig) GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []config.NotifierSettings {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNotifiersForAlert", ctx, alert)
-	ret0, _ := ret[0].([]config.Notifier)
+	ret0, _ := ret[0].([]config.NotifierSettings)
 	return ret0
 }
 

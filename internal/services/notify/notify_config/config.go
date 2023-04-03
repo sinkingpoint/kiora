@@ -21,7 +21,7 @@ func NewClusterNotifier(clusterer clustering.Clusterer, config config.Config) *C
 	}
 }
 
-func (c *ClusterNotifier) GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []config.Notifier {
+func (c *ClusterNotifier) GetNotifiersForAlert(ctx context.Context, alert *model.Alert) []config.NotifierSettings {
 	if !c.clusterer.IsAuthoritativeFor(ctx, alert) {
 		return nil
 	}
