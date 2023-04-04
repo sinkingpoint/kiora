@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-make build
+make build-unchecked
 
 mkdir -p artifacts/logs
 

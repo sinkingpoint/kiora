@@ -7,6 +7,8 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
+type NotifierName string
+
 // DefaultGroupWait is the default amount of time that alerts sit around waiting for more alerts to be added to the group.
 // This is pretty arbitrary, but increasing it will increase the amount of time that alerts are delayed, while sending fewer
 // notifications. Decreasing it will decrease the amount of time that alerts are delayed, but will send more notifications.
@@ -15,7 +17,7 @@ const DEFAULT_GROUP_WAIT = 10 * time.Second
 // Notifier represents something that can send a notification about an alert.
 type Notifier interface {
 	// Name returns the name of the notifier.
-	Name() string
+	Name() NotifierName
 
 	// Notify sends a notification about the given alerts.
 	Notify(ctx context.Context, alerts ...model.Alert) error
@@ -44,11 +46,29 @@ type NotifierSettings struct {
 	GroupWait time.Duration
 }
 
-// NewNotifier creates a new NotifierSettings with the given Notifier, and default settings.
-func NewNotifier(n Notifier) NotifierSettings {
+func DefaultNotifierSettings() NotifierSettings {
 	return NotifierSettings{
-		Notifier:    n,
 		GroupLabels: []string{"alertname"},
 		GroupWait:   DEFAULT_GROUP_WAIT,
 	}
+}
+
+// NewNotifier creates a new NotifierSettings with the given Notifier, and default settings.
+func NewNotifier(n Notifier) NotifierSettings {
+	return DefaultNotifierSettings().WithNotifier(n)
+}
+
+func (n NotifierSettings) WithGroupLabels(labels ...string) NotifierSettings {
+	n.GroupLabels = labels
+	return n
+}
+
+func (n NotifierSettings) WithGroupWait(wait time.Duration) NotifierSettings {
+	n.GroupWait = wait
+	return n
+}
+
+func (n NotifierSettings) WithNotifier(notifier Notifier) NotifierSettings {
+	n.Notifier = notifier
+	return n
 }

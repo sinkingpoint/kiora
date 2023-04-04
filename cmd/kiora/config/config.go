@@ -2,12 +2,13 @@ package config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
 	"github.com/awalterschulze/gographviz"
 	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -30,34 +31,56 @@ type ConfigFile struct {
 	reverseLinks map[string][]Link
 }
 
+// GetNotifiersForAlert walks the config graph, building up notification settings as we go before returning a list
+// of notifiers we hit along the way. We expect here that the ConfigFile has been passed through `Validate` already, and thus
+// is assumed to have no cycles.
 func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) []config.NotifierSettings {
 	leaves := []config.NotifierSettings{}
 
-	// We expect here that the ConfigFile has been passed through `Validate` already, and thus
-	// is assumed to have no cycles.
-	stack := []string{ALERT_ROOT}
-	for len(stack) > 0 {
-		nodeName := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		for _, link := range c.links[nodeName] {
-			matchesFilter := true
-			if link.incomingFilter != nil {
-				matchesFilter = link.incomingFilter.Filter(ctx, a)
-			}
+	// nodeMeta is a node that we've traversed to, and the partial configuration that we've built up along the path there.
+	// TODO(cdouch): I'm not _entirely_ sure what happens when we get a two paths to the same node, but with different
+	// configurations. I think we'll end up with two notifiers, but I'm not sure. Need to think about this more.
+	type nodeMeta struct {
+		name        string
+		partialConf config.NotifierSettings
+	}
 
-			if link.incomingFilter == nil || matchesFilter {
-				stack = append(stack, link.to)
+	// We use a stack here to do a depth-first search of the graph, starting at the `alerts` node.
+	stack := []nodeMeta{{
+		name:        ALERT_ROOT,
+		partialConf: config.DefaultNotifierSettings(),
+	}}
+
+	for len(stack) > 0 {
+		node := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if confNode, ok := c.nodes[node.name].(config.NotifierSettingsNode); confNode != nil && ok {
+			if err := confNode.Apply(&node.partialConf); err != nil {
+				log.Warn().Err(err).Msg("failed to apply notifier settings node")
 			}
 		}
 
-		if node, ok := c.nodes[nodeName].(config.Notifier); node != nil && ok {
-			leaves = append(leaves, config.NewNotifier(node))
+		for _, link := range c.links[node.name] {
+			matchesFilter := link.incomingFilter == nil || link.incomingFilter.Filter(ctx, a)
+			if matchesFilter {
+				stack = append(stack, nodeMeta{
+					name:        link.to,
+					partialConf: node.partialConf,
+				})
+			}
+		}
+
+		if notifier, ok := c.nodes[node.name].(config.Notifier); notifier != nil && ok {
+			leaves = append(leaves, node.partialConf.WithNotifier(notifier))
 		}
 	}
 
 	return leaves
 }
 
+// validateData walks the config graph, along every path into the given leaf. We check every path against the given Fielder,
+// and return an error if we can't find a path into the leaf that matches the data.
 func (c *ConfigFile) validateData(ctx context.Context, leaf string, data config.Fielder) error {
 	roots := calculateRootsFrom(c, leaf) // TODO(cdouch): memoize this.
 	if len(roots) == 0 {
@@ -98,17 +121,17 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 
 	body, err := os.ReadFile(path)
 	if err != nil {
-		return conf, err
+		return conf, errors.Wrap(err, "failed to read config file")
 	}
 
 	graphAst, err := gographviz.Parse(body)
 	if err != nil {
-		return conf, err
+		return conf, errors.Wrap(err, "failed to parse config file as dot")
 	}
 
 	configGraph := newConfigGraph()
 	if err := gographviz.Analyse(graphAst, &configGraph); err != nil {
-		return conf, err
+		return conf, errors.Wrap(err, "failed to load config file")
 	}
 
 	for _, rawNode := range configGraph.nodes {

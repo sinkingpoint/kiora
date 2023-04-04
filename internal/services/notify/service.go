@@ -21,11 +21,17 @@ const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
 
 // groupMeta is a helper struct to track groups of alerts that should be notified together.
 type groupMeta struct {
-	// The group key is
+	// The group key is a unique identifier for the group of alerts.
 	GroupLabels model.Labels
-	Timeout     time.Time
-	Notifier    config.NotifierSettings
-	Alerts      []model.Alert
+
+	// The group timeout is the time at which we should send a notification for this group.
+	Timeout time.Time
+
+	// The group notifier is the notifier that we should use to send this notification.
+	Notifier config.NotifierSettings
+
+	// The group alerts is the list of alerts that are in this group that will be notifier when the timeout is reached.
+	Alerts []model.Alert
 }
 
 // NotifyService is a background service that scans the db for alerts to send notifications for.
@@ -33,15 +39,17 @@ type NotifyService struct {
 	config config.Config
 	bus    services.Bus
 
-	groupMutex    sync.Mutex
-	pendingGroups map[string][]groupMeta
+	groupMutex sync.Mutex
+
+	// pendingGroups is a map of notifier names to a list of groups that are pending notification for that notifier.
+	pendingGroups map[config.NotifierName][]groupMeta
 }
 
-func NewNotifyService(config config.Config, bus services.Bus) *NotifyService {
+func NewNotifyService(conf config.Config, bus services.Bus) *NotifyService {
 	return &NotifyService{
-		config:        config,
+		config:        conf,
 		bus:           bus,
-		pendingGroups: make(map[string][]groupMeta),
+		pendingGroups: make(map[config.NotifierName][]groupMeta),
 	}
 }
 

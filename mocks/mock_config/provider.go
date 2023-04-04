@@ -37,10 +37,10 @@ func (m *MockNotifier) EXPECT() *MockNotifierMockRecorder {
 }
 
 // Name mocks base method.
-func (m *MockNotifier) Name() string {
+func (m *MockNotifier) Name() config.NotifierName {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Name")
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(config.NotifierName)
 	return ret0
 }
 

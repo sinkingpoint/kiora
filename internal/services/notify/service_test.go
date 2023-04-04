@@ -86,7 +86,7 @@ func TestNotifyServiceFiring(t *testing.T) {
 			notifier.EXPECT().Notify(gomock.Any(), alerts).AnyTimes()
 
 			conf := mock_config.NewMockConfig(ctrl)
-			conf.EXPECT().GetNotifiersForAlert(gomock.Any(), gomock.Any()).Return([]config.NotifierSettings{config.NewNotifier(notifier)}).AnyTimes()
+			conf.EXPECT().GetNotifiersForAlert(gomock.Any(), gomock.Any()).Return([]config.NotifierSettings{config.NewNotifier(notifier).WithGroupWait(0)}).AnyTimes()
 
 			notifyService := NewNotifyService(conf, bus)
 			notifyService.notifyFiring(context.TODO())

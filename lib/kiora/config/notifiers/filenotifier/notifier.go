@@ -25,9 +25,11 @@ const STDERR_NODE_NAME = "stderr"
 const FILE_NODE_NAME = "file"
 const DEFAULT_ENCODING = "json"
 
+var _ = config.Notifier(&FileNotifierNode{})
+
 // FileNotifierNode represents a node that can output alerts to a Writer.
 type FileNotifierNode struct {
-	name    string
+	name    config.NotifierName
 	encoder encoding.Encoder
 	file    io.WriteCloser
 }
@@ -46,13 +48,13 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 	switch attrs["type"] {
 	case "stdout":
 		return &FileNotifierNode{
-			name:    name,
+			name:    config.NotifierName(name),
 			encoder: encoder,
 			file:    os.Stdout,
 		}, nil
 	case "stderr":
 		return &FileNotifierNode{
-			name:    name,
+			name:    config.NotifierName(name),
 			encoder: encoder,
 			file:    os.Stderr,
 		}, nil
@@ -68,7 +70,7 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 		}
 
 		return &FileNotifierNode{
-			name:    name,
+			name:    config.NotifierName(name),
 			encoder: encoder,
 			file:    file,
 		}, nil
@@ -77,7 +79,7 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 	}
 }
 
-func (f *FileNotifierNode) Name() string {
+func (f *FileNotifierNode) Name() config.NotifierName {
 	return f.name
 }
 
