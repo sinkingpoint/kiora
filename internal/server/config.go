@@ -20,8 +20,17 @@ type serverConfig struct {
 	HTTPListenAddress string
 
 	ClusterListenAddress string
-	BootstrapPeers       []string
-	ServiceConfig        config.Config
+
+	// ClusterShardLabels is the set of labels that will be used to determine which node in a cluster will send a given alert.
+	// Defaults to an empty list which will shard by every label, effectively causing a random assignment across the cluster. Setting this can improve alert grouping,
+	// at the cost of a potentially unbalanced cluster.
+	ClusterShardLabels []string
+
+	// BootstrapPeers is the set of peers to bootstrap the cluster with. Defaults to an empty list which means that the node will not join a cluster.
+	BootstrapPeers []string
+
+	// ServiceConfig is the config that will determine how data flows through the kiora instance.
+	ServiceConfig config.Config
 
 	// ReadTimeout is the maximum amount of time the server will spend reading requests from clients. Defaults to 5 seconds.
 	ReadTimeout time.Duration

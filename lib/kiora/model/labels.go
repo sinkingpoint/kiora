@@ -17,10 +17,18 @@ type Labels map[string]string
 // Hash takes an xxhash64 across all the labels in the map.
 func (s Labels) Hash() LabelsHash {
 	hash := xxhash.New()
-
 	hash.Write(s.Bytes())
-
 	return hash.Sum64()
+}
+
+// Subset returns a new Labels object with only the keys specified in labelNames.
+func (s Labels) Subset(labelNames ...string) Labels {
+	labels := Labels{}
+	for _, key := range labelNames {
+		labels[key] = s[key]
+	}
+
+	return labels
 }
 
 func (s Labels) Bytes() []byte {

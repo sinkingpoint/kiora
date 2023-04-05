@@ -20,6 +20,7 @@ var CLI struct {
 
 	NodeName             string   `name:"cluster.node-name" help:"the name to join the cluster with"`
 	ClusterListenAddress string   `name:"cluster.listen-url" help:"the address to run cluster activities on" default:"localhost:4279"`
+	ClusterShardLabels   []string `name:"cluster.shard-labels" help:"the labels that determine which node in a cluster will send a given alert"`
 	BootstrapPeers       []string `name:"cluster.bootstrap-peers" help:"the peers to bootstrap with"`
 }
 
@@ -37,6 +38,7 @@ func main() {
 	serverConfig := server.NewServerConfig()
 	serverConfig.HTTPListenAddress = CLI.HTTPListenAddress
 	serverConfig.ClusterListenAddress = CLI.ClusterListenAddress
+	serverConfig.ClusterShardLabels = CLI.ClusterShardLabels
 	serverConfig.BootstrapPeers = CLI.BootstrapPeers
 	serverConfig.ServiceConfig = config
 

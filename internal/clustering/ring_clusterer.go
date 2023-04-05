@@ -28,8 +28,9 @@ var _ = ClustererDelegate(&RingClusterer{})
 
 // RingClusterer is a clusterer that keeps track of nodes in a consistent hash ring.
 type RingClusterer struct {
-	me   consistent.Member
-	ring *consistent.Consistent
+	me        consistent.Member
+	ring      *consistent.Consistent
+	shardKeys []string
 }
 
 // NewRingClusterer constructs a new RingClusterer, with the given name and address.
@@ -50,8 +51,22 @@ func NewRingClusterer(myName string, myAddress string) *RingClusterer {
 	}
 }
 
+func (r *RingClusterer) SetShardLabels(keys []string) {
+	r.shardKeys = keys
+}
+
 func (r *RingClusterer) IsAuthoritativeFor(ctx context.Context, a *model.Alert) bool {
-	return r.ring.LocateKey(a.Labels.Bytes()) == r.me
+	return r.GetAuthoritativeNode(ctx, a) == r.me
+}
+
+// GetAuthoritativeNode returns the node that is authoritative for the given alert.
+func (r *RingClusterer) GetAuthoritativeNode(ctx context.Context, a *model.Alert) consistent.Member {
+	if len(r.shardKeys) == 0 {
+		return r.ring.LocateKey(a.Labels.Bytes())
+	}
+
+	labels := a.Labels.Subset(r.shardKeys...)
+	return r.ring.LocateKey(labels.Bytes())
 }
 
 func (r *RingClusterer) AddNode(name string, address string) {

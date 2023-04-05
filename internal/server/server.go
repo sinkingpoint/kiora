@@ -52,6 +52,9 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	config := serf.DefaultConfig()
 
 	ringClusterer := clustering.NewRingClusterer(config.NodeName, clusterAddress)
+	if len(conf.ClusterShardLabels) > 0 {
+		ringClusterer.SetShardLabels(conf.ClusterShardLabels)
+	}
 
 	config.ListenURL = conf.ClusterListenAddress
 	config.BootstrapPeers = conf.BootstrapPeers
