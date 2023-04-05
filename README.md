@@ -21,6 +21,28 @@ Here's what I want to work on:
  - Multi-Tenancy and Rate limiting
  - Alert Histories
 
+## Usage
+
+```
+Usage: kiora
+
+An experimental Alertmanager
+
+Flags:
+  -h, --help                                                   Show context-sensitive help.
+      --tracing.service-name=STRING
+      --tracing.exporter-type=STRING
+      --tracing.destination-url=STRING
+      --web.listen-url="localhost:4278"                        the address to listen on
+  -c, --config.file="./kiora.dot"                              the config file to load config from
+      --cluster.node-name=STRING                               the name to join the cluster with
+      --cluster.listen-url="localhost:4279"                    the address to run cluster activities on
+      --cluster.shard-labels=CLUSTER.SHARD-LABELS,...          the labels that determine which node in a cluster will send a given alert
+      --cluster.bootstrap-peers=CLUSTER.BOOTSTRAP-PEERS,...    the peers to bootstrap with
+      --storage.backend="boltdb"                               the storage backend to use
+      --storage.path="./kiora.db"                              the path to store data in
+```
+
 ## Prometheus Configuration
 
 Kiora provides a compatibility shim with the Prometheus Alertmanager API. Simply configure your Kiora instance as another Alertmanager, with the "api/prom-compat" path prefix:
@@ -34,32 +56,16 @@ alerting:
           - 0.0.0.0:4278
 ```
 
-## Usage
-
-```
-Usage: kiora
-
-An experimental Alertmanager
-
-Flags:
-  -h, --help                                                   Show context-sensitive help.
-      --web.listen-url="localhost:4278"                        the address to listen on
-  -c, --config.file="./kiora.dot"                              the config file to load config from
-      --cluster.node-name=STRING                               the name to join the cluster with
-      --cluster.listen-url="localhost:4279"                    the address to run cluster activities on
-      --cluster.bootstrap-peers=CLUSTER.BOOTSTRAP-PEERS,...    the peers to bootstrap with
-```
-
 ## Configuration
 
-All Kiora configurations are also valid [Graphviz Dot](https://graphviz.org/doc/info/lang.html) files, allowing you to define flows for alerts, silences, and any other model as it passes through the system. See the examples/ folder for more concrete examples.
+All Kiora configurations are also valid [Graphviz Dot](https://graphviz.org/doc/info/lang.html) files, allowing you to define flows for alerts, silences, and any other model as it passes through the system. See the [examples](examples) folder for more concrete examples.
 Alerts
 ## Pseudo-Nodes
 
 Kiora works with the concept of "pseudo nodes". These are nodes in the graph that act as either sources or sinks of data. We currently have three pseudo-nodes:
 
 1. `alerts` - alerts that come into the system flow out of the `alerts` pseudo-node, following the graph and notifying any notifiers that they hit.
-2. `silences` - silences that come into the system are only accepted if they have a valid path _into_ the `silences` psuedo-node. See examples/silence_validation.dot for a more concrete example of this.
+2. `silences` - silences that come into the system are only accepted if they have a valid path _into_ the `silences` psuedo-node. See [this example](examples/silence_validation.dot) for a more concrete example of this.
 3. `acks` - similar to silences, alert acknowledgements that come into the system are only accepted if the have a valid path into the `acks` pseudo-node.
 
 ### Starting Point
