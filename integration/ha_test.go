@@ -11,9 +11,7 @@ import (
 )
 
 func TestFailover(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
+	initT(t)
 
 	// The general flow of this test is:
 	// - Spin up a cluster, with 3 nodes
@@ -21,8 +19,6 @@ func TestFailover(t *testing.T) {
 	// - Send an alert into the cluster
 	// - Observe that the alert gets sent
 	// - Shutdown the node that sends the alert
-
-	t.Parallel()
 
 	alert := dummyAlert()
 	resolvedAlert := dummyAlert()

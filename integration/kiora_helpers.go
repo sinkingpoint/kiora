@@ -83,8 +83,7 @@ func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
 }
 
 // Start actually executes the Kiora command, running it in a background go routine.
-func (k *KioraInstance) Start(t *testing.T) error {
-	t.Helper()
+func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
 	name := kioraInstanceName()
 	if k.name == "" {
 		k.name = name
@@ -121,7 +120,9 @@ func (k *KioraInstance) Start(t *testing.T) error {
 		k.exitChannel <- k.cmd.Run()
 	}()
 
-	return k.WaitTillUp(context.TODO(), t)
+	require.NoError(t, k.WaitTillUp(context.TODO(), t))
+
+	return k
 }
 
 func (k *KioraInstance) IsUp(ctx context.Context, t *testing.T) bool {
@@ -284,14 +285,12 @@ func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	t.Helper()
 
 	// Start a leader node, telling it to bootstrap the cluster.
-	leader := NewKioraInstance().WithName("node-0")
-	require.NoError(t, leader.Start(t))
+	leader := NewKioraInstance().WithName("node-0").Start(t)
 
 	// Start n-1 instances.
 	nodes := []*KioraInstance{}
 	for i := 1; i < numNodes; i++ {
-		node := NewKioraInstance("--cluster.bootstrap-peers", leader.GetClusterHost()).WithName(fmt.Sprintf("node-%d", i))
-		require.NoError(t, node.Start(t))
+		node := NewKioraInstance("--cluster.bootstrap-peers", leader.GetClusterHost()).WithName(fmt.Sprintf("node-%d", i)).Start(t)
 		nodes = append(nodes, node)
 	}
 

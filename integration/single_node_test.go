@@ -8,14 +8,12 @@ import (
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // Test that Kiora doesn't immediatly exit.
 func TestKioraStart(t *testing.T) {
 	initT(t)
-	kiora := NewKioraInstance()
-	require.NoError(t, kiora.Start(t))
+	kiora := NewKioraInstance().Start(t)
 	time.Sleep(1 * time.Second)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -28,8 +26,7 @@ func TestKioraStart(t *testing.T) {
 func TestKioraAlertPost(t *testing.T) {
 	initT(t)
 
-	kiora := NewKioraInstance()
-	require.NoError(t, kiora.Start(t))
+	kiora := NewKioraInstance().Start(t)
 
 	// Send a bunch of the same alert.
 	for i := 0; i < 50; i++ {
@@ -49,8 +46,7 @@ func TestKioraAlertPost(t *testing.T) {
 func TestKioraResolveResends(t *testing.T) {
 	initT(t)
 
-	kiora := NewKioraInstance()
-	require.NoError(t, kiora.Start(t))
+	kiora := NewKioraInstance().Start(t)
 
 	alert := dummyAlert()
 	resolved := dummyAlert()
