@@ -9,7 +9,7 @@ import (
 func MockBroadcasterExpectingAlerts(ctrl *gomock.Controller, alerts ...[]model.Alert) *MockBroadcaster {
 	broadcaster := NewMockBroadcaster(ctrl)
 	for _, alerts := range alerts {
-		broadcaster.EXPECT().BroadcastAlerts(gomock.Any(), alerts).AnyTimes()
+		broadcaster.EXPECT().BroadcastAlerts(gomock.Any(), alerts).Times(1)
 	}
 
 	return broadcaster

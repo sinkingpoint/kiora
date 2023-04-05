@@ -82,7 +82,10 @@ func (n *NotifyService) notifyFiring(ctx context.Context) {
 }
 
 func (n *NotifyService) notifyResolved(ctx context.Context) {
-	q := query.Status(model.AlertStatusResolved)
+	q := query.AllAlerts(query.Status(model.AlertStatusResolved), query.AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
+		return alert.LastNotifyTime.Before(alert.EndTime)
+	}))
+
 	for _, alert := range n.bus.DB().QueryAlerts(ctx, query.NewAlertQuery(q)) {
 		if alert.LastNotifyTime.Before(alert.EndTime) {
 			n.notifyAlert(ctx, alert)
@@ -100,9 +103,17 @@ func (n *NotifyService) notifyGroup(ctx context.Context) {
 	for key, groups := range n.pendingGroups {
 		stillWaitingGroups := []groupMeta{}
 		for _, g := range groups {
-			if g.Timeout.Before(stubs.Time.Now()) {
+			if g.Timeout.Before(time.Now()) {
+				for i := range g.Alerts {
+					g.Alerts[i].LastNotifyTime = stubs.Time.Now()
+				}
+
 				if err := g.Notifier.Notify(ctx, g.Alerts...); err != nil {
 					n.bus.Logger("notify").Err(err).Msg("failed to notify for alert")
+				}
+
+				if err := n.bus.Broadcaster().BroadcastAlerts(ctx, g.Alerts...); err != nil {
+					n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
 				}
 			} else {
 				stillWaitingGroups = append(stillWaitingGroups, g)
@@ -129,24 +140,38 @@ func (n *NotifyService) groupAlert(ctx context.Context, notifier config.Notifier
 	}
 
 	n.groupMutex.Lock()
-	groups, ok := n.pendingGroups[notifier.Name()]
+	notifierName := notifier.Name()
+	groups, ok := n.pendingGroups[notifierName]
 	if !ok {
-		groups = append(groups, groupMeta{
-			GroupLabels: key,
-			Timeout:     stubs.Time.Now().Add(notifier.GroupWait),
-			Notifier:    notifier,
-			Alerts:      []model.Alert{a},
-		})
+		groups = []groupMeta{
+			{
+				GroupLabels: key,
+				Timeout:     stubs.Time.Now().Add(notifier.GroupWait),
+				Notifier:    notifier,
+				Alerts:      []model.Alert{a},
+			},
+		}
 	} else {
+		found := false
 		for i, g := range groups {
 			if g.GroupLabels.Equal(key) {
 				groups[i].Alerts = append(groups[i].Alerts, a)
+				found = true
 				break
 			}
 		}
+
+		if !found {
+			groups = append(groups, groupMeta{
+				GroupLabels: key,
+				Timeout:     stubs.Time.Now().Add(notifier.GroupWait),
+				Notifier:    notifier,
+				Alerts:      []model.Alert{a},
+			})
+		}
 	}
 
-	n.pendingGroups[notifier.Name()] = groups
+	n.pendingGroups[notifierName] = groups
 	n.groupMutex.Unlock()
 }
 
@@ -164,6 +189,7 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	}
 
 	a.LastNotifyTime = stubs.Time.Now()
+	notified := false
 
 	for _, notifier := range notifiers {
 		if notifier.GroupWait != 0 {
@@ -174,10 +200,14 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 
 		if err := notifier.Notify(ctx, a); err != nil {
 			n.bus.Logger("notify").Err(err).Msg("failed to notify for alert")
+		} else {
+			notified = true
 		}
 	}
 
-	if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
-		n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
+	if notified {
+		if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
+			n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
+		}
 	}
 }
