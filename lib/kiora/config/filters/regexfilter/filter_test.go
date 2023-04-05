@@ -2,12 +2,12 @@ package regexfilter_test
 
 import (
 	"context"
-	"regexp"
 	"testing"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/regexfilter"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRegexFilter(t *testing.T) {
@@ -55,14 +55,14 @@ func TestRegexFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			regex := regexp.MustCompile(tt.Regex)
-			match := regexfilter.RegexFilter{
-				Label: tt.Label,
-				Regex: regex,
-			}
+			filter, err := regexfilter.NewRegexFilter(map[string]string{
+				"field": tt.Label,
+				"regex": tt.Regex,
+			})
 
-			matches := match.Filter(context.TODO(), &tt.Alert)
-			assert.Equal(t, tt.ShouldMatch, matches)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.ShouldMatch, filter.Filter(context.TODO(), &tt.Alert))
 		})
 	}
 }

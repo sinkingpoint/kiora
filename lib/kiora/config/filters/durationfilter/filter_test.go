@@ -8,23 +8,21 @@ import (
 	"github.com/sinkingpoint/kiora/internal/stubs"
 	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/durationfilter"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDurationFilter(t *testing.T) {
-	one := 1 * time.Second
-	two := 5 * time.Hour
 	tests := []struct {
 		name            string
-		filter          durationfilter.DurationFilter
+		attrs           map[string]string
 		silence         model.Silence
 		expectedSuccess bool
 	}{
 		{
 			name: "test max duration",
-			filter: durationfilter.DurationFilter{
-				Field: "duration",
-				Min:   nil,
-				Max:   &one,
+			attrs: map[string]string{
+				"field": "duration",
+				"max":   "1s",
 			},
 			silence: model.Silence{
 				StartTime: stubs.Time.Now(),
@@ -34,9 +32,9 @@ func TestDurationFilter(t *testing.T) {
 		},
 		{
 			name: "test min duration",
-			filter: durationfilter.DurationFilter{
-				Field: "duration",
-				Min:   &one,
+			attrs: map[string]string{
+				"field": "duration",
+				"min":   "1s",
 			},
 			silence: model.Silence{
 				StartTime: stubs.Time.Now(),
@@ -46,10 +44,10 @@ func TestDurationFilter(t *testing.T) {
 		},
 		{
 			name: "test both",
-			filter: durationfilter.DurationFilter{
-				Field: "duration",
-				Min:   &one,
-				Max:   &two,
+			attrs: map[string]string{
+				"field": "duration",
+				"min":   "1s",
+				"max":   "5h",
 			},
 			silence: model.Silence{
 				StartTime: stubs.Time.Now(),
@@ -61,7 +59,9 @@ func TestDurationFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if success := tt.filter.Filter(context.Background(), &tt.silence); success != tt.expectedSuccess {
+			filter, err := durationfilter.NewDurationFilter(tt.attrs)
+			require.NoError(t, err)
+			if success := filter.Filter(context.Background(), &tt.silence); success != tt.expectedSuccess {
 				t.Errorf("expected success: %t, but we didn't get it", tt.expectedSuccess)
 			}
 		})
