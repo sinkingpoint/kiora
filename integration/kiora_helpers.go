@@ -95,7 +95,13 @@ func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
 	clusterPort, err := getRandomPort()
 	require.NoError(t, err)
 
-	args := append([]string{"run", "../cmd/kiora", "-c", k.configFile, "--web.listen-url", "localhost:" + httpPort, "--cluster.listen-url", "localhost:" + clusterPort}, k.args...)
+	args := append([]string{"run",
+		"../cmd/kiora",
+		"-c", k.configFile,
+		"--web.listen-url", "localhost:" + httpPort,
+		"--cluster.listen-url", "localhost:" + clusterPort,
+		"--storage.backend", "inmemory", // Use an in-memory db for testing.
+	}, k.args...)
 
 	k.httpPort = httpPort
 	k.clusterPort = clusterPort

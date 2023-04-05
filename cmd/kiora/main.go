@@ -22,6 +22,9 @@ var CLI struct {
 	ClusterListenAddress string   `name:"cluster.listen-url" help:"the address to run cluster activities on" default:"localhost:4279"`
 	ClusterShardLabels   []string `name:"cluster.shard-labels" help:"the labels that determine which node in a cluster will send a given alert"`
 	BootstrapPeers       []string `name:"cluster.bootstrap-peers" help:"the peers to bootstrap with"`
+
+	StorageBackend string `name:"storage.backend" help:"the storage backend to use" default:"boltdb"`
+	StoragePath    string `name:"storage.path" help:"the path to store data in" default:"./kiora.db"`
 }
 
 func main() {
@@ -55,9 +58,17 @@ func main() {
 		}()
 	}
 
-	db, err := kioradb.NewBoltDB("/tmp/kiora.db")
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create bolt db")
+	var db kioradb.DB
+	switch CLI.StorageBackend {
+	case "boltdb":
+		db, err = kioradb.NewBoltDB(CLI.StoragePath)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to create bolt db")
+		}
+	case "inmemory":
+		db = kioradb.NewInMemoryDB()
+	default:
+		log.Fatal().Msgf("unknown storage backend %s", CLI.StorageBackend)
 	}
 
 	server, err := server.NewKioraServer(serverConfig, db)
