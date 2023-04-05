@@ -6,6 +6,7 @@ import (
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/services"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -57,7 +58,7 @@ func (a *APIImpl) PostAlerts(ctx context.Context, alerts []model.Alert) error {
 }
 
 func (a *APIImpl) QueryAlertStats(ctx context.Context, q query.AlertStatsQuery) ([]query.StatsResult, error) {
-	return a.bus.DB().QueryAlertStats(ctx, q)
+	return kioradb.QueryAlertStats(ctx, a.bus.DB(), q)
 }
 
 func (a *APIImpl) GetSilences(ctx context.Context) ([]model.Silence, error) {

@@ -36,19 +36,18 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 	return m.recorder
 }
 
-// QueryAlertStats mocks base method.
-func (m *MockDB) QueryAlertStats(ctx context.Context, statsQuery query.AlertStatsQuery) ([]query.StatsResult, error) {
+// Close mocks base method.
+func (m *MockDB) Close() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "QueryAlertStats", ctx, statsQuery)
-	ret0, _ := ret[0].([]query.StatsResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// QueryAlertStats indicates an expected call of QueryAlertStats.
-func (mr *MockDBMockRecorder) QueryAlertStats(ctx, statsQuery interface{}) *gomock.Call {
+// Close indicates an expected call of Close.
+func (mr *MockDBMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryAlertStats", reflect.TypeOf((*MockDB)(nil).QueryAlertStats), ctx, statsQuery)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDB)(nil).Close))
 }
 
 // QueryAlerts mocks base method.

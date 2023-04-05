@@ -74,17 +74,6 @@ func (m *inMemoryDB) QueryAlerts(ctx context.Context, q *query.AlertQuery) []mod
 	}
 }
 
-func (m *inMemoryDB) QueryAlertStats(ctx context.Context, q query.AlertStatsQuery) ([]query.StatsResult, error) {
-	alerts := m.QueryAlerts(ctx, query.NewAlertQuery(q.Filter()))
-	for i := range alerts {
-		if err := q.Process(ctx, &alerts[i]); err != nil {
-			return nil, err
-		}
-	}
-
-	return q.Gather(ctx), nil
-}
-
 func (m *inMemoryDB) StoreSilences(ctx context.Context, silences ...model.Silence) error {
 	m.sLock.Lock()
 	defer m.sLock.Unlock()
@@ -106,4 +95,8 @@ func (m *inMemoryDB) QuerySilences(ctx context.Context, query query.SilenceFilte
 	}
 
 	return silences
+}
+
+func (m *inMemoryDB) Close() error {
+	return nil
 }

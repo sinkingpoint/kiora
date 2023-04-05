@@ -55,7 +55,12 @@ func main() {
 		}()
 	}
 
-	server, err := server.NewKioraServer(serverConfig, kioradb.NewInMemoryDB())
+	db, err := kioradb.NewBoltDB("/tmp/kiora.db")
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create bolt db")
+	}
+
+	server, err := server.NewKioraServer(serverConfig, db)
 	if err != nil {
 		log.Err(err).Msg("failed to create server")
 		return

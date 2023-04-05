@@ -19,6 +19,7 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/sinkingpoint/msgpack/v5 v5.3.7
 	github.com/stretchr/testify v1.8.2
+	go.etcd.io/bbolt v1.3.7
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0

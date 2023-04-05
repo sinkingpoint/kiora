@@ -129,7 +129,7 @@ func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
 	frontend.Register(r)
 
 	runtime.SetMutexProfileFraction(5)
-	r.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+	r.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
 	k.httpServer = &http.Server{
 		Addr:         k.HTTPListenAddress,
