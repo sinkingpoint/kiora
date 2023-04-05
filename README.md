@@ -6,19 +6,20 @@ This is a prototype replacement of Prometheus Alertmanager, without the patholog
 
 As of when I wrote this, these are some of the notable features implemented in Kiora:
 
- - Alert notifications
+ - Alert firing notifications
  - Alert resolved notifications
  - Alert silencing
  - Alert acknowledging
  - Clustering/HA, with Hashicorp Serf
  - Silence/Ack data validation
+ - Alert Grouping
+ - A basic UI
 
 Here's what I want to work on:
 
  - Alert Statistics
  - Multi-Tenancy and Rate limiting
  - Alert Histories
- - A UI
 
 ## Prometheus Configuration
 

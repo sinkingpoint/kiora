@@ -1,0 +1,14 @@
+digraph config {
+    // By default, all alerts are delayed by 10s in order to be group by their alertname. That is,
+    // every 10s we fire off a batch of all the alerts that fired in the last 10s with the same alertname.
+    // We can override this default using the group_wait node.
+
+    // The group_wait node is a special node that delays the alerts by a given duration. If it's set to 0s,
+    // then alerts are not grouped at all, and are sent as soon as they are triggered in batches of 1. This has the tendancy
+    // to flood the backing service with alerts, so in high throughput environments it's recommended to set this to some small number (e.g. 100ms) instead.
+    dont_group [type="group_wait" duration="0s"];
+
+    // Otherwise this is the same as before - send alerts through the dont_group node to set the group_wait, and then send alerts into the console.
+    console [type="stdout"];
+    alerts -> dont_group -> console;
+}
