@@ -14,12 +14,18 @@ import (
 
 var _ = DB(&BoltDB{})
 
+// BoltDB is a DB implementation that stores data in a BoltDB database.
 type BoltDB struct {
 	db *bbolt.DB
+
+	// cache is an in-memory cache of the database. This is used to speed up
+	// queries to avoid having to serialize/deserialize data from the database for every request.
+	cache *inMemoryDB
 }
 
+// NewBoltDB creates a new BoltDB database at the given path.
 func NewBoltDB(path string) (*BoltDB, error) {
-	db, err := bbolt.Open(path, 0600, &bbolt.Options{
+	backingDB, err := bbolt.Open(path, 0600, &bbolt.Options{
 		Timeout:  1 * time.Second,
 		OpenFile: stubs.OS.OpenFile,
 	})
@@ -28,11 +34,73 @@ func NewBoltDB(path string) (*BoltDB, error) {
 		return nil, errors.Wrap(err, "failed to open bolt db")
 	}
 
-	return &BoltDB{db: db}, nil
+	db := &BoltDB{
+		db:    backingDB,
+		cache: NewInMemoryDB(),
+	}
+
+	db.refreshCache()
+
+	return db, nil
+}
+
+// refreshCache clears out the in-memory cache and reloads it from the database.
+func (b *BoltDB) refreshCache() error {
+	b.cache.Clear()
+
+	alerts := []model.Alert{}
+	silences := []model.Silence{}
+	if err := b.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte("alerts"))
+		if bucket == nil {
+			return nil
+		}
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var alert model.Alert
+			if err := msgpack.Unmarshal(v, &alert); err != nil {
+				return errors.Wrap(err, "failed to unmarshal alert")
+			}
+
+			alerts = append(alerts, alert)
+			return nil
+		})
+	}); err != nil {
+		return err
+	}
+
+	if err := b.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte("silences"))
+		if bucket == nil {
+			return nil
+		}
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var silence model.Silence
+			if err := msgpack.Unmarshal(v, &silence); err != nil {
+				return errors.Wrap(err, "failed to unmarshal silence")
+			}
+
+			silences = append(silences, silence)
+			return nil
+		})
+	}); err != nil {
+		return err
+	}
+
+	if err := b.cache.StoreAlerts(context.Background(), alerts...); err != nil {
+		return err
+	}
+
+	if err := b.cache.StoreSilences(context.Background(), silences...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *BoltDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	if err := b.db.Update(func(tx *bbolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("alerts"))
 		if err != nil {
 			return errors.Wrap(err, "failed to create alerts bucket")
@@ -50,36 +118,19 @@ func (b *BoltDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	return b.cache.StoreAlerts(ctx, alerts...)
 }
 
 func (b *BoltDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
-	alerts := make([]model.Alert, 0)
-	b.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte("alerts"))
-		if bucket == nil {
-			return nil
-		}
-
-		return bucket.ForEach(func(k, v []byte) error {
-			var alert model.Alert
-			if err := msgpack.Unmarshal(v, &alert); err != nil {
-				return errors.Wrap(err, "failed to unmarshal alert")
-			}
-
-			if query.Filter.MatchesAlert(ctx, &alert) {
-				alerts = append(alerts, alert)
-			}
-
-			return nil
-		})
-	})
-
-	return alerts
+	return b.cache.QueryAlerts(ctx, query)
 }
 
 func (b *BoltDB) StoreSilences(ctx context.Context, silences ...model.Silence) error {
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	if err := b.db.Update(func(tx *bbolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("silences"))
 		if err != nil {
 			return errors.Wrap(err, "failed to create silences bucket")
@@ -97,33 +148,16 @@ func (b *BoltDB) StoreSilences(ctx context.Context, silences ...model.Silence) e
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	return b.cache.StoreSilences(ctx, silences...)
 }
 
 // QuerySilences queries the database for silences matching the given query.
 func (b *BoltDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
-	silences := make([]model.Silence, 0)
-	b.db.View(func(tx *bbolt.Tx) error {
-		bucket := tx.Bucket([]byte("silences"))
-		if bucket == nil {
-			return nil
-		}
-
-		return bucket.ForEach(func(k, v []byte) error {
-			var silence model.Silence
-			if err := msgpack.Unmarshal(v, &silence); err != nil {
-				return errors.Wrap(err, "failed to unmarshal silence")
-			}
-
-			if query.MatchesSilence(ctx, &silence) {
-				silences = append(silences, silence)
-			}
-
-			return nil
-		})
-	})
-
-	return silences
+	return b.cache.QuerySilences(ctx, query)
 }
 
 func (b *BoltDB) Close() error {

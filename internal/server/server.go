@@ -93,13 +93,11 @@ func (k *KioraServer) Shutdown() {
 
 // ListenAndServe starts the server, using TLS if set in the config. This method blocks until the server ends.
 func (k *KioraServer) ListenAndServe() error {
-	httpRouter := mux.NewRouter()
-
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
 	go func() {
-		if err := k.listenAndServeHTTP(httpRouter); err != nil {
+		if err := k.listenAndServeHTTP(context.Background()); err != nil {
 			log.Err(err).Msg("Error shutting down HTTP server")
 		}
 
@@ -122,20 +120,23 @@ func (k *KioraServer) ListenAndServe() error {
 	return nil
 }
 
-func (k *KioraServer) listenAndServeHTTP(r *mux.Router) error {
+func (k *KioraServer) listenAndServeHTTP(ctx context.Context) error {
+	router := mux.NewRouter()
+	router.PathPrefix("/debug/").Handler(http.DefaultServeMux)
+
 	api := api.NewAPIImpl(k.bus, k.clusterer)
-	apiv1.Register(r, api)
-	promcompat.Register(r, api)
-	frontend.Register(r)
+	apiv1.Register(router, api)
+	promcompat.Register(router, api)
+
+	frontend.Register(router)
 
 	runtime.SetMutexProfileFraction(5)
-	r.PathPrefix("/debug/").Handler(http.DefaultServeMux)
 
 	k.httpServer = &http.Server{
 		Addr:         k.HTTPListenAddress,
 		ReadTimeout:  k.ReadTimeout,
 		WriteTimeout: k.WriteTimeout,
-		Handler:      handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(r),
+		Handler:      handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router),
 	}
 
 	var err error

@@ -30,6 +30,16 @@ func NewInMemoryDB() *inMemoryDB {
 	}
 }
 
+func (m *inMemoryDB) Clear() {
+	m.aLock.Lock()
+	defer m.aLock.Unlock()
+	m.alerts = make(map[model.LabelsHash]model.Alert)
+
+	m.sLock.Lock()
+	defer m.sLock.Unlock()
+	m.silences = make(map[string]model.Silence)
+}
+
 func (m *inMemoryDB) storeAlert(alert model.Alert) {
 	labelsHash := alert.Labels.Hash()
 
