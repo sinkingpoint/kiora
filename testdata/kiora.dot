@@ -1,5 +1,5 @@
 digraph config {
     dont_group [type="group_wait" duration="0s"];
-    console [type="stdout"];
+    console [type="file" path="./alerts"];
     alerts -> dont_group -> console;
 }

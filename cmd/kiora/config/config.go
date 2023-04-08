@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/otel"
 )
 
 const ALERT_ROOT = "alerts"
@@ -35,6 +36,9 @@ type ConfigFile struct {
 // of notifiers we hit along the way. We expect here that the ConfigFile has been passed through `Validate` already, and thus
 // is assumed to have no cycles.
 func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) []config.NotifierSettings {
+	ctx, span := otel.Tracer("").Start(ctx, "ConfigFile.GetNotifiersForAlert")
+	defer span.End()
+
 	leaves := []config.NotifierSettings{}
 
 	// nodeMeta is a node that we've traversed to, and the partial configuration that we've built up along the path there.

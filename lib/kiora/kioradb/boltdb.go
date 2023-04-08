@@ -5,11 +5,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/stubs"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/sinkingpoint/msgpack/v5"
 	"go.etcd.io/bbolt"
+	"go.opentelemetry.io/otel"
 )
 
 var _ = DB(&BoltDB{})
@@ -46,6 +48,7 @@ func NewBoltDB(path string) (*BoltDB, error) {
 
 // refreshCache clears out the in-memory cache and reloads it from the database.
 func (b *BoltDB) refreshCache() error {
+	log.Debug().Msg("loading boltdb into cache")
 	b.cache.Clear()
 
 	alerts := []model.Alert{}
@@ -96,10 +99,15 @@ func (b *BoltDB) refreshCache() error {
 		return err
 	}
 
+	log.Debug().Msg("loaded boltdb into cache")
+
 	return nil
 }
 
 func (b *BoltDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
+	ctx, span := otel.Tracer("").Start(ctx, "BoltDB.StoreAlerts")
+	defer span.End()
+
 	if err := b.db.Update(func(tx *bbolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("alerts"))
 		if err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/clustering/serf/messages"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/sinkingpoint/msgpack/v5"
+	"go.opentelemetry.io/otel"
 )
 
 var _ = clustering.Broadcaster(&SerfBroadcaster{})
@@ -76,6 +77,8 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	serfConfig.MemberlistConfig = memberlistConf
 	serfConfig.EventCh = serfCh
 	serfConfig.NodeName = conf.NodeName
+	serfConfig.MaxQueueDepth = 1 << 16      // 64k
+	serfConfig.UserEventSizeLimit = 1 << 12 // 4k
 
 	serf, err := serf.Create(serfConfig)
 	if err != nil {
@@ -141,6 +144,9 @@ func (s *SerfBroadcaster) processMemberEvent(ctx context.Context, ev serf.Member
 }
 
 func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent) {
+	ctx, span := otel.Tracer("").Start(ctx, "SerfBroadcaster.processUserEvent")
+	defer span.End()
+
 	// If we don't have an EventDelegate, there's nothing to handle these events.
 	if s.conf.EventDelegate == nil {
 		return
@@ -176,6 +182,9 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 }
 
 func (s *SerfBroadcaster) broadcast(ctx context.Context, msg messages.Message) error {
+	_, span := otel.Tracer("").Start(ctx, "SerfBroadcaster.broadcast")
+	defer span.End()
+
 	bytes, err := msgpack.Marshal(&msg)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal alerts")
@@ -190,6 +199,9 @@ func (s *SerfBroadcaster) broadcast(ctx context.Context, msg messages.Message) e
 
 // BroadcastAlerts sends alerts over the Serf gossip channel to the cluster.
 func (s *SerfBroadcaster) BroadcastAlerts(ctx context.Context, alerts ...model.Alert) error {
+	ctx, span := otel.Tracer("").Start(ctx, "SerfBroadcaster.BroadcastAlerts")
+	defer span.End()
+
 	var broadcastError error
 
 	// Note: We break the alerts into individual messages in order to attempt to avoid Serf message size limits.

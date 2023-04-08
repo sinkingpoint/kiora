@@ -8,6 +8,7 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"go.opentelemetry.io/otel"
 )
 
 var _ = clustering.EventDelegate(&DBEventDelegate{})
@@ -24,6 +25,9 @@ func NewDBEventDelegate(db kioradb.DB) *DBEventDelegate {
 }
 
 func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
+	ctx, span := otel.Tracer("").Start(ctx, "DBEventDelegate.ProcessAlert")
+	defer span.End()
+
 	currentAlerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.ExactLabelMatch(alert.Labels)))
 
 	// Copy attributes from the current alert if it exists.
