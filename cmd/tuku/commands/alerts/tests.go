@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/sinkingpoint/kiora/cmd/tuku/commands"
@@ -20,6 +21,8 @@ func (a *AlertsTestCmd) Run(ctx *commands.Context) error {
 
 	startTime := time.Now()
 
+	numBatches := len(alerts) / a.BatchSize
+
 	for i := 0; i < len(alerts); i += a.BatchSize {
 		end := i + a.BatchSize
 		if end > len(alerts) {
@@ -30,6 +33,7 @@ func (a *AlertsTestCmd) Run(ctx *commands.Context) error {
 			alerts[j].StartTime = startTime.Add(time.Duration(i+j) * time.Second)
 		}
 
+		fmt.Printf("Sending batch %d/%d\n", i/a.BatchSize+1, numBatches)
 		if err := ctx.Kiora.PostAlerts(alerts[i:end]); err != nil {
 			return err
 		}
