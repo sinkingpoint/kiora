@@ -19,6 +19,12 @@ var _ = services.Service(&NotifyService{})
 
 const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
 
+// NOTIFY_INTERVAL is the interval at which we should check for alerts to notify.
+// This is pretty arbitrary - increasing it will increase the batching we can do, but it also represents
+// the minumum group inteval we can use. Any group intervals less than this will be treated as this because
+// this is how often we'll check for groups to notify.
+const NOTIFY_INTERVAL = 100 * time.Millisecond
+
 // groupMeta is a helper struct to track groups of alerts that should be notified together.
 type groupMeta struct {
 	// The group key is a unique identifier for the group of alerts.
@@ -58,7 +64,7 @@ func (n *NotifyService) Name() string {
 }
 
 func (n *NotifyService) Run(ctx context.Context) error {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(NOTIFY_INTERVAL)
 outer:
 	for {
 		select {
@@ -205,7 +211,13 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 		}
 	}
 
-	if notified {
+	if len(notifiers) == 0 || notified {
+		// Store locally that we've notified for this alert, to avoid a race condition
+		// where the alert doesn't come back from the broadcast before the next notification loop fires.
+		if err := n.bus.DB().StoreAlerts(ctx, a); err != nil {
+			n.bus.Logger("notify").Err(err).Msg("failed to store the alert")
+		}
+
 		if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
 			n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
 		}

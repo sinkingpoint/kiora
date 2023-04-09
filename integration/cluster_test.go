@@ -49,7 +49,7 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 	}
 
 	// Wait a bit for the gossip to settle.
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	found := 0
 	notFound := 0

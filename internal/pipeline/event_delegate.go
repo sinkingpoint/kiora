@@ -26,7 +26,7 @@ type DBEventDelegate struct {
 func NewDBEventDelegate(db kioradb.DB) *DBEventDelegate {
 	return &DBEventDelegate{
 		db:     db,
-		buffer: NewBufferDB(db, 1000, 1000, 10000, 1*time.Second),
+		buffer: NewBufferDB(db, 1000, 1000, 10000, 100*time.Millisecond),
 	}
 }
 

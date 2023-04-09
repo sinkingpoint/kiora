@@ -126,7 +126,9 @@ func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
 		k.exitChannel <- k.cmd.Run()
 	}()
 
-	require.NoError(t, k.WaitTillUp(context.TODO(), t))
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	require.NoError(t, k.WaitTillUp(ctx, t))
 
 	return k
 }
