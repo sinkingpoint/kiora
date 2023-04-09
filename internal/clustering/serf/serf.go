@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
+	"sync"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/memberlist"
@@ -49,8 +50,9 @@ func DefaultConfig() *Config {
 type SerfBroadcaster struct {
 	conf *Config
 
-	serfCh chan serf.Event
-	serf   *serf.Serf
+	shutdownOnce sync.Once
+	serfCh       chan serf.Event
+	serf         *serf.Serf
 }
 
 // NewSerfBroadcaster constructs a SerfBroadcaster with the given config, storing models in the given DB.
@@ -86,9 +88,10 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	}
 
 	return &SerfBroadcaster{
-		conf:   conf,
-		serf:   serf,
-		serfCh: serfCh,
+		conf:         conf,
+		shutdownOnce: sync.Once{},
+		serf:         serf,
+		serfCh:       serfCh,
 	}, nil
 }
 
@@ -107,11 +110,19 @@ func (s *SerfBroadcaster) Run(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
+			s.Shutdown()
 			return nil
 		case event := <-s.serfCh:
 			s.processEvent(context.Background(), event)
 		}
 	}
+}
+
+func (s *SerfBroadcaster) Shutdown() {
+	s.shutdownOnce.Do(func() {
+		s.serf.Leave()
+		s.serf.Shutdown()
+	})
 }
 
 func (s *SerfBroadcaster) processEvent(ctx context.Context, event serf.Event) {
