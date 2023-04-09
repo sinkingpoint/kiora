@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -75,7 +74,6 @@ func (b *bufferDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error
 	}
 
 	b.alertsBuffer = append(b.alertsBuffer, alerts...)
-	fmt.Println("buffered alerts:", len(b.alertsBuffer))
 	return nil
 }
 
