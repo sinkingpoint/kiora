@@ -96,12 +96,12 @@ func (b *bufferDB) StoreSilences(ctx context.Context, silences ...model.Silence)
 	return nil
 }
 
+// flushAlerts flushes the alerts buffer to the underlying database.
+// NOTE: This function is not thread-safe and should only be called if the aLock is held.
 func (b *bufferDB) flushAlerts(ctx context.Context) error {
 	ctx, span := otel.Tracer("").Start(ctx, "bufferDB.flushAlerts")
 	defer span.End()
 
-	b.aLock.Lock()
-	defer b.aLock.Unlock()
 	if err := b.bus.DB().StoreAlerts(ctx, b.alertsBuffer...); err != nil {
 		return err
 	}
@@ -109,12 +109,12 @@ func (b *bufferDB) flushAlerts(ctx context.Context) error {
 	return nil
 }
 
+// flushSilences flushes the silences buffer to the underlying database.
+// NOTE: This function is not thread-safe and should only be called if the sLock is held.
 func (b *bufferDB) flushSilences(ctx context.Context) error {
 	ctx, span := otel.Tracer("").Start(ctx, "bufferDB.flushSilences")
 	defer span.End()
 
-	b.sLock.Lock()
-	defer b.sLock.Unlock()
 	if err := b.bus.DB().StoreSilences(ctx, b.silencesBuffer...); err != nil {
 		return err
 	}
@@ -125,13 +125,18 @@ func (b *bufferDB) flushSilences(ctx context.Context) error {
 // Flush flushes the buffer to the underlying database.
 func (b *bufferDB) Flush(ctx context.Context) error {
 	var flushErr error
+
+	b.aLock.Lock()
 	if err := b.flushAlerts(ctx); err != nil {
 		err = multierror.Append(flushErr, err)
 	}
+	b.aLock.Unlock()
 
+	b.sLock.Lock()
 	if err := b.flushSilences(ctx); err != nil {
 		err = multierror.Append(flushErr, err)
 	}
+	b.sLock.Unlock()
 
 	return flushErr
 }
