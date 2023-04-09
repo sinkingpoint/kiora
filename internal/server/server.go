@@ -56,21 +56,24 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 		ringClusterer.SetShardLabels(conf.ClusterShardLabels)
 	}
 
-	config.ListenURL = conf.ClusterListenAddress
-	config.BootstrapPeers = conf.BootstrapPeers
-	config.ClustererDelegate = ringClusterer
-	config.EventDelegate = pipeline.NewDBEventDelegate(db)
 	broadcaster, err := serf.NewSerfBroadcaster(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
 	}
-
 	bus := services.NewKioraBus(db, broadcaster, conf.ServiceConfig)
+
+	delegate := pipeline.NewDBEventDelegate(bus)
+
+	config.ListenURL = conf.ClusterListenAddress
+	config.BootstrapPeers = conf.BootstrapPeers
+	config.ClustererDelegate = ringClusterer
+	config.EventDelegate = delegate
 
 	services := services.NewBackgroundServices()
 	services.RegisterService(broadcaster)
 	services.RegisterService(notify.NewNotifyService(notify_config.NewClusterNotifier(ringClusterer, conf.ServiceConfig), bus))
 	services.RegisterService(timeout.NewTimeoutService(bus))
+	services.RegisterService(delegate)
 
 	return &KioraServer{
 		serverConfig:       conf,
