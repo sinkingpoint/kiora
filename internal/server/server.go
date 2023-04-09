@@ -49,6 +49,8 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 		return nil, errors.Wrap(err, "failed to decode cluster listen address")
 	}
 
+	// We generate the config up here so that we have a concrete node name to pass to the clusterer.
+	// TODO: This generates a random node name. Allow the user to specify a node name.
 	config := serf.DefaultConfig()
 
 	ringClusterer := clustering.NewRingClusterer(config.NodeName, clusterAddress)
@@ -56,18 +58,18 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 		ringClusterer.SetShardLabels(conf.ClusterShardLabels)
 	}
 
+	delegate := pipeline.NewDBEventDelegate(db)
+	config.EventDelegate = delegate
+	config.ListenURL = conf.ClusterListenAddress
+	config.BootstrapPeers = conf.BootstrapPeers
+	config.ClustererDelegate = ringClusterer
+
 	broadcaster, err := serf.NewSerfBroadcaster(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to construct broadcaster")
 	}
+
 	bus := services.NewKioraBus(db, broadcaster, conf.ServiceConfig)
-
-	delegate := pipeline.NewDBEventDelegate(bus)
-
-	config.ListenURL = conf.ClusterListenAddress
-	config.BootstrapPeers = conf.BootstrapPeers
-	config.ClustererDelegate = ringClusterer
-	config.EventDelegate = delegate
 
 	services := services.NewBackgroundServices()
 	services.RegisterService(broadcaster)

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/sinkingpoint/kiora/internal/services"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
 )
@@ -28,16 +28,15 @@ type bufferDB struct {
 	// It's recommended to keep this low to ensure that alerts and silences are flushed quickly.
 	timeLimit time.Duration
 
-	// bus is the bus that the bufferDB is attached to.
-	bus services.Bus
+	db kioradb.DB
 }
 
 // NewBufferDB creates a new bufferDB.
-func NewBufferDB(bus services.Bus, alertCapacity int, silenceCapacity int, lengthLimit int, timeLimit time.Duration) *bufferDB {
+func NewBufferDB(db kioradb.DB, alertCapacity int, silenceCapacity int, lengthLimit int, timeLimit time.Duration) *bufferDB {
 	return &bufferDB{
 		lengthLimit:    lengthLimit,
 		timeLimit:      timeLimit,
-		bus:            bus,
+		db:             db,
 		alertsBuffer:   make([]model.Alert, 0, alertCapacity),
 		silencesBuffer: make([]model.Silence, 0, silenceCapacity),
 	}
@@ -102,7 +101,7 @@ func (b *bufferDB) flushAlerts(ctx context.Context) error {
 	ctx, span := otel.Tracer("").Start(ctx, "bufferDB.flushAlerts")
 	defer span.End()
 
-	if err := b.bus.DB().StoreAlerts(ctx, b.alertsBuffer...); err != nil {
+	if err := b.db.StoreAlerts(ctx, b.alertsBuffer...); err != nil {
 		return err
 	}
 	b.alertsBuffer = b.alertsBuffer[:0]
@@ -115,7 +114,7 @@ func (b *bufferDB) flushSilences(ctx context.Context) error {
 	ctx, span := otel.Tracer("").Start(ctx, "bufferDB.flushSilences")
 	defer span.End()
 
-	if err := b.bus.DB().StoreSilences(ctx, b.silencesBuffer...); err != nil {
+	if err := b.db.StoreSilences(ctx, b.silencesBuffer...); err != nil {
 		return err
 	}
 	b.silencesBuffer = b.silencesBuffer[:0]

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
-	"github.com/sinkingpoint/kiora/internal/services"
+	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
@@ -15,7 +15,7 @@ var _ = clustering.EventDelegate(&DBEventDelegate{})
 
 // DBEventDelegate provides an EventDelegate that stores incoming data in the underlying database.
 type DBEventDelegate struct {
-	bus services.Bus
+	db kioradb.DB
 
 	// buffer is the bufferDB that stores the alerts and silences.
 	// Because the Delegate receives alerts one at a time, buffering them before flushing them to the database
@@ -23,10 +23,10 @@ type DBEventDelegate struct {
 	buffer *bufferDB
 }
 
-func NewDBEventDelegate(bus services.Bus) *DBEventDelegate {
+func NewDBEventDelegate(db kioradb.DB) *DBEventDelegate {
 	return &DBEventDelegate{
-		bus:    bus,
-		buffer: NewBufferDB(bus, 1000, 1000, 10000, 1*time.Second),
+		db:     db,
+		buffer: NewBufferDB(db, 1000, 1000, 10000, 1*time.Second),
 	}
 }
 
@@ -42,7 +42,7 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 	ctx, span := otel.Tracer("").Start(ctx, "DBEventDelegate.ProcessAlert")
 	defer span.End()
 
-	currentAlerts := d.bus.DB().QueryAlerts(ctx, query.NewAlertQuery(query.ExactLabelMatch(alert.Labels)))
+	currentAlerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.ExactLabelMatch(alert.Labels)))
 
 	// Copy attributes from the current alert if it exists.
 	if len(currentAlerts) > 0 {
@@ -70,7 +70,7 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 	// If it's firing, silence it if there's a matching silence. We can't do this async in a service
 	// because that would cause a race condition where the alert could be fired before the silence is applied.
 	if alert.Status == model.AlertStatusFiring {
-		silences := d.bus.DB().QuerySilences(ctx, query.AllSilences(query.PartialLabelMatch(alert.Labels), query.SilenceIsActive()))
+		silences := d.db.QuerySilences(ctx, query.AllSilences(query.PartialLabelMatch(alert.Labels), query.SilenceIsActive()))
 		if len(silences) > 0 {
 			alert.Status = model.AlertStatusSilenced
 		}
@@ -81,7 +81,7 @@ func (d *DBEventDelegate) ProcessAlert(ctx context.Context, alert model.Alert) {
 }
 
 func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alertID string, ack model.AlertAcknowledgement) {
-	alerts := d.bus.DB().QueryAlerts(ctx, query.NewAlertQuery(query.ID(alertID)))
+	alerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.ID(alertID)))
 	if len(alerts) == 0 {
 		// TODO(cdouch): Handle errors here.
 		return
@@ -99,17 +99,17 @@ func (d *DBEventDelegate) ProcessAlertAcknowledgement(ctx context.Context, alert
 }
 
 func (d *DBEventDelegate) ProcessSilence(ctx context.Context, silence model.Silence) {
-	existingSilence := d.bus.DB().QuerySilences(ctx, query.AllSilences(query.ID(silence.ID), query.SilenceIsActive()))
+	existingSilence := d.db.QuerySilences(ctx, query.AllSilences(query.ID(silence.ID), query.SilenceIsActive()))
 	if len(existingSilence) == 0 && silence.IsActive() {
 		// This is a new silence, so we need to apply it to all the alerts.
-		alerts := d.bus.DB().QueryAlerts(ctx, query.NewAlertQuery(query.AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
+		alerts := d.db.QueryAlerts(ctx, query.NewAlertQuery(query.AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
 			return silence.Matches(alert.Labels) && (alert.Status == model.AlertStatusFiring || alert.Status == model.AlertStatusAcked)
 		})))
 
 		for _, alert := range alerts {
 			alert.Status = model.AlertStatusSilenced
 			// TODO(cdouch): Handle errors here.
-			d.bus.DB().StoreAlerts(ctx, alert) // nolint
+			d.db.StoreAlerts(ctx, alert) // nolint
 		}
 	}
 
