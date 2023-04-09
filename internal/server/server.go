@@ -86,10 +86,6 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 func (k *KioraServer) Shutdown() {
 	k.shutdownOnce.Do(func() {
 		// todo: add more synonyms of stop.
-		if k.httpServer != nil {
-			k.httpServer.Shutdown(context.Background()) //nolint:errcheck
-		}
-
 		k.backgroundServices.Shutdown(context.Background())
 	})
 }
@@ -113,6 +109,10 @@ func (k *KioraServer) ListenAndServe() error {
 		if err := k.backgroundServices.Run(context.Background()); err != nil {
 			log.Err(err).Msg("background services failed")
 			k.Shutdown()
+		}
+
+		if k.httpServer != nil {
+			k.httpServer.Shutdown(context.Background()) //nolint:errcheck
 		}
 
 		wg.Done()
