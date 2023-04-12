@@ -15,9 +15,9 @@ import (
 )
 
 func init() {
-	config.RegisterNode(STDOUT_NODE_NAME, NewFileNotifierNode)
-	config.RegisterNode(STDERR_NODE_NAME, NewFileNotifierNode)
-	config.RegisterNode(FILE_NODE_NAME, NewFileNotifierNode)
+	config.RegisterNode(STDOUT_NODE_NAME, New)
+	config.RegisterNode(STDERR_NODE_NAME, New)
+	config.RegisterNode(FILE_NODE_NAME, New)
 }
 
 const STDOUT_NODE_NAME = "stdout"
@@ -25,16 +25,16 @@ const STDERR_NODE_NAME = "stderr"
 const FILE_NODE_NAME = "file"
 const DEFAULT_ENCODING = "json"
 
-var _ = config.Notifier(&FileNotifierNode{})
+var _ = config.Notifier(&FileNotifier{})
 
-// FileNotifierNode represents a node that can output alerts to a Writer.
-type FileNotifierNode struct {
+// FileNotifier represents a node that can output alerts to a Writer.
+type FileNotifier struct {
 	name    config.NotifierName
 	encoder encoding.Encoder
 	file    io.WriteCloser
 }
 
-func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, error) {
+func New(name string, attrs map[string]string) (config.Node, error) {
 	encodingName := DEFAULT_ENCODING
 	if enc, ok := attrs["encoding"]; ok {
 		encodingName = enc
@@ -47,13 +47,13 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 
 	switch attrs["type"] {
 	case "stdout":
-		return &FileNotifierNode{
+		return &FileNotifier{
 			name:    config.NotifierName(name),
 			encoder: encoder,
 			file:    os.Stdout,
 		}, nil
 	case "stderr":
-		return &FileNotifierNode{
+		return &FileNotifier{
 			name:    config.NotifierName(name),
 			encoder: encoder,
 			file:    os.Stderr,
@@ -69,7 +69,7 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 			return nil, fmt.Errorf("failed to open file %q in file node: %w", fileName, err)
 		}
 
-		return &FileNotifierNode{
+		return &FileNotifier{
 			name:    config.NotifierName(name),
 			encoder: encoder,
 			file:    file,
@@ -79,15 +79,15 @@ func NewFileNotifierNode(name string, attrs map[string]string) (config.Node, err
 	}
 }
 
-func (f *FileNotifierNode) Name() config.NotifierName {
+func (f *FileNotifier) Name() config.NotifierName {
 	return f.name
 }
 
-func (f *FileNotifierNode) Type() string {
+func (f *FileNotifier) Type() string {
 	return "file"
 }
 
-func (f *FileNotifierNode) Notify(ctx context.Context, alerts ...model.Alert) error {
+func (f *FileNotifier) Notify(ctx context.Context, alerts ...model.Alert) error {
 	_, span := otel.Tracer("").Start(ctx, "FileNotifierNode.Notify")
 	defer span.End()
 

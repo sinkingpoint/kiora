@@ -17,7 +17,7 @@ func TestFileNotifierNode(t *testing.T) {
 	require.NoError(t, err)
 	defer file.Close()
 
-	node, err := filenotifier.NewFileNotifierNode("",
+	node, err := filenotifier.New("",
 		map[string]string{
 			"type": "file",
 			"path": file.Name(),
