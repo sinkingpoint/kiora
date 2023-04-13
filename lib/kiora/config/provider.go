@@ -14,13 +14,30 @@ type NotifierName string
 // notifications. Decreasing it will decrease the amount of time that alerts are delayed, but will send more notifications.
 const DEFAULT_GROUP_WAIT = 10 * time.Second
 
+// NotificationError represents an error that occurred while sending a notification.
+type NotificationError struct {
+	Err       error
+	Retryable bool
+}
+
+func NewNotificationError(err error, retryable bool) *NotificationError {
+	return &NotificationError{
+		Err:       err,
+		Retryable: retryable,
+	}
+}
+
+func (n *NotificationError) Error() string {
+	return n.Err.Error()
+}
+
 // Notifier represents something that can send a notification about an alert.
 type Notifier interface {
 	// Name returns the name of the notifier.
 	Name() NotifierName
 
 	// Notify sends a notification about the given alerts.
-	Notify(ctx context.Context, alerts ...model.Alert) error
+	Notify(ctx context.Context, alerts ...model.Alert) *NotificationError
 }
 
 // Config represents a configuration that can return a list of notifiers for a given alert.

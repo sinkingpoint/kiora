@@ -22,7 +22,7 @@ func MockDBWithAlerts(ctrl *gomock.Controller, alerts ...[]model.Alert) *MockDB 
 			}
 
 			return ret
-		}).Times(1)
+		}).MinTimes(1)
 	}
 
 	return db

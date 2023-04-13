@@ -51,14 +51,14 @@ func (mr *MockNotifierMockRecorder) Name() *gomock.Call {
 }
 
 // Notify mocks base method.
-func (m *MockNotifier) Notify(ctx context.Context, alerts ...model.Alert) error {
+func (m *MockNotifier) Notify(ctx context.Context, alerts ...model.Alert) *config.NotificationError {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
 	for _, a := range alerts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Notify", varargs...)
-	ret0, _ := ret[0].(error)
+	ret0, _ := ret[0].(*config.NotificationError)
 	return ret0
 }
 

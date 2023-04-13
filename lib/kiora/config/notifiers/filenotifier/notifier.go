@@ -87,7 +87,7 @@ func (f *FileNotifier) Type() string {
 	return "file"
 }
 
-func (f *FileNotifier) Notify(ctx context.Context, alerts ...model.Alert) error {
+func (f *FileNotifier) Notify(ctx context.Context, alerts ...model.Alert) *config.NotificationError {
 	_, span := otel.Tracer("").Start(ctx, "FileNotifierNode.Notify")
 	defer span.End()
 
@@ -106,5 +106,9 @@ func (f *FileNotifier) Notify(ctx context.Context, alerts ...model.Alert) error 
 		}
 	}
 
-	return lastError
+	if lastError != nil {
+		return config.NewNotificationError(lastError, false)
+	}
+
+	return nil
 }

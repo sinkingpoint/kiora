@@ -27,7 +27,7 @@ func TestFileNotifierNode(t *testing.T) {
 
 	processor := node.(config.Notifier)
 
-	assert.NoError(t, processor.Notify(context.Background(), model.Alert{
+	assert.Nil(t, processor.Notify(context.Background(), model.Alert{
 		Labels: model.Labels{
 			"alertname": "foo",
 		},

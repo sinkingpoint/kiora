@@ -76,9 +76,15 @@ func TestNotifyServiceNotifies(t *testing.T) {
 				alerts = append(alerts, alert)
 			}
 
+			db := mock_kioradb.MockDBWithAlerts(ctrl, tt.Alerts)
+
+			if len(tt.ExpectedBroadcast) > 0 {
+				db.EXPECT().StoreAlerts(gomock.Any(), alerts).Times(1)
+			}
+
 			bus := mock_services.NewMockBus(ctrl)
 			bus.EXPECT().DB().DoAndReturn(func() kioradb.DB {
-				return mock_kioradb.MockDBWithAlerts(ctrl, tt.Alerts)
+				return db
 			}).MinTimes(1)
 
 			notifier := mock_config.NewMockNotifier(ctrl)
