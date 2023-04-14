@@ -1,0 +1,5 @@
+digraph config {
+    slack [type="slack" api_url="https://hooks.slack.com/services/xxx/xxx"];
+
+    alerts -> slack;
+}
