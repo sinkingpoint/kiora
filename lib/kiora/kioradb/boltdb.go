@@ -41,7 +41,9 @@ func NewBoltDB(path string) (*BoltDB, error) {
 		cache: NewInMemoryDB(),
 	}
 
-	db.refreshCache()
+	if err := db.refreshCache(); err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }

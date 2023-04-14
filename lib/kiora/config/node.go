@@ -6,7 +6,7 @@ type Node interface {
 }
 
 // NodeConstructor is a function that takes a raw graph node and turns it into a node that can actually process things.
-type NodeConstructor = func(name string, attrs map[string]string) (Node, error)
+type NodeConstructor = func(name string, bus NodeBus, attrs map[string]string) (Node, error)
 
 var nodeRegistry = map[string]NodeConstructor{}
 

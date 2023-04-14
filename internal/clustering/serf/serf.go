@@ -120,8 +120,11 @@ func (s *SerfBroadcaster) Run(ctx context.Context) error {
 
 func (s *SerfBroadcaster) Shutdown() {
 	s.shutdownOnce.Do(func() {
-		s.serf.Leave()
-		s.serf.Shutdown()
+		if err := s.serf.Leave(); err != nil {
+			log.Error().Err(err).Msg("failed to leave Serf cluster cleanly")
+		}
+
+		s.serf.Shutdown() // nolint:errcheck
 	})
 }
 

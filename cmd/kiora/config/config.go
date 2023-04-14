@@ -138,6 +138,8 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 		return conf, errors.Wrap(err, "failed to load config file")
 	}
 
+	bus := NewKioraNodeBus(&configGraph)
+
 	for _, rawNode := range configGraph.nodes {
 		nodeType := rawNode.attrs["type"]
 		cons, ok := config.LookupNode(nodeType)
@@ -145,7 +147,7 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 			return conf, fmt.Errorf("invalid node type: %q", nodeType)
 		}
 
-		node, err := cons(rawNode.name, rawNode.attrs)
+		node, err := cons(rawNode.name, bus, rawNode.attrs)
 		if err != nil {
 			return conf, err
 		}

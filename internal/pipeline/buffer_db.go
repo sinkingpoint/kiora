@@ -65,15 +65,20 @@ func (b *bufferDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error
 	b.aLock.Lock()
 	defer b.aLock.Unlock()
 
+	var flushErr error
+
 	for len(b.alertsBuffer)+len(alerts) > b.lengthLimit {
 		amt := b.lengthLimit - len(b.alertsBuffer)
 		b.alertsBuffer = append(b.alertsBuffer, alerts[:amt]...)
-		b.flushAlerts(ctx)
+		if err := b.flushAlerts(ctx); err != nil {
+			flushErr = multierror.Append(flushErr, err)
+		}
+
 		alerts = alerts[amt:]
 	}
 
 	b.alertsBuffer = append(b.alertsBuffer, alerts...)
-	return nil
+	return flushErr
 }
 
 // StoreSilences stores the given silences in the buffer, flushing the buffer if it exceeds the length limit.
@@ -84,10 +89,15 @@ func (b *bufferDB) StoreSilences(ctx context.Context, silences ...model.Silence)
 	b.sLock.Lock()
 	defer b.sLock.Unlock()
 
+	var flushErr error
+
 	for len(b.silencesBuffer)+len(silences) > b.lengthLimit {
 		amt := b.lengthLimit - len(b.silencesBuffer)
 		b.silencesBuffer = append(b.silencesBuffer, silences[:amt]...)
-		b.flushSilences(ctx)
+		if err := b.flushSilences(ctx); err != nil {
+			flushErr = multierror.Append(flushErr, err)
+		}
+
 		silences = silences[amt:]
 	}
 
@@ -127,14 +137,15 @@ func (b *bufferDB) Flush(ctx context.Context) error {
 
 	b.aLock.Lock()
 	if err := b.flushAlerts(ctx); err != nil {
-		err = multierror.Append(flushErr, err)
+		flushErr = multierror.Append(flushErr, err)
 	}
 	b.aLock.Unlock()
 
 	b.sLock.Lock()
 	if err := b.flushSilences(ctx); err != nil {
-		err = multierror.Append(flushErr, err)
+		flushErr = multierror.Append(flushErr, err)
 	}
+
 	b.sLock.Unlock()
 
 	return flushErr
