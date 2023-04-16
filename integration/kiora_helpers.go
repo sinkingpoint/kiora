@@ -77,6 +77,21 @@ func (k *KioraInstance) WithName(name string) *KioraInstance {
 	return k
 }
 
+func (k *KioraInstance) WithConfig(t *testing.T, config string) *KioraInstance {
+	file, err := os.CreateTemp("", "")
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		file.Close()
+	})
+
+	_, err = file.Write([]byte(config))
+	require.NoError(t, err)
+
+	k.configFile = file.Name()
+	return k
+}
+
 func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
 	k.configFile = configFile
 	return k

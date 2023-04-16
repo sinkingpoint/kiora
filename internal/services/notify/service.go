@@ -195,7 +195,6 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	}
 
 	a.LastNotifyTime = stubs.Time.Now()
-	notified := false
 
 	for _, notifier := range notifiers {
 		if notifier.GroupWait != 0 {
@@ -206,20 +205,16 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 
 		if err := notifier.Notify(ctx, a); err != nil {
 			n.bus.Logger("notify").Err(err).Msg("failed to notify for alert")
-		} else {
-			notified = true
 		}
 	}
 
-	if len(notifiers) == 0 || notified {
-		// Store locally that we've notified for this alert, to avoid a race condition
-		// where the alert doesn't come back from the broadcast before the next notification loop fires.
-		if err := n.bus.DB().StoreAlerts(ctx, a); err != nil {
-			n.bus.Logger("notify").Err(err).Msg("failed to store the alert")
-		}
+	// Store locally that we've notified for this alert, to avoid a race condition
+	// where the alert doesn't come back from the broadcast before the next notification loop fires.
+	if err := n.bus.DB().StoreAlerts(ctx, a); err != nil {
+		n.bus.Logger("notify").Err(err).Msg("failed to store the alert")
+	}
 
-		if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
-			n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
-		}
+	if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
+		n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
 	}
 }

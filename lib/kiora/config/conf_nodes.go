@@ -13,7 +13,6 @@ func init() {
 		if !ok {
 			return nil, errors.New("missing duration attribute for group_wait node")
 		}
-
 		duration, err := time.ParseDuration(rawDuration)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse duration in group_wait node")
