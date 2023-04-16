@@ -264,7 +264,13 @@ func (a *apiv1) postSilence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseBytes, _ := json.Marshal(silence) // TODO(cdouch): Error checking.
+	responseBytes, err := json.Marshal(silence)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("failed to marshal silence")) // nolint:errcheck
+		log.Err(err).Msg("failed to marshal silence")
+		return
+	}
 
 	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusCreated)
@@ -280,7 +286,13 @@ func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseBytes, _ := json.Marshal(silences) // TODO(cdouch): Error checking.
+	responseBytes, err := json.Marshal(silences)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("failed to marshal silences")) // nolint:errcheck
+		log.Err(err).Msg("failed to marshal silences")
+		return
+	}
 
 	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusOK)
