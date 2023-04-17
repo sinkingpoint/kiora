@@ -6,13 +6,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/common/model"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/server/api"
 	kmodel "github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
-func Register(router *mux.Router, api api.API) {
-	promCompat := NewPromCompat(api)
+func Register(router *mux.Router, api api.API, logger zerolog.Logger) {
+	promCompat := New(api, logger)
 
 	subRouter := router.PathPrefix("/api/prom-compat").Subrouter()
 
@@ -21,12 +21,14 @@ func Register(router *mux.Router, api api.API) {
 
 // promCompat provides an API that is able to ingest alerts from Prometheus.
 type promCompat struct {
-	api api.API
+	api    api.API
+	logger zerolog.Logger
 }
 
-func NewPromCompat(api api.API) *promCompat {
+func New(api api.API, logger zerolog.Logger) *promCompat {
 	return &promCompat{
-		api: api,
+		api:    api,
+		logger: logger.With().Str("component", "promcompat").Logger(),
 	}
 }
 
@@ -53,7 +55,7 @@ func (p *promCompat) PostAlerts(w http.ResponseWriter, r *http.Request) {
 
 	if err := p.api.PostAlerts(r.Context(), alerts); err != nil {
 		http.Error(w, "failed to post alerts", http.StatusInternalServerError)
-		log.Error().Err(err).Msg("failed to post alerts")
+		p.logger.Error().Err(err).Msg("failed to post alerts")
 		return
 	}
 

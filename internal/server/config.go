@@ -3,6 +3,7 @@ package server
 import (
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 )
 
@@ -40,6 +41,8 @@ type serverConfig struct {
 
 	// TLS is an optional pair of cert and key files that will be used to serve TLS connections.
 	TLS *TLSPair
+
+	Logger zerolog.Logger
 }
 
 // NewServerConfig constructs a serverConfig with all the defaults set.

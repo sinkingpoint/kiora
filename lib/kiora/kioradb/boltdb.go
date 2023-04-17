@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/stubs"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -20,13 +20,15 @@ var _ = DB(&BoltDB{})
 type BoltDB struct {
 	db *bbolt.DB
 
+	logger zerolog.Logger
+
 	// cache is an in-memory cache of the database. This is used to speed up
 	// queries to avoid having to serialize/deserialize data from the database for every request.
 	cache *inMemoryDB
 }
 
 // NewBoltDB creates a new BoltDB database at the given path.
-func NewBoltDB(path string) (*BoltDB, error) {
+func NewBoltDB(path string, logger zerolog.Logger) (*BoltDB, error) {
 	backingDB, err := bbolt.Open(path, 0600, &bbolt.Options{
 		Timeout:  1 * time.Second,
 		OpenFile: stubs.OS.OpenFile,
@@ -37,8 +39,9 @@ func NewBoltDB(path string) (*BoltDB, error) {
 	}
 
 	db := &BoltDB{
-		db:    backingDB,
-		cache: NewInMemoryDB(),
+		db:     backingDB,
+		cache:  NewInMemoryDB(),
+		logger: logger.With().Str("component", "boltdb").Logger(),
 	}
 
 	if err := db.refreshCache(); err != nil {
@@ -50,7 +53,7 @@ func NewBoltDB(path string) (*BoltDB, error) {
 
 // refreshCache clears out the in-memory cache and reloads it from the database.
 func (b *BoltDB) refreshCache() error {
-	log.Debug().Msg("loading boltdb into cache")
+	b.logger.Debug().Msg("loading boltdb into cache")
 	b.cache.Clear()
 
 	alerts := []model.Alert{}
@@ -101,7 +104,7 @@ func (b *BoltDB) refreshCache() error {
 		return err
 	}
 
-	log.Debug().Msg("loaded boltdb into cache")
+	b.logger.Debug().Msg("loaded boltdb into cache")
 
 	return nil
 }

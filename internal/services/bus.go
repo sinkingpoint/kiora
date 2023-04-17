@@ -18,15 +18,15 @@ type Bus interface {
 type KioraBus struct {
 	db          kioradb.DB
 	broadcaster clustering.Broadcaster
-	logger      *zerolog.Logger
+	logger      zerolog.Logger
 	config      config.Config
 }
 
-func NewKioraBus(db kioradb.DB, broadcaster clustering.Broadcaster, config config.Config) *KioraBus {
+func NewKioraBus(db kioradb.DB, broadcaster clustering.Broadcaster, logger zerolog.Logger, config config.Config) *KioraBus {
 	return &KioraBus{
 		db:          db,
 		broadcaster: broadcaster,
-		logger:      zerolog.DefaultContextLogger,
+		logger:      logger,
 		config:      config,
 	}
 }

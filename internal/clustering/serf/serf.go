@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/serf/serf"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf/messages"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -86,9 +85,7 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	serfConfig.NodeName = conf.NodeName
 	serfConfig.MaxQueueDepth = 1 << 16      // 64k
 	serfConfig.UserEventSizeLimit = 1 << 12 // 4k
-	serfConfig.Logger = &HCLogger{
-		conf.Logger,
-	}
+	serfConfig.Logger = &HCLogger{conf.Logger}
 
 	serf, err := serf.Create(serfConfig)
 	if err != nil {
@@ -129,7 +126,7 @@ func (s *SerfBroadcaster) Run(ctx context.Context) error {
 func (s *SerfBroadcaster) Shutdown() {
 	s.shutdownOnce.Do(func() {
 		if err := s.serf.Leave(); err != nil {
-			log.Error().Err(err).Msg("failed to leave Serf cluster cleanly")
+			s.conf.Logger.Error().Err(err).Msg("failed to leave Serf cluster cleanly")
 		}
 
 		s.serf.Shutdown() // nolint:errcheck
@@ -176,12 +173,12 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 
 	msg := messages.GetMessage(u.Name)
 	if msg == nil {
-		log.Error().Str("message name", u.Name).Msg("unhandled message type")
+		s.conf.Logger.Error().Str("message name", u.Name).Msg("unhandled message type")
 		return
 	}
 
 	if err := msgpack.Unmarshal(u.Payload, msg); err != nil {
-		log.Err(err).Str("message name", u.Name).Msg("failed to unmarshal message")
+		s.conf.Logger.Err(err).Str("message name", u.Name).Msg("failed to unmarshal message")
 		return
 	}
 
@@ -194,12 +191,12 @@ func (s *SerfBroadcaster) processUserEvent(ctx context.Context, u serf.UserEvent
 	case *messages.Silence:
 		s.conf.EventDelegate.ProcessSilence(ctx, msg.Silence)
 	default:
-		log.Error().Str("message name", u.Name).Msg("unhandled message type")
+		s.conf.Logger.Error().Str("message name", u.Name).Msg("unhandled message type")
 		return
 	}
 
 	if err != nil {
-		log.Error().Str("message name", u.Name).Msg("failed to process message")
+		s.conf.Logger.Error().Str("message name", u.Name).Msg("failed to process message")
 	}
 }
 

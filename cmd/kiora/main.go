@@ -6,6 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/alecthomas/kong"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
 	"github.com/sinkingpoint/kiora/internal/server"
@@ -33,9 +34,12 @@ func main() {
 		Compact: true,
 	}))
 
+	logger := zerolog.New(os.Stderr).Level(zerolog.DebugLevel)
+	log.Logger = logger
+
 	config, err := config.LoadConfigFile(CLI.ConfigFile)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to load config")
+		logger.Fatal().Err(err).Msg("failed to load config")
 	}
 
 	serverConfig := server.NewServerConfig()
@@ -44,16 +48,17 @@ func main() {
 	serverConfig.ClusterShardLabels = CLI.ClusterShardLabels
 	serverConfig.BootstrapPeers = CLI.BootstrapPeers
 	serverConfig.ServiceConfig = config
+	serverConfig.Logger = logger
 
 	tp, err := tracing.InitTracing(CLI.TracingConfiguration)
 	if err != nil {
-		log.Warn().Err(err).Msg("failed to start tracing")
+		logger.Warn().Err(err).Msg("failed to start tracing")
 	}
 
 	if tp != nil {
 		defer func() {
 			if err := tp.Shutdown(context.Background()); err != nil {
-				log.Warn().Err(err).Msg("failed to shutdown tracing. Spans may have been lost")
+				logger.Warn().Err(err).Msg("failed to shutdown tracing. Spans may have been lost")
 			}
 		}()
 	}
@@ -61,19 +66,19 @@ func main() {
 	var db kioradb.DB
 	switch CLI.StorageBackend {
 	case "boltdb":
-		db, err = kioradb.NewBoltDB(CLI.StoragePath)
+		db, err = kioradb.NewBoltDB(CLI.StoragePath, logger)
 		if err != nil {
-			log.Fatal().Err(err).Msg("failed to create bolt db")
+			logger.Fatal().Err(err).Msg("failed to create bolt db")
 		}
 	case "inmemory":
 		db = kioradb.NewInMemoryDB()
 	default:
-		log.Fatal().Msgf("unknown storage backend %s", CLI.StorageBackend)
+		logger.Fatal().Msgf("unknown storage backend %s", CLI.StorageBackend)
 	}
 
 	server, err := server.NewKioraServer(serverConfig, db)
 	if err != nil {
-		log.Err(err).Msg("failed to create server")
+		logger.Err(err).Msg("failed to create server")
 		return
 	}
 
@@ -82,15 +87,15 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			log.Info().Msg("Received signal, shutting down")
+			logger.Info().Msg("Received signal, shutting down")
 			server.Shutdown()
 			break
 		}
 	}()
 
 	if err := server.ListenAndServe(); err != nil {
-		log.Err(err).Msg("failed to listen and serve")
+		logger.Err(err).Msg("failed to listen and serve")
 	}
 
-	log.Info().Msg("Kiora Shut Down")
+	logger.Info().Msg("Kiora Shut Down")
 }

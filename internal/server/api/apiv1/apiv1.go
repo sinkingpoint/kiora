@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/server/api"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -21,9 +21,10 @@ import (
 const CONTENT_TYPE_JSON = "application/json"
 const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
 
-func Register(router *mux.Router, api api.API) {
+func Register(router *mux.Router, api api.API, logger zerolog.Logger) {
 	apiv1 := apiv1{
-		api: api,
+		api:    api,
+		logger: logger.With().Str("component", "apiv1").Logger(),
 	}
 
 	subRouter := router.PathPrefix("/api/v1").Subrouter()
@@ -38,7 +39,15 @@ func Register(router *mux.Router, api api.API) {
 }
 
 type apiv1 struct {
-	api api.API
+	api    api.API
+	logger zerolog.Logger
+}
+
+func New(api api.API, logger zerolog.Logger) *apiv1 {
+	return &apiv1{
+		api:    api,
+		logger: logger.With().Str("component", "apiv1").Logger(),
+	}
 }
 
 func decodeFromContentType(r *http.Request, v interface{}) error {
@@ -163,7 +172,7 @@ func (a *apiv1) queryAlertStats(w http.ResponseWriter, r *http.Request) {
 
 	q, err := query.UnmarshalAlertStatsQuery(args)
 	if err != nil {
-		log.Warn().Msg(err.Error())
+		a.logger.Warn().Msg(err.Error())
 		span.RecordError(err)
 		http.Error(w, "failed to unmarshal query", http.StatusBadRequest)
 		return
@@ -207,7 +216,7 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		span.SetStatus(codes.Error, "failed to marshal cluster nodes")
-		log.Err(err).Msg("failed to marshal cluster nodes")
+		a.logger.Err(err).Msg("failed to marshal cluster nodes")
 		http.Error(w, "failed to marshal cluster nodes", http.StatusInternalServerError)
 		return
 	}
@@ -242,7 +251,7 @@ func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 	if err := a.api.AckAlert(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to handle alert acknowledgement")) // nolint:errcheck
-		log.Err(err).Msg("failed to broadcast alert acknowledgment")
+		a.logger.Err(err).Msg("failed to broadcast alert acknowledgment")
 		return
 	}
 
@@ -260,7 +269,7 @@ func (a *apiv1) postSilence(w http.ResponseWriter, r *http.Request) {
 	if err := a.api.PostSilence(r.Context(), silence); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("failed to handle alert acknowledgement")) // nolint:errcheck
-		log.Err(err).Msg("failed to broadcast alert acknowledgment")
+		a.logger.Err(err).Msg("failed to broadcast alert acknowledgment")
 		return
 	}
 
@@ -268,7 +277,7 @@ func (a *apiv1) postSilence(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to marshal silence")) // nolint:errcheck
-		log.Err(err).Msg("failed to marshal silence")
+		a.logger.Err(err).Msg("failed to marshal silence")
 		return
 	}
 
@@ -282,7 +291,7 @@ func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to get silences")) // nolint:errcheck
-		log.Err(err).Msg("failed to get silences")
+		a.logger.Err(err).Msg("failed to get silences")
 		return
 	}
 
@@ -290,7 +299,7 @@ func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("failed to marshal silences")) // nolint:errcheck
-		log.Err(err).Msg("failed to marshal silences")
+		a.logger.Err(err).Msg("failed to marshal silences")
 		return
 	}
 
