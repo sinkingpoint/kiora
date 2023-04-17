@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/http"
+	"text/template"
 
 	"github.com/rs/zerolog"
 )
@@ -17,4 +18,10 @@ type NodeBus interface {
 
 	// Logger returns a logger that can be used to log messages.
 	Logger(component string) zerolog.Logger
+
+	// Template returns a template that can be used to render templates.
+	Template(name string) *template.Template
+
+	// RegisterTemplate registers a template with the bus that other nodes can reference.
+	RegisterTemplate(name string, tmpl *template.Template) error
 }

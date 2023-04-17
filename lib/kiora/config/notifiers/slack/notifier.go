@@ -4,13 +4,26 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
+
+var DefaultSlackTemplate *template.Template
+
+func init() {
+	tmpl, err := template.New("slack").Parse(`[FIRING: {{ len . }}] {{ (index . 0).Labels.alertname }}`)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to parse default slack template")
+	}
+
+	DefaultSlackTemplate = tmpl
+}
 
 func init() {
 	config.RegisterNode("slack", New)
@@ -43,6 +56,8 @@ func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node,
 		return nil, errors.Wrap(err, "failed to load api url")
 	}
 
+	bus.RegisterTemplate("slack", DefaultSlackTemplate)
+
 	return &SlackNotifier{
 		name:   config.NotifierName(name),
 		bus:    bus,
@@ -61,8 +76,17 @@ func (s *SlackNotifier) Type() string {
 }
 
 func (s *SlackNotifier) Notify(ctx context.Context, alerts ...model.Alert) *config.NotificationError {
+	tmpl := s.bus.Template("slack")
+	writer := strings.Builder{}
+	if err := tmpl.Execute(&writer, alerts); err != nil {
+		return &config.NotificationError{
+			Err:       err,
+			Retryable: false,
+		}
+	}
+
 	payload := slackPayload{
-		Text: fmt.Sprintf("[FIRING: %d] %s", len(alerts), alerts[0].Labels["alertname"]),
+		Text: writer.String(),
 	}
 
 	payloadBytes, err := json.Marshal(payload)
