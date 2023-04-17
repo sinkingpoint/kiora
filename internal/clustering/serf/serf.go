@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/hashicorp/memberlist"
 	"github.com/hashicorp/serf/serf"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf/messages"
@@ -37,6 +39,8 @@ type Config struct {
 	NodeName          string
 	ClustererDelegate clustering.ClustererDelegate
 	EventDelegate     clustering.EventDelegate
+
+	Logger zerolog.Logger
 }
 
 func DefaultConfig() *Config {
@@ -44,6 +48,7 @@ func DefaultConfig() *Config {
 		ListenURL:      "localhost:4279",
 		BootstrapPeers: []string{},
 		NodeName:       randomNodeName(),
+		Logger:         zerolog.New(os.Stdout).Level(zerolog.DebugLevel).With().Str("component", "serf").Logger(),
 	}
 }
 
@@ -81,6 +86,9 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	serfConfig.NodeName = conf.NodeName
 	serfConfig.MaxQueueDepth = 1 << 16      // 64k
 	serfConfig.UserEventSizeLimit = 1 << 12 // 4k
+	serfConfig.Logger = &HCLogger{
+		conf.Logger,
+	}
 
 	serf, err := serf.Create(serfConfig)
 	if err != nil {
