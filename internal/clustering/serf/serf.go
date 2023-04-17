@@ -38,6 +38,7 @@ type Config struct {
 	NodeName          string
 	ClustererDelegate clustering.ClustererDelegate
 	EventDelegate     clustering.EventDelegate
+	DBDelegate        serf.UserDelegate
 
 	Logger zerolog.Logger
 }
@@ -86,6 +87,7 @@ func NewSerfBroadcaster(conf *Config) (*SerfBroadcaster, error) {
 	serfConfig.MaxQueueDepth = 1 << 16      // 64k
 	serfConfig.UserEventSizeLimit = 1 << 12 // 4k
 	serfConfig.Logger = &HCLogger{conf.Logger}
+	serfConfig.UserDelegate = conf.DBDelegate
 
 	serf, err := serf.Create(serfConfig)
 	if err != nil {

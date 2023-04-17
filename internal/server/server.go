@@ -64,6 +64,7 @@ func NewKioraServer(conf serverConfig, db kioradb.DB) (*KioraServer, error) {
 	config.BootstrapPeers = conf.BootstrapPeers
 	config.ClustererDelegate = ringClusterer
 	config.Logger = conf.Logger
+	config.DBDelegate = serf.NewDBDelegate(db, conf.Logger)
 
 	broadcaster, err := serf.NewSerfBroadcaster(config)
 	if err != nil {
