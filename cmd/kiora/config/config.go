@@ -8,6 +8,7 @@ import (
 	"github.com/awalterschulze/gographviz"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -116,7 +117,7 @@ func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) erro
 }
 
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.
-func LoadConfigFile(path string) (*ConfigFile, error) {
+func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 	conf := &ConfigFile{
 		nodes:        make(map[string]config.Node),
 		links:        make(map[string][]Link),
@@ -138,7 +139,7 @@ func LoadConfigFile(path string) (*ConfigFile, error) {
 		return conf, errors.Wrap(err, "failed to load config file")
 	}
 
-	bus := NewKioraNodeBus(&configGraph)
+	bus := NewKioraNodeBus(&configGraph, logger)
 
 	for _, rawNode := range configGraph.nodes {
 		nodeType := rawNode.attrs["type"]

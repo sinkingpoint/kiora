@@ -37,7 +37,7 @@ func main() {
 	logger := zerolog.New(os.Stderr).Level(zerolog.DebugLevel)
 	log.Logger = logger
 
-	config, err := config.LoadConfigFile(CLI.ConfigFile)
+	config, err := config.LoadConfigFile(CLI.ConfigFile, logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to load config")
 	}

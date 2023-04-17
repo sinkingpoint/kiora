@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,7 @@ func TestConfigLoad(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fileName := writeConfigFile(t, tt.config)
-			_, err := config.LoadConfigFile(fileName)
+			_, err := config.LoadConfigFile(fileName, zerolog.New(os.Stdout))
 			if tt.expectSuccess {
 				assert.NoError(t, err)
 			} else {
@@ -152,7 +153,7 @@ func TestConfigAckFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fileName := writeConfigFile(t, tt.config)
-			cfg, err := config.LoadConfigFile(fileName)
+			cfg, err := config.LoadConfigFile(fileName, zerolog.New(os.Stdout))
 			require.NoError(t, err)
 
 			err = cfg.ValidateData(context.TODO(), tt.ack)
