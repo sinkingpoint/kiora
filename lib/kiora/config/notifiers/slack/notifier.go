@@ -54,7 +54,9 @@ func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node,
 		return nil, err
 	}
 
-	bus.RegisterTemplate("slack", DefaultSlackTemplate)
+	if err := bus.RegisterTemplate("slack", DefaultSlackTemplate); err != nil {
+		return nil, err
+	}
 
 	return &SlackNotifier{
 		name:   config.NotifierName(name),
