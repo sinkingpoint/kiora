@@ -1,4 +1,4 @@
-package config
+package unmarshal
 
 // Secret wraps a string in a stringer that redacts the value.
 type Secret string

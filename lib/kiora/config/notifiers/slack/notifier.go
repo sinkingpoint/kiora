@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
 
@@ -39,21 +40,18 @@ type SlackNotifier struct {
 	bus    config.NodeBus
 	client *http.Client
 
-	apiURL *config.MaybeSecretFile
+	apiURL *unmarshal.MaybeSecretFile
 }
 
 func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node, error) {
-	if attrs["api_url"] != "" && attrs["api_url_file"] != "" {
-		return nil, errors.New("cannot specify both api_url and api_url_file")
-	}
+	var rawNode = struct {
+		ApiURL *unmarshal.MaybeSecretFile `config:"api_url" required:"true"`
+	}{}
 
-	if attrs["api_url"] == "" && attrs["api_url_file"] == "" {
-		return nil, errors.New("must specify either api_url or api_url_file")
-	}
-
-	apiURL, err := config.NewMaybeSecretFile(attrs["api_url_file"], config.Secret(attrs["api_url"]))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load api url")
+	if err := unmarshal.UnmarshalConfig(attrs, rawNode, unmarshal.UnmarshalOpts{
+		DisallowUnknownFields: true,
+	}); err != nil {
+		return nil, err
 	}
 
 	bus.RegisterTemplate("slack", DefaultSlackTemplate)
@@ -63,7 +61,7 @@ func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node,
 		bus:    bus,
 		client: bus.HTTPClient(),
 
-		apiURL: apiURL,
+		apiURL: rawNode.ApiURL,
 	}, nil
 }
 
