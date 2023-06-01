@@ -2,6 +2,7 @@ import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { Alert, DefaultService } from "../../api";
 import Single from "../alertcard";
+import styles from "./styles.css";
 
 interface AlertViewState {
 	alerts: Alert[];
@@ -23,12 +24,12 @@ interface SuccessViewProps {
 
 const SuccessView = ({ alerts }: SuccessViewProps) => {
 	return (
-		<>
+		<div class={styles.success}>
 			{(alerts.length > 0 &&
 				alerts.map((alert) => {
 					return <Single key={alert.id} alert={alert} />;
 				})) || <div>No alerts</div>}
-		</>
+		</div>
 	);
 };
 

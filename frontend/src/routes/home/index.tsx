@@ -1,4 +1,4 @@
-import { h } from "preact";
+import { h, Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { DefaultService } from "../../api";
 import AlertList from "../../components/alertlist";
@@ -86,10 +86,10 @@ const StatsRow = () => {
 
 const Home = () => {
 	return (
-		<div>
+		<>
 			<StatsRow />
-			<AlertList />
-		</div>
+			<div class={styles.row}><AlertList /></div>
+		</>
 	);
 };
 
