@@ -16,7 +16,7 @@ const AlertCard = ({ alert }: CardProps) => {
 				<div>
 					<span class={style["single-top"]}>{startTime}</span>
 					<span class={style["single-top"]}>
-						{(alert.labels["alertname"] && `'alertname="'${alert.labels["alertname"]}'"' `) || (
+						{(alert.labels["alertname"] && `alertname="${alert.labels["alertname"]}"' `) || (
 							<i>No Alert Name</i>
 						)}
 					</span>
