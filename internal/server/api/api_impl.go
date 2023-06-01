@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/services"
@@ -76,6 +77,10 @@ func (a *APIImpl) PostSilence(ctx context.Context, silence model.Silence) error 
 func (a *APIImpl) AckAlert(ctx context.Context, alertID string, alertAck model.AlertAcknowledgement) error {
 	if err := a.bus.Config().ValidateData(ctx, &alertAck); err != nil {
 		return err
+	}
+
+	if len(a.bus.DB().QueryAlerts(ctx, query.NewAlertQuery(query.ID(alertID)))) == 0 {
+		return fmt.Errorf("alert %q not found", alertID)
 	}
 
 	return a.bus.Broadcaster().BroadcastAlertAcknowledgement(ctx, alertID, alertAck)
