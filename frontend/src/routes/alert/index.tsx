@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import LabelList from "../../components/alertcard/labels";
 import { Alert, DefaultService } from "../../api";
 import style from "./styles.css";
+import Button from "../../components/button";
 
 interface AlertState {
 	loading: boolean;
@@ -34,20 +35,30 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 				</span>
 			)}
 
+
+			<span class={style["alert-row"]}>
+				<Button text="Acknowledge" />
+				<Button text="Silence" />
+			</span>
+
 			<span class={style["alert-row"]}>
 				<LabelList alert={alert} />
 			</span>
 
 			<span class={style["alert-row"]}>
-				<label>Status:</label> {alert.status}
-			</span>
-
-			<span class={style["alert-row"]}>
-				<label>ID:</label> {alert.id}
-			</span>
-
-			<span class={style["alert-row"]}>
-				<label>Started At:</label> {startTime.toLocaleString()}
+				<table>
+					<tr>
+						<td><label>Status:</label></td> <td>{alert.status}</td>
+					</tr>
+					<tr>
+						<td><label>ID:</label></td>
+						<td>{alert.id}</td>
+					</tr>
+					<tr>
+						<td><label>Started At:</label></td>
+						<td>{startTime.toLocaleString()}</td>
+					</tr>
+				</table>
 			</span>
 
 			{endTime.getTime() > 0 && (
