@@ -23,6 +23,13 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 	const startTime = new Date(alert.startsAt);
 	const endTime = new Date(alert.endsAt);
 
+	let silenceLink = "/silences/new";
+	const filters = [];
+	for(const key of Object.keys(alert.labels)) {
+		filters.push("matcher=" + encodeURIComponent(`${key}="${alert.labels[key]}"`));
+	}
+	silenceLink = silenceLink + "?" + filters.join("&");
+
 	return (
 		<div class={style["alert-view"]}>
 			<span class={style["alert-row"]}>
@@ -35,17 +42,15 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 				</span>
 			)}
 
+			<div class={style["alert-row"]}>
+				<a href={silenceLink.toString()}><Button label="Silence" /></a>
+			</div>
 
-			<span class={style["alert-row"]}>
-				<Button text="Acknowledge" />
-				<Button text="Silence" />
-			</span>
-
-			<span class={style["alert-row"]}>
+			<div class={style["alert-row"]}>
 				<LabelList alert={alert} />
-			</span>
+			</div>
 
-			<span class={style["alert-row"]}>
+			<div class={style["alert-row"]}>
 				<table>
 					<tr>
 						<td><label>Status:</label></td> <td>{alert.status}</td>
@@ -59,7 +64,7 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 						<td>{startTime.toLocaleString()}</td>
 					</tr>
 				</table>
-			</span>
+			</div>
 
 			{endTime.getTime() > 0 && (
 				<span class={style["alert-row"]}>
