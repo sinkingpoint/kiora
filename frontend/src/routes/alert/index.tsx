@@ -23,12 +23,13 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 	const startTime = new Date(alert.startsAt);
 	const endTime = new Date(alert.endsAt);
 
-	let silenceLink = "/silences/new";
-	const filters = [];
+	const silenceFilters = new URLSearchParams();
 	for(const key of Object.keys(alert.labels)) {
-		filters.push("matcher=" + encodeURIComponent(`${key}="${alert.labels[key]}"`));
+		silenceFilters.append("filter", `${key}="${alert.labels[key]}"`);
 	}
-	silenceLink = silenceLink + "?" + filters.join("&");
+
+	const silenceLink = new URL("/silences/new", window.location.origin);
+	silenceLink.search = silenceFilters.toString();
 
 	return (
 		<div class={style["alert-view"]}>
