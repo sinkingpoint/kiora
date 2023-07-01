@@ -24,9 +24,7 @@ func init() {
 	}
 
 	DefaultSlackTemplate = tmpl
-}
 
-func init() {
 	config.RegisterNode("slack", New)
 }
 
@@ -40,12 +38,14 @@ type SlackNotifier struct {
 	bus    config.NodeBus
 	client *http.Client
 
-	apiURL *unmarshal.MaybeSecretFile
+	apiURL   *unmarshal.MaybeSecretFile
+	template *template.Template
 }
 
 func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node, error) {
 	var rawNode = struct {
-		ApiURL *unmarshal.MaybeSecretFile `config:"api_url" required:"true"`
+		ApiURL       *unmarshal.MaybeSecretFile `config:"api_url" required:"true"`
+		TemplateFile *unmarshal.MaybeFile       `config:"template_file"`
 	}{}
 
 	if err := unmarshal.UnmarshalConfig(attrs, rawNode, unmarshal.UnmarshalOpts{
