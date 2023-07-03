@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import { Alert, DefaultService } from "../../api";
 import Single from "../alertcard";
 import styles from "./styles.css";
+import Spinner from "../spinner";
 
 interface AlertViewState {
 	alerts: Alert[];
@@ -64,7 +65,7 @@ const AlertList = () => {
 	}, [alerts]);
 
 	if (alerts.loading) {
-		return <div>Loading...</div>;
+		return <Spinner />;
 	} else if (alerts.error) {
 		return <ErrorView error={alerts.error} />;
 	}

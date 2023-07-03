@@ -4,6 +4,7 @@ import LabelList from "../../components/alertcard/labels";
 import { Alert, DefaultService } from "../../api";
 import style from "./styles.css";
 import Button from "../../components/button";
+import Spinner from "../../components/spinner";
 
 interface AlertState {
 	loading: boolean;
@@ -117,7 +118,7 @@ const AlertView = ({ id }: AlertProps) => {
 	}, [state, id]);
 
 	if (state.loading) {
-		return <div>Loading...</div>;
+		return <Spinner />;
 	} else if (state.error) {
 		return <div>{state.error}</div>;
 	} else if (state.alert) {

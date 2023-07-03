@@ -4,6 +4,7 @@ import { DefaultService } from "../../api";
 import AlertList from "../../components/alertlist";
 import SingleStatPanel from "../../components/stats/single_stat_panel";
 import styles from "./styles.css";
+import Spinner from "../../components/spinner";
 
 interface StatsState {
 	firingAlerts: number;
@@ -66,7 +67,7 @@ const StatsRow = () => {
 	});
 
 	if (stats.loading) {
-		return <div>Loading...</div>;
+		return <Spinner />;
 	}
 
 	if (stats.error) {
