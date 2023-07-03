@@ -5,14 +5,19 @@
 	-moz-osx-font-smoothing: grayscale;
 
 	color-scheme: light dark;
-	color: #444;
-	background: #fafafa;
+
+	--text: #444;
+	--background: #fafafa;
+	--border: #cacaca;
+	color: var(--text);
+	background: var(--background);
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		color: #fff;
-		background: #1c1c1c;
+		--text: #fff;
+		--background: #1c1c1c;
+		--border: #555555;
 	}
 }
 

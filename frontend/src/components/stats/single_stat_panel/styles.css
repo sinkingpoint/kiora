@@ -1,5 +1,5 @@
 .card {
-	border: 2px solid #e6e6e6;
+	border: 2px solid var(--border);
 	padding: 10px;
 	text-align: center;
 	border-radius: 5px;

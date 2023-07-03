@@ -1,14 +1,14 @@
 .single {
 	padding: 10px;
 	border-radius: 5px;
-	border: solid #2d2d2d;
+	border: solid var(--border);
 	margin: 10px;
 }
 
 .single-top {
 	font-size: 1em;
 	font-weight: bold;
-	color: #fff;
+	color: var(--text);
 	padding-left: 10px;
 }
 

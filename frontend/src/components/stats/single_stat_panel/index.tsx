@@ -8,13 +8,9 @@ interface SingleStatPanelProps {
 }
 
 const SingleStatPanel = ({ title, value, color }: SingleStatPanelProps) => {
-	if (color === undefined) {
-		color = "#fff";
-	}
-
 	return (
 		<div class={styles.card}>
-			<div class={styles.value} style={{ color }}>
+			<div class={styles.value}>
 				{value}
 			</div>
 
