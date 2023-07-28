@@ -58,31 +58,31 @@ func (a alertsByFields) Less(i, j int) bool {
 			continue
 		}
 
-		switch iVal.(type) {
+		switch val := iVal.(type) {
 		case string:
 			if a.Order == OrderDesc {
-				return (iVal.(string) > jVal.(string))
+				return (val > jVal.(string))
 			}
 
-			return iVal.(string) < jVal.(string)
+			return val < jVal.(string)
 		case int:
 			if a.Order == OrderDesc {
-				return (iVal.(int) > jVal.(int))
+				return (val > jVal.(int))
 			}
 
-			return iVal.(int) < jVal.(int)
+			return val < jVal.(int)
 		case float64:
 			if a.Order == OrderDesc {
-				return (iVal.(float64) > jVal.(float64))
+				return (val > jVal.(float64))
 			}
 
-			return iVal.(float64) < jVal.(float64)
+			return val < jVal.(float64)
 		case time.Time:
 			if a.Order == OrderDesc {
-				return (iVal.(time.Time).After(jVal.(time.Time)))
+				return (val.After(jVal.(time.Time)))
 			}
 
-			return iVal.(time.Time).Before(jVal.(time.Time))
+			return val.Before(jVal.(time.Time))
 		default:
 			log.Warn().Str("field", field).Interface("value", iVal).Msg("unknown field type")
 			continue

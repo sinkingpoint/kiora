@@ -44,7 +44,6 @@ func newTracerProvider(config TracingConfiguration, exp sdktrace.SpanExporter) (
 			semconv.ServiceNameKey.String(config.ServiceName),
 		),
 	)
-
 	if err != nil {
 		return nil, err
 	}

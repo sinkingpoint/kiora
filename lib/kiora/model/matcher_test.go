@@ -8,6 +8,7 @@ import (
 )
 
 func MustRegexMatcher(t *testing.T, label, regex string) model.Matcher {
+	t.Helper()
 	m, err := model.LabelValueRegexMatcher(label, regex)
 	require.NoError(t, err)
 	return m

@@ -2,10 +2,11 @@ package filenotifier
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/internal/encoding"
@@ -20,10 +21,12 @@ func init() {
 	config.RegisterNode(FILE_NODE_NAME, New)
 }
 
-const STDOUT_NODE_NAME = "stdout"
-const STDERR_NODE_NAME = "stderr"
-const FILE_NODE_NAME = "file"
-const DEFAULT_ENCODING = "json"
+const (
+	STDOUT_NODE_NAME = "stdout"
+	STDERR_NODE_NAME = "stderr"
+	FILE_NODE_NAME   = "file"
+	DEFAULT_ENCODING = "json"
+)
 
 var _ = config.Notifier(&FileNotifier{})
 

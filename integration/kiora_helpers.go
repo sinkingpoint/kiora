@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -18,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +29,7 @@ type ackRequest struct {
 	AlertID string `json:"alertID"`
 }
 
-// KioraInstance wraps an instance of Kiora started as a seperate process as a black box.
+// KioraInstance wraps an instance of Kiora started as a separate process as a black box.
 type KioraInstance struct {
 	// The cluster name of this instance.
 	name string
@@ -78,6 +79,7 @@ func (k *KioraInstance) WithName(name string) *KioraInstance {
 }
 
 func (k *KioraInstance) WithConfig(t *testing.T, config string) *KioraInstance {
+	t.Helper()
 	file, err := os.CreateTemp("", "")
 	require.NoError(t, err)
 
@@ -85,7 +87,7 @@ func (k *KioraInstance) WithConfig(t *testing.T, config string) *KioraInstance {
 		file.Close()
 	})
 
-	_, err = file.Write([]byte(config))
+	_, err = file.WriteString(config)
 	require.NoError(t, err)
 
 	k.configFile = file.Name()
@@ -99,6 +101,7 @@ func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
 
 // Start actually executes the Kiora command, running it in a background go routine.
 func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
+	t.Helper()
 	name := kioraInstanceName()
 	if k.name == "" {
 		k.name = name
@@ -110,7 +113,8 @@ func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
 	clusterPort, err := getRandomPort()
 	require.NoError(t, err)
 
-	args := append([]string{"run",
+	args := append([]string{
+		"run",
 		"../cmd/kiora",
 		"-c", k.configFile,
 		"--web.listen-url", "localhost:" + httpPort,
@@ -143,27 +147,30 @@ func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	require.NoError(t, k.WaitTillUp(ctx, t))
+	require.NoError(t, k.WaitTillUp(t, ctx))
 
 	return k
 }
 
-func (k *KioraInstance) IsUp(ctx context.Context, t *testing.T) bool {
+func (k *KioraInstance) IsUp(t *testing.T, ctx context.Context) bool {
+	t.Helper()
 	url := k.GetHTTPURL("/")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	require.NoError(t, err)
 
-	_, err = http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	resp.Body.Close()
 	return err == nil
 }
 
-func (k *KioraInstance) WaitTillUp(ctx context.Context, t *testing.T) error {
+func (k *KioraInstance) WaitTillUp(t *testing.T, ctx context.Context) error {
+	t.Helper()
 	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
 		case <-ticker.C:
-			if k.IsUp(ctx, t) {
+			if k.IsUp(t, ctx) {
 				return nil
 			}
 		case <-ctx.Done():
@@ -213,6 +220,7 @@ func (k *KioraInstance) WaitForExit(ctx context.Context) error {
 }
 
 func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model.Alert) {
+	t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/alerts")
 
 	alertBytes, err := json.Marshal([]model.Alert{alert})
@@ -228,6 +236,7 @@ func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model
 }
 
 func (k *KioraInstance) SendAlertAcknowledgement(t *testing.T, ctx context.Context, ack ackRequest) {
+	t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/alerts/ack")
 
 	ackBytes, err := json.Marshal(ack)
@@ -243,6 +252,7 @@ func (k *KioraInstance) SendAlertAcknowledgement(t *testing.T, ctx context.Conte
 }
 
 func (k *KioraInstance) SendSilence(t *testing.T, ctx context.Context, silence model.Silence) {
+	t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/silences")
 
 	silenceBytes, err := json.Marshal(silence)
@@ -258,6 +268,7 @@ func (k *KioraInstance) SendSilence(t *testing.T, ctx context.Context, silence m
 }
 
 func (k *KioraInstance) GetAlerts(t *testing.T, ctx context.Context) []model.Alert {
+	t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/alerts")
 	resp, err := http.Get(requestURL)
 	require.NoError(t, err)

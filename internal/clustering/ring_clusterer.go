@@ -23,8 +23,10 @@ func (k *kioraMember) String() string {
 	return k.Name
 }
 
-var _ = Clusterer(&RingClusterer{})
-var _ = ClustererDelegate(&RingClusterer{})
+var (
+	_ = Clusterer(&RingClusterer{})
+	_ = ClustererDelegate(&RingClusterer{})
+)
 
 // RingClusterer is a clusterer that keeps track of nodes in a consistent hash ring.
 type RingClusterer struct {
@@ -35,7 +37,7 @@ type RingClusterer struct {
 
 // NewRingClusterer constructs a new RingClusterer, with the given name and address.
 // This name and address _must_ be the same as the node in the underlying Cluster in order to properly shard alerts.
-func NewRingClusterer(myName string, myAddress string) *RingClusterer {
+func NewRingClusterer(myName, myAddress string) *RingClusterer {
 	me := &kioraMember{
 		Name:    myName,
 		Address: myAddress,
@@ -69,7 +71,7 @@ func (r *RingClusterer) GetAuthoritativeNode(ctx context.Context, a *model.Alert
 	return r.ring.LocateKey(labels.Bytes())
 }
 
-func (r *RingClusterer) AddNode(name string, address string) {
+func (r *RingClusterer) AddNode(name, address string) {
 	r.ring.Add(&kioraMember{
 		Name:    name,
 		Address: address,

@@ -3,12 +3,12 @@ package model
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/sinkingpoint/kiora/internal/stubs"
 )
 
@@ -64,7 +64,7 @@ func (s *Silence) UnmarshalJSON(b []byte) error {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&rawSilence); err != nil {
-		return err
+		return errors.Wrap(err, "failed to unmarshal silence")
 	}
 
 	s.ID = uuid.New().String()

@@ -15,9 +15,11 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-const ALERT_ROOT = "alerts"
-const SILENCES_LEAF = "silences"
-const ACK_LEAF = "acks"
+const (
+	ALERT_ROOT    = "alerts"
+	SILENCES_LEAF = "silences"
+	ACK_LEAF      = "acks"
+)
 
 var _ = config.Config(&ConfigFile{})
 

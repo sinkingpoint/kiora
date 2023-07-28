@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,7 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	var config Config
 	require.NoError(t, unmarshal.UnmarshalConfig(data, &config, unmarshal.UnmarshalOpts{}), "Unexpected error")
 
-	assert.Equal(t, expected, config, "Incorrect unmarshalled config")
+	require.Equal(t, expected, config, "Incorrect unmarshalled config")
 }
 
 func TestUnmarshalConfig_MissingRequiredField(t *testing.T) {
@@ -64,9 +63,9 @@ func TestUnmarshalConfig_MissingRequiredField(t *testing.T) {
 
 	var config Config
 	err := unmarshal.UnmarshalConfig(data, &config, unmarshal.UnmarshalOpts{})
-	assert.Error(t, err, "Expected error")
+	require.Error(t, err, "Expected error")
 	expectedError := "UnmarshalConfig: field Field3 is required but not found in the config"
-	assert.EqualError(t, err, expectedError, "Incorrect error message")
+	require.EqualError(t, err, expectedError, "Incorrect error message")
 }
 
 func TestUnmarshalConfig_DisallowUnknownFields(t *testing.T) {
@@ -85,7 +84,7 @@ func TestUnmarshalConfig_DisallowUnknownFields(t *testing.T) {
 	err := unmarshal.UnmarshalConfig(data, &config, unmarshal.UnmarshalOpts{
 		DisallowUnknownFields: true,
 	})
-	assert.Error(t, err, "Expected error")
+	require.Error(t, err, "Expected error")
 }
 
 func TestUnmarshalConfig_DisallowBothFileAndLiteral(t *testing.T) {
@@ -100,5 +99,5 @@ func TestUnmarshalConfig_DisallowBothFileAndLiteral(t *testing.T) {
 
 	var config Config
 	err := unmarshal.UnmarshalConfig(data, &config, unmarshal.UnmarshalOpts{})
-	assert.Error(t, err, "Expected error")
+	require.Error(t, err, "Expected error")
 }

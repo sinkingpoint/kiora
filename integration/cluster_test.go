@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,13 +27,14 @@ func TestKioraClusterAlerts(t *testing.T) {
 		reqURL := k.GetHTTPURL("/api/v1/alerts")
 		resp, err := http.Get(reqURL)
 		require.NoError(t, err)
+		defer resp.Body.Close()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		respBytes, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
-		assert.Contains(t, string(respBytes), "foo")
+		require.Contains(t, string(respBytes), "foo")
 	}
 }
 
@@ -64,8 +64,8 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 1, found, "Expected only one notification")
-	assert.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
+	require.Equal(t, 1, found, "Expected only one notification")
+	require.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
 
 	found = 0
 	notFound = 0
@@ -90,9 +90,9 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 1, found, "Expected only one notification")
-	assert.Equal(t, 1, totalFound, "Expected only one notification")
-	assert.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
+	require.Equal(t, 1, found, "Expected only one notification")
+	require.Equal(t, 1, totalFound, "Expected only one notification")
+	require.Equal(t, len(nodes)-1, notFound, "Excepted two nodes to not send the notification")
 }
 
 // Tests that we can fire alert, acknowledge it, and get the acknowledgement back.
@@ -125,10 +125,10 @@ func TestAcknowledgementGetsRegistered(t *testing.T) {
 	alerts = nodes[0].GetAlerts(t, context.TODO())
 	require.Len(t, alerts, 1)
 
-	assert.NotNil(t, alerts[0].Acknowledgement)
-	assert.Equal(t, "test_creator", alerts[0].Acknowledgement.Creator)
-	assert.Equal(t, "test_comment", alerts[0].Acknowledgement.Comment)
-	assert.Equal(t, model.AlertStatusAcked, alerts[0].Status)
+	require.NotNil(t, alerts[0].Acknowledgement)
+	require.Equal(t, "test_creator", alerts[0].Acknowledgement.Creator)
+	require.Equal(t, "test_comment", alerts[0].Acknowledgement.Comment)
+	require.Equal(t, model.AlertStatusAcked, alerts[0].Status)
 }
 
 // Test that we can add a silence, and that it prevents the alert from being sent.
@@ -166,18 +166,18 @@ func TestSilencesSilence(t *testing.T) {
 	for _, alert := range alerts {
 		if alert.Status == model.AlertStatusSilenced {
 			foundSilenced += 1
-			assert.Equal(t, "true", alert.Labels["silenced"])
+			require.Equal(t, "true", alert.Labels["silenced"])
 		} else {
-			assert.Equal(t, "false", alert.Labels["silenced"])
+			require.Equal(t, "false", alert.Labels["silenced"])
 		}
 	}
 
-	assert.Equal(t, 1, foundSilenced, "Expected one silenced alert")
+	require.Equal(t, 1, foundSilenced, "Expected one silenced alert")
 
 	foundAlerted := false
 	// Assert that no node sent the alert for the silenced alert.
 	for _, node := range nodes {
-		assert.NotContains(t, node.Stdout(), `"silenced":"true"`)
+		require.NotContains(t, node.Stdout(), `"silenced":"true"`)
 
 		if strings.Contains(node.Stdout(), `"silenced":"false"`) {
 			if foundAlerted {
@@ -188,7 +188,7 @@ func TestSilencesSilence(t *testing.T) {
 	}
 
 	// Assert that one node sent the alert for the silenced alert.
-	assert.True(t, foundAlerted, "Expected one node to send the alert for the non-silenced alert")
+	require.True(t, foundAlerted, "Expected one node to send the alert for the non-silenced alert")
 }
 
 // Test that if we send an alert, and then silence it, the alert status gets updated.
@@ -208,5 +208,5 @@ func TestSilencesSilenceAfterAlert(t *testing.T) {
 	// Make sure the alert exists and is silenced.
 	alerts := nodes[0].GetAlerts(t, context.TODO())
 	require.Len(t, alerts, 1)
-	assert.Equal(t, model.AlertStatusSilenced, alerts[0].Status)
+	require.Equal(t, model.AlertStatusSilenced, alerts[0].Status)
 }

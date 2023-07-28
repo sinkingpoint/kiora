@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,16 +51,16 @@ func TestGrouping(t *testing.T) {
 	k.SendAlert(t, context.TODO(), alert2)
 
 	// The alert should be delayed by the group_wait, so neither alert should have come through yet.
-	assert.NotContains(t, k.Stdout(), "bar")
-	assert.NotContains(t, k.Stdout(), "baz")
+	require.NotContains(t, k.Stdout(), "bar")
+	require.NotContains(t, k.Stdout(), "baz")
 
 	// 2s is the group wait.
 	time.Sleep(2 * time.Second)
-	assert.Contains(t, k.Stdout(), "bar")
-	assert.Contains(t, k.Stdout(), "baz")
+	require.Contains(t, k.Stdout(), "bar")
+	require.Contains(t, k.Stdout(), "baz")
 
 	// Wait another group to make sure it doesn't fire again.
 	time.Sleep(2 * time.Second)
-	assert.Equal(t, 1, strings.Count(k.Stdout(), "bar"))
-	assert.Equal(t, 1, strings.Count(k.Stdout(), "baz"))
+	require.Equal(t, 1, strings.Count(k.Stdout(), "bar"))
+	require.Equal(t, 1, strings.Count(k.Stdout(), "baz"))
 }

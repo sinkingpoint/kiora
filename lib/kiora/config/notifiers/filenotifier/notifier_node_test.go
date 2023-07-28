@@ -8,7 +8,6 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config/notifiers/filenotifier"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +26,7 @@ func TestFileNotifierNode(t *testing.T) {
 
 	processor := node.(config.Notifier)
 
-	assert.Nil(t, processor.Notify(context.Background(), model.Alert{
+	require.Nil(t, processor.Notify(context.Background(), model.Alert{
 		Labels: model.Labels{
 			"alertname": "foo",
 		},
@@ -36,6 +35,6 @@ func TestFileNotifierNode(t *testing.T) {
 	fileContents, err := os.ReadFile(file.Name())
 	require.NoError(t, err)
 
-	assert.Contains(t, string(fileContents), "alertname")
-	assert.Contains(t, string(fileContents), "foo")
+	require.Contains(t, string(fileContents), "alertname")
+	require.Contains(t, string(fileContents), "foo")
 }

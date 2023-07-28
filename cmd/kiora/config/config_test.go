@@ -8,7 +8,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/cmd/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,7 +15,7 @@ func writeConfigFile(t *testing.T, config string) string {
 	t.Helper()
 	file, err := os.CreateTemp("", "kiora_test")
 	require.NoError(t, err)
-	_, err = file.Write([]byte(config))
+	_, err = file.WriteString(config)
 	require.NoError(t, err)
 	file.Close()
 	return file.Name()
@@ -51,9 +50,9 @@ func TestConfigLoad(t *testing.T) {
 			fileName := writeConfigFile(t, tt.config)
 			_, err := config.LoadConfigFile(fileName, zerolog.New(os.Stdout))
 			if tt.expectSuccess {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -166,7 +165,7 @@ func TestConfigAckFilter(t *testing.T) {
 			}
 
 			for _, s := range tt.expectError {
-				assert.Contains(t, err.Error(), s, "expected error to contain %q", s)
+				require.Contains(t, err.Error(), s, "expected error to contain %q", s)
 			}
 		})
 	}

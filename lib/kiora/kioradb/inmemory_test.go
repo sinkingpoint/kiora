@@ -7,7 +7,6 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestInMemoryDB(t *testing.T) {
 	db := kioradb.NewInMemoryDB()
 
 	// Add an alert
-	assert.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
+	require.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
 		{
 			Labels: model.Labels{
 				"foo": "bar",
@@ -26,13 +25,13 @@ func TestInMemoryDB(t *testing.T) {
 
 	alerts := db.QueryAlerts(context.TODO(), query.NewAlertQuery(query.MatchAll()))
 
-	assert.Len(t, alerts, 1)
+	require.Len(t, alerts, 1)
 	alert := alerts[0]
-	assert.Equal(t, "bar", alert.Labels["foo"])
-	assert.Equal(t, model.AlertStatusFiring, alert.Status)
+	require.Equal(t, "bar", alert.Labels["foo"])
+	require.Equal(t, model.AlertStatusFiring, alert.Status)
 
 	// Resolve the above alert, add another
-	assert.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
+	require.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
 		{
 			Labels: model.Labels{
 				"foo": "bar",
@@ -52,18 +51,18 @@ func TestInMemoryDB(t *testing.T) {
 
 	for _, alert := range alerts {
 		if _, hasFoo := alert.Labels["foo"]; hasFoo {
-			assert.Equal(t, "bar", alert.Labels["foo"])
-			assert.Equal(t, model.AlertStatusResolved, alert.Status)
+			require.Equal(t, "bar", alert.Labels["foo"])
+			require.Equal(t, model.AlertStatusResolved, alert.Status)
 		} else if _, hasBar := alert.Labels["bar"]; hasBar {
-			assert.Equal(t, "baz", alert.Labels["bar"])
-			assert.Equal(t, model.AlertStatusFiring, alert.Status)
+			require.Equal(t, "baz", alert.Labels["bar"])
+			require.Equal(t, model.AlertStatusFiring, alert.Status)
 		} else {
 			t.Errorf("unexpected alert: %v", alert)
 		}
 	}
 
 	// Timeout the second alert
-	assert.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
+	require.NoError(t, db.StoreAlerts(context.Background(), []model.Alert{
 		{
 			Labels: model.Labels{
 				"bar": "baz",
@@ -77,11 +76,11 @@ func TestInMemoryDB(t *testing.T) {
 
 	for _, alert := range alerts {
 		if _, hasFoo := alert.Labels["foo"]; hasFoo {
-			assert.Equal(t, "bar", alert.Labels["foo"])
-			assert.Equal(t, model.AlertStatusResolved, alert.Status)
+			require.Equal(t, "bar", alert.Labels["foo"])
+			require.Equal(t, model.AlertStatusResolved, alert.Status)
 		} else if _, hasBar := alert.Labels["bar"]; hasBar {
-			assert.Equal(t, "baz", alert.Labels["bar"])
-			assert.Equal(t, model.AlertStatusResolved, alert.Status)
+			require.Equal(t, "baz", alert.Labels["bar"])
+			require.Equal(t, model.AlertStatusResolved, alert.Status)
 		} else {
 			t.Errorf("unexpected alert: %v", alert)
 		}

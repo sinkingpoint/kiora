@@ -17,13 +17,13 @@ import (
 
 var _ = services.Service(&NotifyService{})
 
-const DEFAULT_RENOTIFY_INTERVAL = 3 * time.Hour
+const DefaultRenotifyInterval = 3 * time.Hour
 
-// NOTIFY_INTERVAL is the interval at which we should check for alerts to notify.
+// NotifyInterval is the interval at which we should check for alerts to notify.
 // This is pretty arbitrary - increasing it will increase the batching we can do, but it also represents
-// the minumum group inteval we can use. Any group intervals less than this will be treated as this because
+// the minimum group inteval we can use. Any group intervals less than this will be treated as this because
 // this is how often we'll check for groups to notify.
-const NOTIFY_INTERVAL = 100 * time.Millisecond
+const NotifyInterval = 100 * time.Millisecond
 
 // groupMeta is a helper struct to track groups of alerts that should be notified together.
 type groupMeta struct {
@@ -64,7 +64,7 @@ func (n *NotifyService) Name() string {
 }
 
 func (n *NotifyService) Run(ctx context.Context) error {
-	ticker := time.NewTicker(NOTIFY_INTERVAL)
+	ticker := time.NewTicker(NotifyInterval)
 outer:
 	for {
 		select {
@@ -80,7 +80,7 @@ outer:
 }
 
 func (n *NotifyService) notifyFiring(ctx context.Context) {
-	q := query.NewAlertQuery(query.AllAlerts(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(stubs.Time.Now().Add(-DEFAULT_RENOTIFY_INTERVAL))))
+	q := query.NewAlertQuery(query.AllAlerts(query.Status(model.AlertStatusFiring), query.LastNotifyTimeMax(stubs.Time.Now().Add(-DefaultRenotifyInterval))))
 
 	for _, a := range n.bus.DB().QueryAlerts(ctx, q) {
 		n.notifyAlert(ctx, a)
@@ -119,7 +119,7 @@ func (n *NotifyService) notifyGroup(ctx context.Context) {
 				}
 
 				if err := n.bus.Broadcaster().BroadcastAlerts(ctx, g.Alerts...); err != nil {
-					n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
+					n.bus.Logger("notify").Err(err).Msg("failed to broadcast the successful notify")
 				}
 			} else {
 				stillWaitingGroups = append(stillWaitingGroups, g)
@@ -215,6 +215,6 @@ func (n *NotifyService) notifyAlert(ctx context.Context, a model.Alert) {
 	}
 
 	if err := n.bus.Broadcaster().BroadcastAlerts(ctx, a); err != nil {
-		n.bus.Logger("notify").Err(err).Msg("failed to broadcast the sucessful notify")
+		n.bus.Logger("notify").Err(err).Msg("failed to broadcast the successful notify")
 	}
 }

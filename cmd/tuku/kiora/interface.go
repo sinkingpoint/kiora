@@ -17,7 +17,7 @@ type KioraInstance struct {
 	URL        string
 }
 
-func NewKioraInstance(url string, apiVersion string) *KioraInstance {
+func NewKioraInstance(url, apiVersion string) *KioraInstance {
 	return &KioraInstance{
 		HTTPClient: http.DefaultClient,
 		APIVersion: apiVersion,
@@ -25,7 +25,7 @@ func NewKioraInstance(url string, apiVersion string) *KioraInstance {
 	}
 }
 
-func (k *KioraInstance) getRequest(method string, uri string, body io.Reader) (*http.Request, error) {
+func (k *KioraInstance) getRequest(method, uri string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s/api/%s/%s", k.URL, k.APIVersion, uri)
 	return http.NewRequest(method, url, body)
 }

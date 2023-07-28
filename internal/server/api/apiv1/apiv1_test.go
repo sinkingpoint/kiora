@@ -17,7 +17,6 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,14 +109,15 @@ func TestPostAlerts(t *testing.T) {
 			api.postAlerts(recorder, request)
 
 			response := recorder.Result()
+			defer response.Body.Close()
 			responseBody, err := io.ReadAll(response.Body)
 			require.NoError(t, err)
-			assert.Equal(t, http.StatusAccepted, response.StatusCode, string(responseBody))
+			require.Equal(t, http.StatusAccepted, response.StatusCode, string(responseBody))
 
 			require.Equal(t, 1, len(db.alerts), "expected one alert")
 			alert := db.alerts[0]
-			assert.Equal(t, referenceTime, alert.StartTime)
-			assert.Equal(t, model.AlertStatusFiring, alert.Status)
+			require.Equal(t, referenceTime, alert.StartTime)
+			require.Equal(t, model.AlertStatusFiring, alert.Status)
 		})
 	}
 }

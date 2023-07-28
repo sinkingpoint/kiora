@@ -29,11 +29,10 @@ type BoltDB struct {
 
 // NewBoltDB creates a new BoltDB database at the given path.
 func NewBoltDB(path string, logger zerolog.Logger) (*BoltDB, error) {
-	backingDB, err := bbolt.Open(path, 0600, &bbolt.Options{
+	backingDB, err := bbolt.Open(path, 0o600, &bbolt.Options{
 		Timeout:  1 * time.Second,
 		OpenFile: stubs.OS.OpenFile,
 	})
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open bolt db")
 	}

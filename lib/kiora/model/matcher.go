@@ -3,9 +3,10 @@ package model
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"regexp"
 	"strings"
+
+	"github.com/grafana/regexp"
+	"github.com/pkg/errors"
 )
 
 type Matcher struct {
@@ -16,10 +17,10 @@ type Matcher struct {
 	regex      *regexp.Regexp
 }
 
-func LabelValueRegexMatcher(label string, regex string) (Matcher, error) {
+func LabelValueRegexMatcher(label, regex string) (Matcher, error) {
 	r, err := regexp.Compile(regex)
 	if err != nil {
-		return Matcher{}, err
+		return Matcher{}, errors.Wrap(err, "failed to compile matcher regexp")
 	}
 
 	return Matcher{
@@ -30,7 +31,7 @@ func LabelValueRegexMatcher(label string, regex string) (Matcher, error) {
 	}, nil
 }
 
-func LabelValueEqualMatcher(label string, value string) Matcher {
+func LabelValueEqualMatcher(label, value string) Matcher {
 	return Matcher{
 		Label: label,
 		Value: value,
@@ -45,19 +46,20 @@ func (m *Matcher) Negate() *Matcher {
 func (m *Matcher) UnmarshalText(raw string) error {
 	var parts []string
 
-	if strings.Contains(raw, "=~") {
+	switch {
+	case strings.Contains(raw, "=~"):
 		parts = strings.Split(raw, "=~")
 		m.IsRegex = true
 		m.IsNegative = false
-	} else if strings.Contains(raw, "!~") {
+	case strings.Contains(raw, "!~"):
 		parts = strings.Split(raw, "!~")
 		m.IsRegex = true
 		m.IsNegative = true
-	} else if strings.Contains(raw, "!=") {
+	case strings.Contains(raw, "!="):
 		parts = strings.Split(raw, "!=")
 		m.IsRegex = false
 		m.IsNegative = true
-	} else {
+	default:
 		parts = strings.Split(raw, "=")
 		m.IsRegex = false
 		m.IsNegative = false
@@ -83,7 +85,7 @@ func (m *Matcher) UnmarshalJSON(b []byte) error {
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.DisallowUnknownFields()
 	if err := d.Decode(&raw); err != nil {
-		return err
+		return errors.Wrap(err, "failed to decode matcher")
 	}
 
 	m.Label = raw.Label
@@ -94,7 +96,7 @@ func (m *Matcher) UnmarshalJSON(b []byte) error {
 	if m.IsRegex {
 		regex, err := regexp.Compile(m.Value)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to compile matcher regexp")
 		}
 
 		m.regex = regex
@@ -108,7 +110,7 @@ func (m *Matcher) Matches(labels Labels) bool {
 		return false
 	}
 
-	result := false
+	var result bool
 	if m.IsRegex {
 		result = m.regex.MatchString(labels[m.Label])
 	} else {

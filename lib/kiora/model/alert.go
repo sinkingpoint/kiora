@@ -5,15 +5,15 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sinkingpoint/kiora/internal/stubs"
 )
 
 // DEFAULT_TIMEOUT_INTERVAL is the length of time after first seeing an alert that we time out the alert
-// if we haven't seen any other information about it
+// if we haven't seen any other information about it.
 const DEFAULT_TIMEOUT_INTERVAL = 12 * time.Hour
 
 // AlertStatus is the current status of an alert in Kiora.
@@ -121,7 +121,7 @@ func (a *Alert) UnmarshalJSON(b []byte) error {
 	decoder.DisallowUnknownFields()
 
 	if err := decoder.Decode(&rawAlert); err != nil {
-		return err
+		return errors.Wrap(err, "failed to decode alert")
 	}
 
 	a.Labels = rawAlert.Labels
@@ -150,7 +150,7 @@ func (a *Alert) Materialise() error {
 	}
 
 	// AlertIDs are a bit arbitrary, but having them as a hash of the labels affords a few nice advantages.
-	// Namely, it means that any given alert has a consistant ID across all Kiora instances, and across time.
+	// Namely, it means that any given alert has a consistent ID across all Kiora instances, and across time.
 	a.ID = alertID(a.Labels)
 	return a.validate()
 }

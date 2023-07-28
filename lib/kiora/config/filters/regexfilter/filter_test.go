@@ -6,7 +6,6 @@ import (
 
 	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/regexfilter"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,8 +29,8 @@ func TestRegexFilter(t *testing.T) {
 			ShouldMatch: true,
 		},
 		{
-			Name:  "non existant label",
-			Label: "some_weird_non_existant_label",
+			Name:  "non existent label",
+			Label: "some_weird_non_existent_label",
 			Regex: "test",
 			Alert: model.Alert{
 				Labels: model.Labels{
@@ -62,7 +61,7 @@ func TestRegexFilter(t *testing.T) {
 
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.ShouldMatch, filter.Filter(context.TODO(), &tt.Alert))
+			require.Equal(t, tt.ShouldMatch, filter.Filter(context.TODO(), &tt.Alert))
 		})
 	}
 }

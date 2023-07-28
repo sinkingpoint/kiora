@@ -3,6 +3,7 @@ package alerts
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/sinkingpoint/kiora/cmd/tuku/commands"
 )
 
@@ -16,7 +17,7 @@ func (a *AlertsGetCmd) Run(ctx *commands.Context) error {
 
 	out, err := ctx.Formatter.Marshal(alerts)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to marshal alerts")
 	}
 
 	fmt.Println(string(out))

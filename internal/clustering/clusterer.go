@@ -18,7 +18,7 @@ type Clusterer interface {
 // ClustererDelegates receive cluster updates (node additions and removals).
 type ClustererDelegate interface {
 	// AddNode is called when a node is added to the cluster.
-	AddNode(name string, address string)
+	AddNode(name, address string)
 
 	// RemoveNode is called when a node is removed, or fails.
 	RemoveNode(name string)

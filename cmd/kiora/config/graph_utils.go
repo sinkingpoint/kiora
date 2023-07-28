@@ -2,7 +2,8 @@ package config
 
 import (
 	"context"
-	"errors"
+
+	"github.com/pkg/errors"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
@@ -39,7 +40,7 @@ func calculateRootsFrom(graph *ConfigFile, nodeName string) HashSet {
 // searchForAckNode starts at the given fromNode and does a depth-first search across the graph,
 // checking the filters on each link and trying to find a path to the given destinationNode,
 // returning whether or not it was able to find it.
-func searchForNode(ctx context.Context, graph *ConfigFile, fromNode string, destinationNode string, data config.Fielder) error {
+func searchForNode(ctx context.Context, graph *ConfigFile, fromNode, destinationNode string, data config.Fielder) error {
 	if fromNode == destinationNode {
 		return nil
 	}

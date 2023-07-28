@@ -8,7 +8,5 @@ type stubTime struct {
 }
 
 var Time = stubTime{
-	Now: func() time.Time {
-		return time.Now()
-	},
+	Now: time.Now,
 }

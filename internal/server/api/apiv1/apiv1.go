@@ -18,8 +18,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const CONTENT_TYPE_JSON = "application/json"
-const CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
+const (
+	CONTENT_TYPE_JSON  = "application/json"
+	CONTENT_TYPE_PROTO = "application/vnd.google.protobuf"
+)
 
 func Register(router *mux.Router, api api.API, logger zerolog.Logger) {
 	apiv1 := apiv1{
@@ -213,7 +215,6 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bytes, err := json.Marshal(clusterNodes)
-
 	if err != nil {
 		span.SetStatus(codes.Error, "failed to marshal cluster nodes")
 		a.logger.Err(err).Msg("failed to marshal cluster nodes")
@@ -298,12 +299,12 @@ func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
 	responseBytes, err := json.Marshal(silences)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to marshal silences")) // nolint:errcheck
+		w.Write([]byte("failed to marshal silences")) // nolint:errcheck // Errors writing here are not recoverable.
 		a.logger.Err(err).Msg("failed to marshal silences")
 		return
 	}
 
 	w.Header().Set("Content-Type", CONTENT_TYPE_JSON)
 	w.WriteHeader(http.StatusOK)
-	w.Write(responseBytes) // nolint:errcheck
+	w.Write(responseBytes) // nolint:errcheck // Errors writing here are not recoverable.
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/sinkingpoint/kiora/internal/testutils"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,5 +34,5 @@ func TestBufferDBAlerts(t *testing.T) {
 	wg.Wait()
 
 	storedAlerts := db.QueryAlerts(context.TODO(), query.NewAlertQuery(query.MatchAll()))
-	assert.Len(t, storedAlerts, len(alerts), "stored alerts should match the number of alerts we generated (%d != %d)", len(storedAlerts), len(alerts))
+	require.Len(t, storedAlerts, len(alerts), "stored alerts should match the number of alerts we generated (%d != %d)", len(storedAlerts), len(alerts))
 }

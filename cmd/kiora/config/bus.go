@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 )
@@ -36,5 +37,5 @@ func (k *KioraNodeBus) Template(name string) *template.Template {
 
 func (k *KioraNodeBus) RegisterTemplate(name string, tmpl *template.Template) error {
 	_, err := k.templates.AddParseTree(name, tmpl.Tree)
-	return err
+	return errors.Wrap(err, "failed to add template")
 }

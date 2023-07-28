@@ -2,8 +2,9 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -87,7 +88,7 @@ func (q *AlertCountQuery) Filter() AlertFilter {
 }
 
 func (q *AlertCountQuery) Process(ctx context.Context, alert *model.Alert) error {
-	q.count += 1
+	q.count++
 	return nil
 }
 

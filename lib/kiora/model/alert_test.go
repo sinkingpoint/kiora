@@ -7,7 +7,6 @@ import (
 
 	"github.com/sinkingpoint/kiora/internal/stubs"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -203,7 +202,7 @@ func TestAlertUnmarshal(t *testing.T) {
 			alert.ID = ""
 
 			if !tt.expectedFailure && tt.expectedAlert != nil {
-				assert.Equal(t, *tt.expectedAlert, alert)
+				require.Equal(t, *tt.expectedAlert, alert)
 			}
 		})
 	}

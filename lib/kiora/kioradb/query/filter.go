@@ -2,10 +2,11 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -138,8 +139,7 @@ func (e *ExactLabelMatchFilter) MatchesAlert(ctx context.Context, alert *model.A
 }
 
 // AllMatchFilter is a query that returns every alert.
-type AllMatchFilter struct {
-}
+type AllMatchFilter struct{}
 
 func MatchAll() *AllMatchFilter {
 	return &AllMatchFilter{}

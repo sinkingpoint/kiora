@@ -12,7 +12,7 @@ type NotifierName string
 // DefaultGroupWait is the default amount of time that alerts sit around waiting for more alerts to be added to the group.
 // This is pretty arbitrary, but increasing it will increase the amount of time that alerts are delayed, while sending fewer
 // notifications. Decreasing it will decrease the amount of time that alerts are delayed, but will send more notifications.
-const DEFAULT_GROUP_WAIT = 10 * time.Second
+const DefaultGroupWait = 10 * time.Second
 
 // NotificationError represents an error that occurred while sending a notification.
 type NotificationError struct {
@@ -66,7 +66,7 @@ type NotifierSettings struct {
 func DefaultNotifierSettings() NotifierSettings {
 	return NotifierSettings{
 		GroupLabels: []string{"alertname"},
-		GroupWait:   DEFAULT_GROUP_WAIT,
+		GroupWait:   DefaultGroupWait,
 	}
 }
 

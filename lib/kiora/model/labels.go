@@ -41,9 +41,9 @@ func (s Labels) Bytes() []byte {
 
 	buf := bytes.Buffer{}
 	for _, k := range keys {
-		buf.Write([]byte(k))
+		buf.WriteString(k)
 		buf.Write(hashSep)
-		buf.Write([]byte(s[k]))
+		buf.WriteString(s[k])
 	}
 
 	return buf.Bytes()

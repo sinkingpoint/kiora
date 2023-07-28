@@ -42,7 +42,7 @@ type SlackNotifier struct {
 }
 
 func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node, error) {
-	var rawNode = struct {
+	rawNode := struct {
 		ApiURL       *unmarshal.MaybeSecretFile `config:"api_url" required:"true"`
 		TemplateFile *unmarshal.MaybeFile       `config:"template_file"`
 	}{}
@@ -50,7 +50,7 @@ func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node,
 	if err := unmarshal.UnmarshalConfig(attrs, rawNode, unmarshal.UnmarshalOpts{
 		DisallowUnknownFields: true,
 	}); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to unmarshal config")
 	}
 
 	if err := bus.RegisterTemplate("slack", DefaultSlackTemplate); err != nil {

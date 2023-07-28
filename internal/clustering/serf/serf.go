@@ -24,7 +24,7 @@ var _ = clustering.Broadcaster(&SerfBroadcaster{})
 
 // randomNodeName returns a random, 16 char long node name to use when one isn't given.
 func randomNodeName() string {
-	var letterRunes = []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	letterRunes := []rune("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	b := make([]rune, 16)
 	for i := range b {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
@@ -120,7 +120,7 @@ func (s *SerfBroadcaster) Run(ctx context.Context) error {
 			s.Shutdown()
 			return nil
 		case event := <-s.serfCh:
-			s.processEvent(context.Background(), event)
+			s.processEvent(ctx, event)
 		}
 	}
 }
@@ -142,7 +142,7 @@ func (s *SerfBroadcaster) processEvent(ctx context.Context, event serf.Event) {
 	case serf.MemberEvent:
 		s.processMemberEvent(ctx, ev)
 	default:
-		return
+		s.conf.Logger.Debug().Str("event type", ev.EventType().String()).Msg("unhandled event type")
 	}
 }
 
@@ -161,6 +161,7 @@ func (s *SerfBroadcaster) processMemberEvent(ctx context.Context, ev serf.Member
 		for _, member := range ev.Members {
 			s.conf.ClustererDelegate.RemoveNode(member.Name)
 		}
+	default:
 	}
 }
 

@@ -50,7 +50,6 @@ func (a *SilencePostCmd) Run(ctx *commands.Context) error {
 		EndTime:   endTime,
 		Matchers:  matchers,
 	})
-
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package alerts
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
 	"github.com/sinkingpoint/kiora/cmd/tuku/commands"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
@@ -17,7 +18,7 @@ func (a *AlertsPostCmd) Run(ctx *commands.Context) error {
 	for _, alertJSON := range a.Alerts {
 		alert := model.Alert{}
 		if err := json.Unmarshal([]byte(alertJSON), &alert); err != nil {
-			return err
+			return errors.Wrap(err, "failed to unmarshal alert")
 		}
 
 		alerts = append(alerts, alert)

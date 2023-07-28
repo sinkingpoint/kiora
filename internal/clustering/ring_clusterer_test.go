@@ -6,12 +6,12 @@ import (
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRingClustererSharding(t *testing.T) {
 	clusterer := clustering.NewRingClusterer("a", "a")
-	// Add a bunch of nodes to decrease the likelyhood that we get proper sharding just by chance.
+	// Add a bunch of nodes to decrease the likelihood that we get proper sharding just by chance.
 	for i := 'b'; i < 'z'; i++ {
 		clusterer.AddNode(string(i), string(i))
 	}
@@ -42,6 +42,6 @@ func TestRingClustererSharding(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, authA, authB)
-	assert.NotEqual(t, authA, authC)
+	require.Equal(t, authA, authB)
+	require.NotEqual(t, authA, authC)
 }

@@ -116,7 +116,7 @@ func (k *KioraServer) ListenAndServe() error {
 		}
 
 		if k.httpServer != nil {
-			k.httpServer.Shutdown(context.Background()) //nolint:errcheck
+			k.httpServer.Shutdown(context.Background()) //nolint:errcheck // Shutting down the server is best effort.
 		}
 
 		wg.Done()
@@ -164,7 +164,7 @@ func (k *KioraServer) listenAndServeHTTP(ctx context.Context) error {
 }
 
 // resolveConcreteAddress takes a listen address like `localhost:4278` and resolves
-// it into a concrete address like `[::]:4278`
+// it into a concrete address like `[::]:4278`.
 func resolveConcreteAddress(address string) (string, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {

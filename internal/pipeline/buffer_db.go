@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
@@ -32,7 +33,7 @@ type bufferDB struct {
 }
 
 // NewBufferDB creates a new bufferDB.
-func NewBufferDB(db kioradb.DB, alertCapacity int, silenceCapacity int, lengthLimit int, timeLimit time.Duration) *bufferDB {
+func NewBufferDB(db kioradb.DB, alertCapacity, silenceCapacity, lengthLimit int, timeLimit time.Duration) *bufferDB {
 	return &bufferDB{
 		lengthLimit:    lengthLimit,
 		timeLimit:      timeLimit,
@@ -112,7 +113,7 @@ func (b *bufferDB) flushAlerts(ctx context.Context) error {
 	defer span.End()
 
 	if err := b.db.StoreAlerts(ctx, b.alertsBuffer...); err != nil {
-		return err
+		return errors.Wrap(err, "failed to store alerts")
 	}
 	b.alertsBuffer = b.alertsBuffer[:0]
 	return nil

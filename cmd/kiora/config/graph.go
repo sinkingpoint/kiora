@@ -3,9 +3,10 @@ package config
 // Defines a custom Graph for gographviz that accepts all extra attributes.
 
 import (
-	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // node is a node in the config graph that defines a filter, or a receiver.
@@ -76,7 +77,7 @@ func (c *configGraph) AddEdge(src, dst string, directed bool, attrs map[string]s
 	return nil
 }
 
-func (c *configGraph) AddNode(parentGraph string, name string, attrs map[string]string) error {
+func (c *configGraph) AddNode(parentGraph, name string, attrs map[string]string) error {
 	if parentGraph == c.name {
 		if _, ok := c.nodes[name]; ok {
 			return fmt.Errorf("config graph already contains a node called %q", name)
@@ -101,7 +102,7 @@ func (c *configGraph) AddNode(parentGraph string, name string, attrs map[string]
 	}
 }
 
-func (c *configGraph) AddAttr(parentGraph string, field, value string) error {
+func (c *configGraph) AddAttr(parentGraph, field, value string) error {
 	if parentGraph == c.name {
 		if _, ok := c.attrs[field]; ok {
 			return fmt.Errorf("graph already has an attribute %q", field)
@@ -120,7 +121,7 @@ func (c *configGraph) AddAttr(parentGraph string, field, value string) error {
 	}
 }
 
-func (c *configGraph) AddSubGraph(parentGraph string, name string, attrs map[string]string) error {
+func (c *configGraph) AddSubGraph(parentGraph, name string, attrs map[string]string) error {
 	if parentGraph == c.name {
 		if _, ok := c.attrs[name]; ok {
 			return fmt.Errorf("graph already has an subgraph %q", name)

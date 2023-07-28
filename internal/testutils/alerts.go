@@ -13,7 +13,7 @@ type alertTemplates struct {
 	LabelCardinalities []int
 }
 
-func generateAlertTemplates(numPossibleAlerts int, maximumLabels int, maximumCardinality int) []alertTemplates {
+func generateAlertTemplates(numPossibleAlerts, maximumLabels, maximumCardinality int) []alertTemplates {
 	potentialAlerts := make([]alertTemplates, numPossibleAlerts)
 
 	for i := 0; i < numPossibleAlerts; i++ {
@@ -35,7 +35,7 @@ func generateAlertTemplates(numPossibleAlerts int, maximumLabels int, maximumCar
 	return potentialAlerts
 }
 
-func GenerateDummyAlerts(num int, numPossibleAlerts int, maximumLabels int, maximumCardinality int) []model.Alert {
+func GenerateDummyAlerts(num, numPossibleAlerts, maximumLabels, maximumCardinality int) []model.Alert {
 	// Generate a bunch of alerts with random labels.
 	alerts := make([]model.Alert, num)
 	templates := generateAlertTemplates(numPossibleAlerts, maximumLabels, maximumCardinality)

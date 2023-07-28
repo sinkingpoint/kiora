@@ -7,7 +7,7 @@ import (
 
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSortAlertsByFields(t *testing.T) {
@@ -95,7 +95,7 @@ func TestSortAlertsByFields(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			sort.Sort(query.SortAlertsByFields(tt.Alerts, tt.Fields, tt.Order))
 			for i, alert := range tt.Alerts {
-				assert.Equal(t, tt.ExpectedAlerts[i], alert, "expected alert %d to be %v, got %v", i, tt.ExpectedAlerts[i], alert)
+				require.Equal(t, tt.ExpectedAlerts[i], alert, "expected alert %d to be %v, got %v", i, tt.ExpectedAlerts[i], alert)
 			}
 		})
 	}

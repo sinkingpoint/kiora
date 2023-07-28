@@ -6,7 +6,6 @@ import (
 
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -70,8 +69,8 @@ func TestAlertCountQuery(t *testing.T) {
 			}
 
 			got := q.Gather(context.TODO())
-			assert.Len(t, got, 1, "gather returned wrong number of results")
-			assert.Equal(t, tt.want, got[0].Frames[0][0], "gather returned wrong value")
+			require.Len(t, got, 1, "gather returned wrong number of results")
+			require.Equal(t, tt.want, got[0].Frames[0][0], "gather returned wrong value")
 		})
 	}
 }
@@ -126,9 +125,9 @@ func TestAlertStatusCountQuery(t *testing.T) {
 			}
 
 			got := q.Gather(context.TODO())
-			assert.Len(t, got, len(tt.want), "gather returned wrong number of results")
+			require.Len(t, got, len(tt.want), "gather returned wrong number of results")
 			for _, result := range got {
-				assert.Equal(t, tt.want[result.Labels["status"]], result.Frames[0][0], "gather returned wrong value")
+				require.Equal(t, tt.want[result.Labels["status"]], result.Frames[0][0], "gather returned wrong value")
 			}
 		})
 	}
