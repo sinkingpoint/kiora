@@ -21,7 +21,9 @@ const AlertCard = ({ alert }: CardProps) => {
 						)}
 					</span>
 
-					<div class={style["single-top"]}><Labels alert={alert} /></div>
+					<div class={style["single-top"]}>
+						<Labels alert={alert} />
+					</div>
 				</div>
 			</div>
 		</a>

@@ -1,4 +1,4 @@
-import { h, Fragment } from "preact";
+import { h } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { Alert, DefaultService } from "../../api";
 import Single from "../alertcard";

@@ -10,9 +10,7 @@ interface SingleStatPanelProps {
 const SingleStatPanel = ({ title, value, color }: SingleStatPanelProps) => {
 	return (
 		<div class={styles.card}>
-			<div class={styles.value}>
-				{value}
-			</div>
+			<div class={styles.value}>{value}</div>
 
 			<label class={styles.title}>{title}</label>
 		</div>

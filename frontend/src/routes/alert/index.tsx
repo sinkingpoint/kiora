@@ -25,7 +25,7 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 	const endTime = new Date(alert.endsAt);
 
 	const silenceFilters = new URLSearchParams();
-	for(const key of Object.keys(alert.labels)) {
+	for (const key of Object.keys(alert.labels)) {
 		silenceFilters.append("filter", `${key}="${alert.labels[key]}"`);
 	}
 
@@ -45,7 +45,9 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 			)}
 
 			<div class={style["alert-row"]}>
-				<a href={silenceLink.toString()}><Button label="Silence" /></a>
+				<a href={silenceLink.toString()}>
+					<Button label="Silence" />
+				</a>
 			</div>
 
 			<div class={style["alert-row"]}>
@@ -55,14 +57,21 @@ const SuccessView = ({ alert }: SuccessViewProps) => {
 			<div class={style["alert-row"]}>
 				<table>
 					<tr>
-						<td><label>Status:</label></td> <td>{alert.status}</td>
+						<td>
+							<label>Status:</label>
+						</td>{" "}
+						<td>{alert.status}</td>
 					</tr>
 					<tr>
-						<td><label>ID:</label></td>
+						<td>
+							<label>ID:</label>
+						</td>
 						<td>{alert.id}</td>
 					</tr>
 					<tr>
-						<td><label>Started At:</label></td>
+						<td>
+							<label>Started At:</label>
+						</td>
 						<td>{startTime.toLocaleString()}</td>
 					</tr>
 				</table>

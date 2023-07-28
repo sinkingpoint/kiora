@@ -38,8 +38,7 @@ type SlackNotifier struct {
 	bus    config.NodeBus
 	client *http.Client
 
-	apiURL   *unmarshal.MaybeSecretFile
-	template *template.Template
+	apiURL *unmarshal.MaybeSecretFile
 }
 
 func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node, error) {

@@ -89,7 +89,9 @@ const Home = () => {
 	return (
 		<>
 			<StatsRow />
-			<div class={styles.row}><AlertList /></div>
+			<div class={styles.row}>
+				<AlertList />
+			</div>
 		</>
 	);
 };
