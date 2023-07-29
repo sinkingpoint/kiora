@@ -3,20 +3,17 @@ test:
 	mkdir -p artifacts/
 	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
 
-lint:
+lint-backend:
 	golangci-lint run ./...
-
-fmt:
+fmt-backend:
 	go fmt ./...
 
 lint-frontend:
 	cd frontend && npm run lint
-
 fmt-frontend:
 	cd frontend && npm run prettier --write ./src
 
 lint: lint-backend lint-frontend
-
 fmt: fmt-backend fmt-frontend
 
 integration:
@@ -27,13 +24,17 @@ coverage: test
 
 ci: generate fmt lint test
 
-build: generate ci build-unchecked
+build: build-frontend build-backend
 
-build-unchecked:
+build-backend:
 	go build -o ./artifacts/tuku ./cmd/tuku
 	go build -o ./artifacts/kiora ./cmd/kiora
 
-run: build
+build-frontend:
+	cd frontend && npm run build
+	cp -r ./frontend/build ./internal/server/frontend/assets
+
+run:
 	./artifacts/kiora -c ./testdata/kiora.dot
 
 run-cluster:
@@ -44,8 +45,8 @@ generate:
 	mockgen -source ./lib/kiora/config/provider.go > mocks/mock_config/provider.go
 	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
 	mockgen -source ./internal/services/bus.go > mocks/mock_services/bus.go
-	go generate ./...
 
 clean:
 	rm -rf ./artifacts
 	rm -rf ./frontend/build
+	rm -rf ./internal/server/frontend/assets

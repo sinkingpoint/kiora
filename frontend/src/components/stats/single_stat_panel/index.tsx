@@ -7,7 +7,7 @@ interface SingleStatPanelProps {
 	color?: string;
 }
 
-const SingleStatPanel = ({ title, value, color }: SingleStatPanelProps) => {
+const SingleStatPanel = ({ title, value }: SingleStatPanelProps) => {
 	return (
 		<div class={styles.card}>
 			<div class={styles.value}>{value}</div>

@@ -4,6 +4,6 @@
 /tuku
 /frontend/build
 /frontend/size-plugin.json
-/frontend/node_modules/.cache
+/frontend/node_modules
 /internal/server/frontend/assets
 /kiora.db

@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//go:embed assets/build/*
+//go:embed assets/*
 var content embed.FS
 
 // Registers a router that will serve the frontend assets created and embedded by the above go:generate directives.

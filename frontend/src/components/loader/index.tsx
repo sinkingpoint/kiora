@@ -15,7 +15,7 @@ const Loader = ({ loader, done }: LoaderProps) => {
 			loader();
 			setLoaded(true);
 		}
-	}, [loader, setLoaded]);
+	}, [loader, loaded, setLoaded]);
 
 	return loaded ? done : <Spinner />;
 };

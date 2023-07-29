@@ -34,7 +34,7 @@ const getSilenceEnd = (rawDuration: string): Date => {
 		return null;
 	}
 
-	const durationAmt = parseInt(durationMatches[1]);
+	const durationAmt = parseInt(durationMatches[1], 10);
 	const durationUnit = durationMatches[2];
 
 	const now = new Date();
