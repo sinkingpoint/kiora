@@ -22,7 +22,7 @@ integration:
 coverage: test
 	go tool cover -html=artifacts/cover.out
 
-ci: generate fmt lint test
+ci: fmt lint test
 
 build: build-frontend build-backend
 

@@ -14,12 +14,44 @@ As of when I wrote this, these are some of the notable features implemented in K
  - Silence/Ack data validation
  - Alert Grouping
  - A basic UI
+ - Alert Statistics
 
 Here's what I want to work on:
 
- - Alert Statistics
  - Multi-Tenancy and Rate limiting
  - Alert Histories
+
+## Install
+
+### Building from source
+
+To build Kiora from source, you'll need:
+
+ - [Go Version 1.20](https://golang.org/doc/install) or higher
+ - NodeJS version 18.15 or higher. We recommend using [nvm](https://github.com/nvm-sh/nvm)
+ - [MockGen](https://github.com/uber-go/mock)
+ - GNU Make
+
+Start by cloning the repository:
+
+```
+git clone https://github.com/sinkingpoint/kiora.git
+cd kiora
+```
+
+Then download the frontend dependencies:
+
+```
+cd frontend && npm install
+```
+
+You can then run the build using GNU Make:
+
+```
+make build
+```
+
+Which will put a compiled kiora binary at `artifacts/kiora`
 
 ## Usage
 
