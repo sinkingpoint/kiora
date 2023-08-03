@@ -2,11 +2,33 @@
 	padding: 5px;
 	border: solid var(--border);
 	word-wrap: none;
+	white-space: nowrap;
+	margin-right: 5px;
+	margin-top: 5px;
 }
 
 .delete-label-button {
 	height: 100%;
 	background: inherit;
 	border: none;
-	border-left: solid var(--border);
+}
+
+.silence-form {
+	display: flex;
+	flex-direction: column;
+}
+
+.silence-form > div {
+	display: flex;
+	flex-direction: row;
+	padding: 10px;
+}
+
+.silence-form > div > label {
+	font-weight: bold;
+	font-size: 24px;
+}
+
+.silence-form > * > input[type="text"] {
+	font-size: 20px;
 }
