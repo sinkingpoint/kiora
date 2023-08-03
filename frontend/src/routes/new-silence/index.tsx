@@ -2,6 +2,7 @@ import { h } from "preact";
 import { ChangeEvent } from "preact/compat";
 import { useState } from "preact/hooks";
 import style from "./styles.css";
+import Button from "../../components/button";
 
 type MatcherOperation = "=" | "!=" | "=~" | "!~";
 
@@ -31,11 +32,10 @@ const parseMatcher = (matcher: string): Matcher | null => {
 	}
 
 	// If the operator is a regex operator, check that the regex is valid.
-	if(operator.includes("~")) {
+	if (operator.includes("~")) {
 		try {
 			new RegExp(matcherMatches[3]);
-		}
-		catch {
+		} catch {
 			return null;
 		}
 	}
@@ -105,6 +105,28 @@ const setFilterInURL = (filters: string[]) => {
 	window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
 };
 
+// checkFormValidity checks if the form is valid and displays errors if it is not.
+const checkFormValidity = () => {
+	const duration = document.getElementById("duration") as HTMLInputElement;
+	const creator = document.getElementById("creator") as HTMLInputElement;
+	const comment = document.getElementById("comment") as HTMLInputElement;
+
+	if (getSilenceEnd(duration.value) === null) {
+		duration.setCustomValidity("Invalid duration");
+		duration.reportValidity();
+	} else if (creator.value === "") {
+		creator.setCustomValidity("Creator cannot be empty");
+		creator.reportValidity();
+	} else if (comment.value === "") {
+		comment.setCustomValidity("Comment cannot be empty");
+		comment.reportValidity();
+	} else {
+		return true;
+	}
+
+	return false;
+};
+
 const NewSilence = () => {
 	const params = new URLSearchParams(window.location.search);
 	const [duration, setDuration] = useState<string>("1h");
@@ -148,8 +170,9 @@ const NewSilence = () => {
 				<label>Duration</label>
 			</div>
 
-			<div style={{ justifyContent: "space-between" }}>
+			<div style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
 				<input
+					id="duration"
 					type="text"
 					title="Duration in Go format, e.g. 1h"
 					pattern="[0-9]+[mhdw]"
@@ -166,6 +189,7 @@ const NewSilence = () => {
 
 			<div>
 				<input
+					id="label-filter"
 					type="text"
 					title='Label filter, e.g foo="bar"'
 					pattern='[a-zA-Z_]+(=~|!=|!~|=)".+"'
@@ -179,21 +203,19 @@ const NewSilence = () => {
 							newFilters.push(e.currentTarget.value);
 							setFilterInURL(newFilters);
 							setFilter(newFilters);
-
-							e.currentTarget.value = "";
 						}
 					}}
 				/>
 			</div>
 
-			<div style={{flexWrap: "wrap"}}>{filterSpans}</div>
+			<div style={{ flexWrap: "wrap" }}>{filterSpans}</div>
 
 			<div>
 				<label>Creator</label>
 			</div>
 
 			<div>
-				<input type="text" required />
+				<input id="creator" type="text" required />
 			</div>
 
 			<div>
@@ -201,11 +223,11 @@ const NewSilence = () => {
 			</div>
 
 			<div>
-				<input type="text" required />
+				<input id="comment" type="text" required />
 			</div>
 
-			<div>
-				<button type="button">Preview</button>
+			<div style={{ marginTop: "20px", flexDirection: "row" }}>
+				<Button label="Preview" onClick={checkFormValidity} />
 			</div>
 		</div>
 	);
