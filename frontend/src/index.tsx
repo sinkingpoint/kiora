@@ -3,6 +3,6 @@ import App from "./components/app";
 import { OpenAPI } from "./api";
 
 OpenAPI.VERSION = "v1";
-OpenAPI.BASE = `http://192.168.1.116:4278/api/${OpenAPI.VERSION}`;
+OpenAPI.BASE = `${process.env.PREACT_APP_API_HOST}/api/${OpenAPI.VERSION}`;
 
 export default App;

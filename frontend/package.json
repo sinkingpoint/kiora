@@ -6,7 +6,7 @@
 	"scripts": {
 		"build": "NODE_OPTIONS=--openssl-legacy-provider preact build",
 		"serve": "sirv build --cors --single",
-		"dev": "NODE_OPTIONS=--openssl-legacy-provider preact watch",
+		"dev": "PREACT_APP_API_HOST=http://localhost:4278 NODE_OPTIONS=--openssl-legacy-provider preact watch",
 		"lint": "eslint src",
 		"prettier": "prettier ./src --write",
 		"test": "jest",
