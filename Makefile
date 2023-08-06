@@ -32,6 +32,7 @@ build-backend:
 
 build-frontend:
 	cd frontend && npm run build
+	rm -r ./internal/server/frontend/assets
 	cp -r ./frontend/build ./internal/server/frontend/assets
 
 run:
