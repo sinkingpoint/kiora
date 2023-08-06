@@ -1,4 +1,4 @@
-package apiv1
+package apiv1_test
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/server/api"
+	"github.com/sinkingpoint/kiora/internal/server/api/apiv1"
 	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
@@ -92,7 +93,7 @@ func TestPostAlerts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := &mockDB{}
-			api := New(
+			api := apiv1.New(
 				api.NewAPIImpl(services.NewKioraBus(db, db, zerolog.New(os.Stderr), nil), nil),
 				zerolog.New(os.Stderr),
 			)
@@ -106,7 +107,7 @@ func TestPostAlerts(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 
-			api.postAlerts(recorder, request)
+			api.PostAlerts(recorder, request)
 
 			response := recorder.Result()
 			defer response.Body.Close()

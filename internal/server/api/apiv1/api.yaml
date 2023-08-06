@@ -55,8 +55,7 @@ paths:
     post:
       summary: Add, or update alerts
       requestBody:
-        required: true
-        $ref: '#/components/requestBodies/Alerts'
+        $ref: '#/components/requestBodies/PostAlerts'
       responses:
         '400':
           description: Alerts are invalid
@@ -75,10 +74,11 @@ paths:
             type: string
         - in: query
           name: args
-          required: true
           description: The arguments to the query, depending on the query type.
           schema:
             type: object
+            additionalProperties:
+              type: string
             example:
               filter_type: status
               status: firing
@@ -99,8 +99,7 @@ paths:
     post:
       summary: Acknowledge an alert
       requestBody:
-        required: true
-        $ref: '#/components/requestBodies/AlertAcknowledgment'
+        $ref: '#/components/requestBodies/AcknowledgeAlert'
       responses:
         '400':
           description: Some data was missing from the acknowledgment
@@ -108,48 +107,51 @@ paths:
           description: Broadcasting the acknowledgment failed
         '201':
           description: The alert was sucessfully acknowledged
-  
-
+  /silences:
+    get:
+      summary: Get silences
+      responses:
+        '200':
+          description: Returns all the silences
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Silence'
+    post:
+      summary: Silence alerts
+      requestBody:
+        $ref: '#/components/requestBodies/PostSilence'
+      responses:
+        '201':
+          description: The silence was created
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Silence'
 components:
   requestBodies:
-    Alerts:
+    PostAlerts:
       description: Alerts to add, or update in the system.
       content:
         application/json:
           schema:
             type: array
             items:
-              type: object
-              required:
-                - labels
-              properties:
-                labels:
-                  type: object
-                  additionalProperties:
-                    type: string
-                annotations:
-                  type: object
-                  additionalProperties:
-                    type: string
-                startsAt:
-                  type: string
-                  format: date-time
-                endsAt:
-                  type: string
-                  format: date-time
-    AlertAcknowledgment:
+              $ref: '#/components/schemas/Alert'
+    AcknowledgeAlert:
       description: Metadata when acknowledging an alert
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              alertID:
-                type: string
-              creator:
-                type: string
-              comment:
-                type: string
+            $ref: '#/components/schemas/AlertAcknowledgement'
+    PostSilence:
+      description: A silence to add
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Silence'
   schemas:
     StatsResult:
       type: object
@@ -168,9 +170,16 @@ components:
             items:
               type: number
               format: float
-    Acknowledgement:
+    AlertAcknowledgement:
       type: object
+      required:
+        - alertID
+        - creator
+        - comment
       properties:
+        alertID:
+          type: string
+          writeOnly: true
         creator:
           type: string
         comment:
@@ -187,6 +196,7 @@ components:
       properties:
         id:
           type: string
+          readOnly: true
         labels:
           type: object
           additionalProperties:
@@ -204,7 +214,8 @@ components:
             - timed out
             - silenced
         acknowledgement:
-          $ref: '#/components/schemas/Acknowledgement'
+          readOnly: true
+          $ref: '#/components/schemas/AlertAcknowledgement'
         startsAt:
           type: string
           format: date-time
@@ -214,3 +225,47 @@ components:
         timeoutDeadline:
           type: string
           format: date-time
+          readOnly: true
+    Matcher:
+      type: object
+      required:
+        - label
+        - value
+        - isRegex
+        - isNegative
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+        isRegex:
+          type: boolean
+        isNegative:
+          type: boolean
+    Silence:
+      type: object
+      required:
+        - id
+        - creator
+        - comment
+        - startsAt
+        - endsAt
+        - matchers
+      properties:
+        id:
+          type: string
+          readOnly: true
+        creator:
+          type: string
+        comment:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        matchers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Matcher'

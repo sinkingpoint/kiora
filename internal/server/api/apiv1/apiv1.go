@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
@@ -24,21 +23,32 @@ const (
 )
 
 func Register(router *mux.Router, api api.API, logger zerolog.Logger) {
-	apiv1 := apiv1{
+	baseAPI := &apiv1{
 		api:    api,
 		logger: logger.With().Str("component", "apiv1").Logger(),
 	}
 
+	apiv1 := ServerInterfaceWrapper{
+		Handler: baseAPI,
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		},
+	}
+
 	subRouter := router.PathPrefix("/api/v1").Subrouter()
 
-	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.postAlerts), "POST api/v1/alerts"))
-	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getAlerts), "GET /api/v1/alerts"))
-	subRouter.Path("/alerts/stats").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.queryAlertStats), "GET /api/v1/alerts/stats"))
-	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.acknowledgeAlert), "POST /api/v1/alerts/ack"))
-	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getClusterStatus), "GET /api/v1/cluster/status"))
-	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.postSilence), "POST /api/v1/silences"))
-	subRouter.Path("/silences").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.getSilences), "GET /api/v1/silences"))
+	subRouter.Path("/alerts").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.PostAlerts), "POST api/v1/alerts"))
+	subRouter.Path("/alerts").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.GetAlerts), "GET /api/v1/alerts"))
+	subRouter.Path("/alerts/stats").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.GetAlertsStats), "GET /api/v1/alerts/stats"))
+	subRouter.Path("/alerts/ack").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.PostAlertsAck), "POST /api/v1/alerts/ack"))
+	subRouter.Path("/silences").Methods(http.MethodPost).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.PostSilences), "POST /api/v1/silences"))
+	subRouter.Path("/silences").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(apiv1.GetSilences), "GET /api/v1/silences"))
+
+	// This is technically not in the spec.
+	subRouter.Path("/cluster/status").Methods(http.MethodGet).Handler(otelhttp.NewHandler(http.HandlerFunc(baseAPI.getClusterStatus), "GET /api/v1/cluster/status"))
 }
+
+var _ = ServerInterface(&apiv1{})
 
 type apiv1 struct {
 	api    api.API
@@ -70,14 +80,14 @@ func decodeFromContentType(r *http.Request, v interface{}) error {
 
 // postAlerts handles the POST /alerts request, decoding a list of alerts
 // from the body, and forwarding them to the db.
-func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
+func (a *apiv1) PostAlerts(w http.ResponseWriter, r *http.Request) {
 	span := trace.SpanFromContext(r.Context())
 
-	var alerts []model.Alert
+	var body PostAlertsJSONBody
 
 	switch r.Header.Get("Content-Type") {
 	case CONTENT_TYPE_JSON:
-		if err := decodeFromContentType(r, &alerts); err != nil {
+		if err := decodeFromContentType(r, &body); err != nil {
 			span.RecordError(err)
 			http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 			return
@@ -87,8 +97,29 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	alerts := make([]model.Alert, len(body))
+	for i, alert := range body {
+		alerts[i] = model.Alert{
+			Labels:      alert.Labels,
+			Annotations: alert.Annotations,
+			StartTime:   alert.StartsAt,
+			Status:      model.AlertStatus(alert.Status),
+		}
+
+		if alert.EndsAt != nil {
+			alerts[i].EndTime = *alert.EndsAt
+		}
+
+		if err := alerts[i].Materialise(); err != nil {
+			span.RecordError(err)
+			http.Error(w, fmt.Sprintf("failed to materialise alert: %q", err.Error()), http.StatusBadRequest)
+			return
+		}
+	}
+
 	if err := a.api.PostAlerts(r.Context(), alerts); err != nil {
-		span.SetStatus(codes.Error, "failed to process alerts")
+		a.logger.Debug().Err(err).Msg("failed to post alerts")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -98,44 +129,34 @@ func (a *apiv1) postAlerts(w http.ResponseWriter, r *http.Request) {
 
 // getAlerts returns all the alerts in the system as a JSON array.
 // TODO(cdouch): Take filters here rather than returning everything.
-func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
+func (a *apiv1) GetAlerts(w http.ResponseWriter, r *http.Request, params GetAlertsParams) {
 	span := trace.SpanFromContext(r.Context())
 
 	var queries []query.AlertFilter
-	if id := r.URL.Query().Get("id"); id != "" {
-		queries = append(queries, query.ID(id))
+	if params.Id != nil {
+		queries = append(queries, query.ID(*params.Id))
 	}
 
-	opts := []query.QueryOp{}
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		limit, err := strconv.Atoi(limitStr)
-		if err != nil {
-			span.RecordError(err)
-			http.Error(w, "invalid limit", http.StatusBadRequest)
-			return
-		}
-
-		opts = append(opts, query.Limit(limit))
+	opts := []query.QueryOption{}
+	if params.Limit != nil {
+		opts = append(opts, query.Limit(*params.Limit))
 	}
 
-	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
-		offset, err := strconv.Atoi(offsetStr)
-		if err != nil {
-			span.RecordError(err)
-			http.Error(w, "invalid offset", http.StatusBadRequest)
-			return
-		}
-
-		opts = append(opts, query.Offset(offset))
+	if params.Offset != nil {
+		opts = append(opts, query.Offset(*params.Offset))
 	}
 
-	if sort := r.URL.Query()["sort"]; len(sort) > 0 {
+	if params.Sort != nil && len(*params.Sort) > 0 {
 		order := query.OrderAsc
-		if r.URL.Query().Get("order") == string(query.OrderDesc) {
+		if params.Order != nil && *params.Order == DESC {
 			order = query.OrderDesc
 		}
 
-		opts = append(opts, query.OrderBy(sort, order))
+		opts = append(opts, query.OrderBy(*params.Sort, order))
+	} else if params.Order != nil {
+		span.RecordError(fmt.Errorf("order specified without sort"))
+		http.Error(w, "order specified without sort", http.StatusBadRequest)
+		return
 	}
 
 	var q query.AlertFilter
@@ -147,15 +168,17 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 
 	alerts, err := a.api.GetAlerts(r.Context(), query.NewAlertQuery(q, opts...))
 	if err != nil {
-		span.RecordError(err)
+		a.logger.Debug().Err(err).Msg("failed to get alerts")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
 		return
 	}
 
 	bytes, err := json.Marshal(alerts)
 	if err != nil {
-		span.RecordError(err)
-		http.Error(w, "failed to get alerts", http.StatusInternalServerError)
+		a.logger.Debug().Err(err).Msg("failed to marshal alerts")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, "failed to marshal alerts", http.StatusInternalServerError)
 		return
 	}
 
@@ -164,32 +187,33 @@ func (a *apiv1) getAlerts(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes) //nolint:errcheck
 }
 
-func (a *apiv1) queryAlertStats(w http.ResponseWriter, r *http.Request) {
+func (a *apiv1) GetAlertsStats(w http.ResponseWriter, r *http.Request, params GetAlertsStatsParams) {
 	span := trace.SpanFromContext(r.Context())
 
-	args := make(map[string]string)
-	for k, v := range r.URL.Query() {
-		args[k] = v[0]
+	if params.Args == nil {
+		params.Args = &map[string]string{}
 	}
 
-	q, err := query.UnmarshalAlertStatsQuery(args)
+	q, err := query.UnmarshalAlertStatsQuery(params.Type, *params.Args)
 	if err != nil {
-		a.logger.Warn().Msg(err.Error())
-		span.RecordError(err)
+		a.logger.Warn().Err(err).Msg("failed to construct alert stats query")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "failed to unmarshal query", http.StatusBadRequest)
 		return
 	}
 
 	stats, err := a.api.QueryAlertStats(r.Context(), q)
 	if err != nil {
-		span.RecordError(err)
+		a.logger.Debug().Err(err).Msg("failed to query alert stats")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "failed to query alert stats", http.StatusInternalServerError)
 		return
 	}
 
 	bytes, err := json.Marshal(stats)
 	if err != nil {
-		span.RecordError(err)
+		a.logger.Debug().Err(err).Msg("failed to marshal alert stats")
+		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, "failed to marshal alert stats", http.StatusInternalServerError)
 		return
 	}
@@ -205,6 +229,7 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 
 	clusterNodes, err := a.api.GetClusterStatus(r.Context())
 	if err != nil {
+		a.logger.Debug().Err(err).Msg("failed to get cluster status")
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -212,6 +237,7 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 
 	if clusterNodes == nil {
 		http.Error(w, "no clusterer configured", http.StatusNotFound)
+		return
 	}
 
 	bytes, err := json.Marshal(clusterNodes)
@@ -227,58 +253,79 @@ func (a *apiv1) getClusterStatus(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes) // nolint:errcheck
 }
 
-func (a *apiv1) acknowledgeAlert(w http.ResponseWriter, r *http.Request) {
-	type ackRequest struct {
-		model.AlertAcknowledgement
-		AlertID string `json:"alertID"`
-	}
+func (a *apiv1) PostAlertsAck(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+	ack := PostAlertsAckJSONRequestBody{}
 
-	ack := ackRequest{}
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-
 	if err := decoder.Decode(&ack); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error())) // nolint:errcheck
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, fmt.Sprintf("failed to decode body: %q", err.Error()), http.StatusBadRequest)
 		return
 	}
 
-	if ack.AlertID == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("alertID is required")) // nolint:errcheck
+	if ack.AlertID == nil {
+		span.SetStatus(codes.Error, "missing Alert ID")
+		http.Error(w, "missing Alert ID", http.StatusBadRequest)
 		return
 	}
 
-	if err := a.api.AckAlert(r.Context(), ack.AlertID, ack.AlertAcknowledgement); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("failed to handle alert acknowledgement: %s", err.Error()))) // nolint:errcheck
-		a.logger.Err(err).Msg("failed to broadcast alert acknowledgment")
+	alertAck := model.AlertAcknowledgement{
+		Creator: ack.Creator,
+		Comment: ack.Comment,
+	}
+
+	if err := a.api.AckAlert(r.Context(), *ack.AlertID, alertAck); err != nil {
+		a.logger.Debug().Err(err).Msg("failed to broadcast alert acknowledgment")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, fmt.Sprintf("failed to handle alert acknowledgment: %q", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (a *apiv1) postSilence(w http.ResponseWriter, r *http.Request) {
-	silence := model.Silence{}
-	if err := decodeFromContentType(r, &silence); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error())) // nolint:errcheck
+func (a *apiv1) PostSilences(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
+
+	silenceBody := PostSilencesJSONRequestBody{}
+	if err := decodeFromContentType(r, &silenceBody); err != nil {
+		a.logger.Debug().Err(err).Msg("failed to decode silence")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, fmt.Sprintf("failed to decode silence: %q", err.Error()), http.StatusBadRequest)
 		return
 	}
 
+	silence := model.Silence{
+		Creator:   silenceBody.Creator,
+		Comment:   silenceBody.Comment,
+		StartTime: silenceBody.StartsAt,
+		EndTime:   silenceBody.EndsAt,
+		Matchers:  make([]model.Matcher, len(silenceBody.Matchers)),
+	}
+
+	for i, matcher := range silenceBody.Matchers {
+		silence.Matchers[i] = model.Matcher{
+			Label:      matcher.Label,
+			Value:      matcher.Value,
+			IsRegex:    matcher.IsRegex,
+			IsNegative: matcher.IsNegative,
+		}
+	}
+
 	if err := a.api.PostSilence(r.Context(), silence); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("failed to handle alert acknowledgement")) // nolint:errcheck
-		a.logger.Err(err).Msg("failed to broadcast alert acknowledgment")
+		a.logger.Debug().Err(err).Msg("failed to broadcast alert acknowledgment")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, fmt.Sprintf("failed to post silence: %q", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
 	responseBytes, err := json.Marshal(silence)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to marshal silence")) // nolint:errcheck
-		a.logger.Err(err).Msg("failed to marshal silence")
+		a.logger.Debug().Err(err).Msg("failed to marshal silence")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, "failed to marshal silence", http.StatusInternalServerError)
 		return
 	}
 
@@ -287,20 +334,21 @@ func (a *apiv1) postSilence(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseBytes) // nolint:errcheck
 }
 
-func (a *apiv1) getSilences(w http.ResponseWriter, r *http.Request) {
+func (a *apiv1) GetSilences(w http.ResponseWriter, r *http.Request) {
+	span := trace.SpanFromContext(r.Context())
 	silences, err := a.api.GetSilences(r.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to get silences")) // nolint:errcheck
-		a.logger.Err(err).Msg("failed to get silences")
+		a.logger.Debug().Err(err).Msg("failed to get silences")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, "failed to get silences", http.StatusInternalServerError)
 		return
 	}
 
 	responseBytes, err := json.Marshal(silences)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("failed to marshal silences")) // nolint:errcheck // Errors writing here are not recoverable.
-		a.logger.Err(err).Msg("failed to marshal silences")
+		a.logger.Debug().Err(err).Msg("failed to marshal silences")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, "failed to marshal silences", http.StatusInternalServerError)
 		return
 	}
 

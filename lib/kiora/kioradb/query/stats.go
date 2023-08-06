@@ -4,12 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 )
-
-var ErrMissingType = errors.New("missing filter type")
 
 // StatsResult is a single result from a StatsQuery.
 type StatsResult struct {
@@ -42,19 +38,12 @@ func RegisterAlertStatsQuery(name string, constructor alertStatsQueryConstructor
 }
 
 // UnmarshalAlertStatsQuery unmarshals an AlertStatsQuery from a set of arguments.
-func UnmarshalAlertStatsQuery(args map[string]string) (AlertStatsQuery, error) {
-	name, ok := args["type"]
-	if !ok {
-		return nil, ErrMissingType
-	}
-	delete(args, "type")
-
-	constructor, ok := alertStatsQueryRegistry[name]
-	if !ok {
-		return nil, fmt.Errorf("unknown stats query type %q", name)
+func UnmarshalAlertStatsQuery(ty string, args map[string]string) (AlertStatsQuery, error) {
+	if constructor, ok := alertStatsQueryRegistry[ty]; ok {
+		return constructor(args)
 	}
 
-	return constructor(args)
+	return nil, fmt.Errorf("unknown stats query type %q", ty)
 }
 
 func init() {

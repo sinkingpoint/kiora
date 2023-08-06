@@ -160,7 +160,9 @@ func (k *KioraInstance) IsUp(t *testing.T, ctx context.Context) bool {
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
-	resp.Body.Close()
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
 	return err == nil
 }
 

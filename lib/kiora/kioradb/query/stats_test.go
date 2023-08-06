@@ -12,15 +12,15 @@ import (
 func TestAlertCountQuery(t *testing.T) {
 	tests := []struct {
 		name   string
+		ty     string
 		args   map[string]string
 		alerts []model.Alert
 		want   float64
 	}{
 		{
 			name: "test alert count query",
-			args: map[string]string{
-				"type": "count",
-			},
+			ty:   "count",
+			args: map[string]string{},
 			alerts: []model.Alert{
 				{
 					Labels: model.Labels{
@@ -32,8 +32,8 @@ func TestAlertCountQuery(t *testing.T) {
 		},
 		{
 			name: "test alert count query with filter",
+			ty:   "count",
 			args: map[string]string{
-				"type":        "count",
 				"filter_type": "status",
 				"status":      "firing",
 			},
@@ -57,7 +57,7 @@ func TestAlertCountQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := query.UnmarshalAlertStatsQuery(tt.args)
+			q, err := query.UnmarshalAlertStatsQuery(tt.ty, tt.args)
 			require.NoError(t, err, "unmarshal alert stats query failed")
 			require.NotNil(t, q, "unmarshal alert stats query failed")
 
@@ -78,15 +78,15 @@ func TestAlertCountQuery(t *testing.T) {
 func TestAlertStatusCountQuery(t *testing.T) {
 	tests := []struct {
 		name   string
+		ty     string
 		args   map[string]string
 		alerts []model.Alert
 		want   map[string]float64
 	}{
 		{
 			name: "test alert status count query",
-			args: map[string]string{
-				"type": "status_count",
-			},
+			ty:   "status_count",
+			args: map[string]string{},
 			alerts: []model.Alert{
 				{
 					Labels: model.Labels{
@@ -116,7 +116,7 @@ func TestAlertStatusCountQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := query.UnmarshalAlertStatsQuery(tt.args)
+			q, err := query.UnmarshalAlertStatsQuery(tt.ty, tt.args)
 			require.NoError(t, err, "unmarshal alert stats query failed")
 			require.NotNil(t, q, "unmarshal alert stats query failed")
 

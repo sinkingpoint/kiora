@@ -14,7 +14,7 @@ type Query struct {
 	Limit   int
 }
 
-type QueryOp interface {
+type QueryOption interface {
 	Apply(*Query)
 }
 
@@ -24,20 +24,20 @@ func (f QueryOpFunc) Apply(q *Query) {
 	f(q)
 }
 
-func OrderBy(fields []string, order Order) QueryOp {
+func OrderBy(fields []string, order Order) QueryOption {
 	return QueryOpFunc(func(q *Query) {
 		q.OrderBy = fields
 		q.Order = order
 	})
 }
 
-func Limit(limit int) QueryOp {
+func Limit(limit int) QueryOption {
 	return QueryOpFunc(func(q *Query) {
 		q.Limit = limit
 	})
 }
 
-func Offset(offset int) QueryOp {
+func Offset(offset int) QueryOption {
 	return QueryOpFunc(func(q *Query) {
 		q.Offset = offset
 	})
@@ -48,7 +48,7 @@ type AlertQuery struct {
 	Filter AlertFilter
 }
 
-func NewAlertQuery(filter AlertFilter, ops ...QueryOp) *AlertQuery {
+func NewAlertQuery(filter AlertFilter, ops ...QueryOption) *AlertQuery {
 	q := AlertQuery{
 		Filter: filter,
 	}
