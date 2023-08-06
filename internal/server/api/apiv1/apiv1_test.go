@@ -3,6 +3,7 @@ package apiv1_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,10 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/server/api"
 	"github.com/sinkingpoint/kiora/internal/server/api/apiv1"
 	"github.com/sinkingpoint/kiora/internal/services"
+	"github.com/sinkingpoint/kiora/internal/stubs"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -50,7 +53,30 @@ func (m *mockDB) BroadcastSilences(ctx context.Context, silences ...model.Silenc
 }
 
 func (m *mockDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
-	return nil
+	alerts := []model.Alert{}
+	for _, a := range m.alerts {
+		if query.Filter.MatchesAlert(ctx, &a) {
+			alerts = append(alerts, a)
+		}
+	}
+
+	if query.Offset > 0 {
+		if query.Offset > len(alerts) {
+			return []model.Alert{}
+		}
+
+		alerts = alerts[query.Offset:]
+	}
+
+	if query.Limit > 0 {
+		if query.Limit > len(alerts) {
+			return alerts
+		}
+
+		alerts = alerts[:query.Limit]
+	}
+
+	return alerts
 }
 
 func (m *mockDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
@@ -119,6 +145,117 @@ func TestPostAlerts(t *testing.T) {
 			alert := db.alerts[0]
 			require.Equal(t, referenceTime, alert.StartTime)
 			require.Equal(t, model.AlertStatusFiring, alert.Status)
+		})
+	}
+}
+
+// TestGetAlerts tests the /api/v1/alerts endpoint with various matchers
+// to make sure that it properly parses and applies them.
+func TestGetAlertsMatchers(t *testing.T) {
+	referenceAlerts := []model.Alert{
+		{
+			Labels: model.Labels{
+				"alertname": "test",
+				"instance":  "test",
+				"notify":    "foo",
+			},
+			Status:    model.AlertStatusFiring,
+			StartTime: stubs.Time.Now(),
+		},
+		{
+			Labels: model.Labels{
+				"alertname": "test",
+				"instance":  "test2",
+				"notify":    "bar",
+			},
+			Status:    model.AlertStatusFiring,
+			StartTime: stubs.Time.Now(),
+		},
+		{
+			Labels: model.Labels{
+				"alertname": "test",
+				"instance":  "test3",
+				"notify":    "bar",
+			},
+			Status:    model.AlertStatusFiring,
+			StartTime: stubs.Time.Now(),
+		},
+	}
+
+	for i := range referenceAlerts {
+		referenceAlerts[i].Materialise()
+	}
+
+	tests := []struct {
+		name           string
+		matchers       []string
+		expectedAlerts []int
+	}{
+		{
+			name:           "test match all",
+			matchers:       []string{},
+			expectedAlerts: []int{0, 1, 2},
+		},
+		{
+			name:           "test match instance",
+			matchers:       []string{"instance=test"},
+			expectedAlerts: []int{0},
+		},
+		{
+			name:           "test match notify",
+			matchers:       []string{"notify=bar"},
+			expectedAlerts: []int{1, 2},
+		},
+		{
+			name:           "test negative match",
+			matchers:       []string{"notify!=bar"},
+			expectedAlerts: []int{0},
+		},
+		{
+			name:           "test regex match",
+			matchers:       []string{"instance=~test[23]"},
+			expectedAlerts: []int{1, 2},
+		},
+		{
+			name:           "test regex negative match",
+			matchers:       []string{"instance!~test[23]"},
+			expectedAlerts: []int{0},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := &mockDB{
+				alerts: referenceAlerts,
+			}
+
+			router := mux.NewRouter()
+			apiv1.Register(router, api.NewAPIImpl(services.NewKioraBus(db, db, zerolog.New(os.Stderr), nil), nil), zerolog.New(os.Stderr))
+
+			resp := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodGet, "http://localhost/api/v1/alerts", nil)
+			require.NoError(t, err)
+
+			q := request.URL.Query()
+			for _, m := range tt.matchers {
+				q.Add("matchers", m)
+			}
+
+			request.URL.RawQuery = q.Encode()
+
+			router.ServeHTTP(resp, request)
+
+			response := resp.Result()
+
+			responseBody, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusOK, response.StatusCode, string(responseBody))
+
+			alerts := []model.Alert{}
+			require.NoError(t, json.Unmarshal(responseBody, &alerts))
+
+			require.Equal(t, len(tt.expectedAlerts), len(alerts), "expected %d alerts, got %d", len(tt.expectedAlerts), len(alerts))
 		})
 	}
 }

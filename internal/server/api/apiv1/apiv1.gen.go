@@ -103,8 +103,8 @@ type GetAlertsParams struct {
 	// Order The order of the results. Only valid if `sort` is also specified.
 	Order *GetAlertsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
 
-	// Id Get only the given alert by ID
-	Id *string `form:"id,omitempty" json:"id,omitempty"`
+	// Matchers Get only the given alert by ID
+	Matchers *[]string `form:"matchers,omitempty" json:"matchers,omitempty"`
 }
 
 // GetAlertsParamsOrder defines parameters for GetAlerts.
@@ -202,11 +202,11 @@ func (siw *ServerInterfaceWrapper) GetAlerts(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// ------------- Optional query parameter "id" -------------
+	// ------------- Optional query parameter "matchers" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "id", r.URL.Query(), &params.Id)
+	err = runtime.BindQueryParameter("form", true, false, "matchers", r.URL.Query(), &params.Matchers)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "matchers", Err: err})
 		return
 	}
 
@@ -469,15 +469,15 @@ var swaggerSpec = []string{
 	"CH0mjK40cedWyCZmAqwShUajQrz0SI23oZ07gjhA4KLM3d0F/MPKCMvHynip5FY+w34qYXjMAsWAfb2A",
 	"dIWigg+6airReoxJ8DEO4kTRaubk5ePvG/RHmUkLFVMWYctsMid0PGtLWLL3T1lKoyuKgCS0JRcHlIW+",
 	"M/EbW1g4L2ootY2WrYBohT0ARccvORGcpxmQw3FFGZ+cqRryYC1G+6ktTQQ7nBmfKD8TXH3EDRithC7E",
-	"W9b5Vmj2fnAi1JjrQqM6W+ODZc4w9n1+t38qM3nx4/5pooMvAT5DEo6hMLhS32A394rDUcQ2ldIeK9LC",
-	"E4OSN3G4qJ0NbWY/Pj//BwfnZ466lOLT/2+xzI9c2tYR0UwxyaVTJn9IffAE8mveEi6eiAK0wW7mbaoK",
-	"/LFjtUtjhQTaRFG1C9H6eRpPtotssiQd1wiY7VGbydenBe2Pl8i7NQLyHGvqsq+vyONW0UV3kqxegufV",
-	"I/K2StMerWKaOLZg2F/4LjdNIPRp9nbzBad33inri+8G8uvYwO4gdJdfP4TTxWK6ZPZRovD3RopbCCI0",
-	"OYZQNMYcJ5slqlVa965C0W6jEESlQ2DmCu+qlr5BRr/4pAPTO1A5BBpon323wveIb7L3TujmIXza8Vb6",
-	"UBwvls0oVUFi0k4bejuGrdeUZGUFXzZs1hBWUUsmFNZd5Dk7Phcsc62ggi/DrKjde0zBD1DVpt2FYqf/",
-	"czgyri5xGet3sMRs811K5nT8u0fh3E9CmNnSqEQbCWsxPPdJ7d2NVqjELY61IhacuUtWg5nFNVahN0f2",
-	"JScHD0VdELd/baKY+MNmrBJjZP8alUBZet5JevwCDq4ZCvTs/0kb9t0O/NmQ3/dnvovn+r8vd3vt5TBF",
-	"mtauHueyQ42vPtebZoY+oDtNsKeK6Lf+O/Vq5CBW1rhILUpgJ2CMotPprwAAAP//Viyak8AUAAA=",
+	"W9b5Vmj2fnAi1JjrQqM6W+ODZc4w9n1+t38qM3nx4/5pooMvAT5DEo6hMLhS32A394rDUcQ2ldI+FJkH",
+	"kfQmzh61s6FN/Mfn5//gXP3MUZdxfPr/LZb5kUvb+imyICapdsrkD6kPnkB+zUvExRNRgDbYjcRNVYE/",
+	"dqR3Wa6QQJsoqnYhWj/P8snykU12qOMaAbM1azP5+rSg/fESebdlQJ5jTV1y9gV7XDo6vybJ6iV43kwi",
+	"b6s07dEqpolDD4b1hu9y0wRCn2ZvN99/euedsr42byC/jv3tDkJ3+fVDOF3srUtmHyX6Qm+kuIUgQpNj",
+	"CEVjzHGyeKJapXXvKhTtsgpBVDoEZq7wrmrpG2T0e1E6ML0DlUOggfbZdyt8j/gma/GEbp7Rpw1xpU3F",
+	"6WPZq1IFJibttN+3U9qi+K/XtUi3Lxs2awirqCUTCusu8pwdnwuWuVZvwZfzanfvKQY/QFWbdlWKg8Cf",
+	"w5Fxs4m7Wr+iJUaf71Iyp9PhPQrnfhLCzJZGJdpIWIvhuU9q7260QiVucawVseDMXbIazCyusQq9ObIv",
+	"OTl4ZuqCuP2pE8XE/zljlRgj+9eoBMrS88rS4xdwcM1QoGe/V9qw71bkz4b8vj/zXTzX/5y522svhyHT",
+	"tHb1OJcdanz1ud40M/QB3WmCPVVEv/XPq1cjB7Gyxj1rUQI7AWMUnU5/BQAA//8FIxiq3xQAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

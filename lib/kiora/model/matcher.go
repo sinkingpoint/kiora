@@ -71,6 +71,15 @@ func (m *Matcher) UnmarshalText(raw string) error {
 
 	m.Label = parts[0]
 	m.Value = parts[1]
+	if m.IsRegex {
+		regex, err := regexp.Compile(m.Value)
+		if err != nil {
+			return errors.Wrap(err, "failed to compile matcher regexp")
+		}
+
+		m.regex = regex
+	}
+
 	return nil
 }
 

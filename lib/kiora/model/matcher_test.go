@@ -7,14 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func MustRegexMatcher(t *testing.T, label, regex string) model.Matcher {
+func MustRegexMatcher(t *testing.T, label, regex string) *model.Matcher {
 	t.Helper()
 	m, err := model.LabelValueRegexMatcher(label, regex)
 	require.NoError(t, err)
-	return m
-}
-
-func ptrTo(m model.Matcher) *model.Matcher {
 	return &m
 }
 
@@ -41,7 +37,7 @@ func TestMatchers(t *testing.T) {
 		},
 		{
 			name:    "regex match",
-			matcher: MustRegexMatcher(t, "foo", "bar"),
+			matcher: *MustRegexMatcher(t, "foo", "bar"),
 			labels: model.Labels{
 				"foo": "barrington",
 			},
@@ -49,7 +45,7 @@ func TestMatchers(t *testing.T) {
 		},
 		{
 			name:    "negative match",
-			matcher: *ptrTo(MustRegexMatcher(t, "foo", "bar")).Negate(),
+			matcher: *MustRegexMatcher(t, "foo", "bar").Negate(),
 			labels: model.Labels{
 				"foo": "barrington",
 			},

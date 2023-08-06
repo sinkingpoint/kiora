@@ -128,13 +128,28 @@ func (a *apiv1) PostAlerts(w http.ResponseWriter, r *http.Request) {
 }
 
 // getAlerts returns all the alerts in the system as a JSON array.
-// TODO(cdouch): Take filters here rather than returning everything.
 func (a *apiv1) GetAlerts(w http.ResponseWriter, r *http.Request, params GetAlertsParams) {
 	span := trace.SpanFromContext(r.Context())
 
 	var queries []query.AlertFilter
-	if params.Id != nil {
-		queries = append(queries, query.ID(*params.Id))
+
+	if params.Matchers != nil {
+		for _, matcherString := range *params.Matchers {
+			matcher := model.Matcher{}
+			if err := matcher.UnmarshalText(matcherString); err != nil {
+				a.logger.Debug().Err(err).Msgf("failed to unmarshal matcher %q", matcherString)
+				span.RecordError(err)
+				http.Error(w, fmt.Sprintf("failed to unmarshal matcher: %q", matcherString), http.StatusBadRequest)
+				return
+			}
+
+			if matcher.Label == "__id__" && !matcher.IsRegex && !matcher.IsNegative {
+				// For __id__=value matchers, we can use the ID filter, which is more efficient.
+				queries = append(queries, query.ID(matcher.Value))
+			} else {
+				queries = append(queries, query.AlertMatcher(matcher))
+			}
+		}
 	}
 
 	opts := []query.QueryOption{}

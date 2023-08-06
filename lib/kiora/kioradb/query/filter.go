@@ -262,7 +262,7 @@ func AllSilences(queries ...SilenceFilter) *AllFilter {
 	}
 }
 
-// IDFilter is a query that matches a specific alert by ID.
+// IDFilter is a query that matches a specific alert or silence by ID.
 type IDFilter struct {
 	ID string
 }
@@ -285,8 +285,16 @@ func ID(id string) *IDFilter {
 	}
 }
 
+// SilenceIsActive returns a SilenceFilter that matches only active silences.
 func SilenceIsActive() SilenceFilter {
 	return SilenceFilterFunc(func(ctx context.Context, silence *model.Silence) bool {
 		return silence.IsActive()
+	})
+}
+
+// AlertMatcher returns an AlertFilter that matches alerts that match the given matcher.
+func AlertMatcher(matcher model.Matcher) AlertFilter {
+	return AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
+		return matcher.Matches(alert.Labels)
 	})
 }

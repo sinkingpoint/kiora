@@ -141,6 +141,10 @@ func (a *Alert) Materialise() error {
 		a.StartTime = stubs.Time.Now()
 	}
 
+	if a.Annotations == nil {
+		a.Annotations = map[string]string{}
+	}
+
 	if a.Status == AlertStatusResolved && a.EndTime.IsZero() {
 		a.EndTime = stubs.Time.Now()
 	}

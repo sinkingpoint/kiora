@@ -35,10 +35,12 @@ paths:
              - ASC
              - DESC
         - in: query
-          name: id
+          name: matchers
           description: Get only the given alert by ID
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '400':
           description: Invalid query parameters

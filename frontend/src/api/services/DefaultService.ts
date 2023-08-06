@@ -24,7 +24,7 @@ export class DefaultService {
         offset,
         sort,
         order,
-        id,
+        matchers,
     }: {
         /**
          * The maximum number of results to return
@@ -45,7 +45,7 @@ export class DefaultService {
         /**
          * Get only the given alert by ID
          */
-        id?: string,
+        matchers?: Array<string>,
     }): CancelablePromise<Array<Alert>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -55,7 +55,7 @@ export class DefaultService {
                 'offset': offset,
                 'sort': sort,
                 'order': order,
-                'id': id,
+                'matchers': matchers,
             },
             errors: {
                 400: `Invalid query parameters`,
