@@ -16,21 +16,37 @@ export class DefaultService {
      * Get alerts details
      * Takes an optional filter, limit, ordering, and fields and returns alerts based on those
      *
-     * @param limit The maximum number of results to return
-     * @param offset The offset into the results to return. Used for pagination
-     * @param sort The fields to sort the results by
-     * @param order The order of the results. Only valid if `sort` is also specified.
-     * @param id Get only the given alert by ID
      * @returns Alert Got alerts
      * @throws ApiError
      */
-    public static getAlerts(
+    public static getAlerts({
+        limit,
+        offset,
+        sort,
+        order,
+        id,
+    }: {
+        /**
+         * The maximum number of results to return
+         */
         limit?: number,
+        /**
+         * The offset into the results to return. Used for pagination
+         */
         offset?: number,
+        /**
+         * The fields to sort the results by
+         */
         sort?: Array<string>,
+        /**
+         * The order of the results. Only valid if `sort` is also specified.
+         */
         order?: 'ASC' | 'DESC',
+        /**
+         * Get only the given alert by ID
+         */
         id?: string,
-    ): CancelablePromise<Array<Alert>> {
+    }): CancelablePromise<Array<Alert>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/alerts',
@@ -50,13 +66,17 @@ export class DefaultService {
 
     /**
      * Add, or update alerts
-     * @param requestBody Alerts to add, or update in the system.
      * @returns any Alerts accepted for addition, or updating
      * @throws ApiError
      */
-    public static postAlerts(
+    public static postAlerts({
+        requestBody,
+    }: {
+        /**
+         * Alerts to add, or update in the system.
+         */
         requestBody?: Array<Alert>,
-    ): CancelablePromise<any> {
+    }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/alerts',
@@ -71,15 +91,19 @@ export class DefaultService {
 
     /**
      * Query aggregated stats about alerts in the system
-     * @param type
-     * @param args The arguments to the query, depending on the query type.
      * @returns StatsResult Sucessfully queried stats
      * @throws ApiError
      */
-    public static getAlertsStats(
+    public static getAlertsStats({
+        type,
+        args,
+    }: {
         type: string,
+        /**
+         * The arguments to the query, depending on the query type.
+         */
         args?: Record<string, string>,
-    ): CancelablePromise<Array<StatsResult>> {
+    }): CancelablePromise<Array<StatsResult>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/alerts/stats',
@@ -96,13 +120,17 @@ export class DefaultService {
 
     /**
      * Acknowledge an alert
-     * @param requestBody Metadata when acknowledging an alert
      * @returns any The alert was sucessfully acknowledged
      * @throws ApiError
      */
-    public static postAlertsAck(
+    public static postAlertsAck({
+        requestBody,
+    }: {
+        /**
+         * Metadata when acknowledging an alert
+         */
         requestBody?: AlertAcknowledgement,
-    ): CancelablePromise<any> {
+    }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/alerts/ack',
@@ -129,13 +157,17 @@ export class DefaultService {
 
     /**
      * Silence alerts
-     * @param requestBody A silence to add
      * @returns Silence The silence was created
      * @throws ApiError
      */
-    public static postSilences(
+    public static postSilences({
+        requestBody,
+    }: {
+        /**
+         * A silence to add
+         */
         requestBody?: Silence,
-    ): CancelablePromise<Silence> {
+    }): CancelablePromise<Silence> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/silences',

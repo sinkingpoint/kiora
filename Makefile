@@ -46,7 +46,7 @@ generate:
 	mockgen -source ./internal/clustering/broadcaster.go > mocks/mock_clustering/broadcaster.go
 	mockgen -source ./internal/services/bus.go > mocks/mock_services/bus.go
 	oapi-codegen -generate gorilla,spec,types -package apiv1 ./internal/server/api/apiv1/api.yaml > ./internal/server/api/apiv1/apiv1.gen.go
-	cd frontend && npm exec openapi -- -i ../internal/server/api/apiv1/api.yaml -o src/api
+	cd frontend && npm exec openapi -- --useOptions -i ../internal/server/api/apiv1/api.yaml -o src/api
 
 clean:
 	rm -rf ./artifacts

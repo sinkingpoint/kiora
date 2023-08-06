@@ -28,7 +28,7 @@ const StatsRow = () => {
 	});
 
 	const fetchStats = async () => {
-		await DefaultService.getAlertsStats("status_count", {})
+		await DefaultService.getAlertsStats({type: "status_count"})
 			.then((result) => {
 				const newStats = {
 					...stats,

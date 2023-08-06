@@ -107,7 +107,7 @@ const AlertView = ({ id }: AlertProps) => {
 			return;
 		}
 
-		DefaultService.getAlerts(null, null, null, null, id)
+		DefaultService.getAlerts({id: id})
 			.then((alerts) => {
 				if (alerts.length === 0) {
 					return;
