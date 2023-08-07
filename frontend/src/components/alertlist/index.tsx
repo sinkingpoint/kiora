@@ -42,7 +42,7 @@ const AlertList = () => {
 
 	useEffect(() => {
 		const fetchAlerts = async () => {
-			await DefaultService.getAlerts({sort: ["__starts_at__"], order: "DESC", limit: 100})
+			await DefaultService.getAlerts({ sort: ["__starts_at__"], order: "DESC", limit: 100 })
 				.then((newAlerts) => {
 					setAlerts({
 						...alerts,

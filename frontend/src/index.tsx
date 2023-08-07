@@ -9,7 +9,7 @@ let apiHost = "";
 // The reason we have to do this try-catch fudge is that when preact sets `process.env.PREACT_APP_API_HOST`
 // it _doesn't_ set `process` or `process.env`, so checking if those exist will throw an error.
 try {
-    apiHost = process.env.PREACT_APP_API_HOST;
+	apiHost = process.env.PREACT_APP_API_HOST;
 } catch {}
 
 OpenAPI.VERSION = "v1";

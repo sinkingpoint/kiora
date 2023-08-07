@@ -9,9 +9,9 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/internal/clustering"
 	"github.com/sinkingpoint/kiora/internal/clustering/serf"
@@ -139,11 +139,16 @@ func (k *KioraServer) listenAndServeHTTP(ctx context.Context) error {
 
 	runtime.SetMutexProfileFraction(5)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+	})
+
 	k.httpServer = &http.Server{
 		Addr:         k.HTTPListenAddress,
 		ReadTimeout:  k.ReadTimeout,
 		WriteTimeout: k.WriteTimeout,
-		Handler:      handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(router),
+		Handler:      c.Handler(router),
 	}
 
 	var err error

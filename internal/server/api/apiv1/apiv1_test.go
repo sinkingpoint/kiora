@@ -246,6 +246,7 @@ func TestGetAlertsMatchers(t *testing.T) {
 			router.ServeHTTP(resp, request)
 
 			response := resp.Result()
+			defer response.Body.Close()
 
 			responseBody, err := io.ReadAll(response.Body)
 			require.NoError(t, err)

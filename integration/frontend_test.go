@@ -17,6 +17,7 @@ func TestFrontendIsEmbedded(t *testing.T) {
 
 	resp, err := http.Get(kiora.GetHTTPURL("/"))
 	require.NoError(t, err)
+	resp.Body.Close()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

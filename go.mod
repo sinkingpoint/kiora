@@ -11,7 +11,6 @@ require (
 	github.com/getkin/kin-openapi v0.118.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd
 	github.com/hashicorp/go-hclog v1.5.0
@@ -20,6 +19,7 @@ require (
 	github.com/hashicorp/serf v0.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.42.0
+	github.com/rs/cors v1.9.0
 	github.com/rs/zerolog v1.29.0
 	github.com/sinkingpoint/msgpack/v5 v5.3.7
 	github.com/stretchr/testify v1.8.4

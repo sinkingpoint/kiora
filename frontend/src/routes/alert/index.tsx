@@ -107,7 +107,7 @@ const AlertView = ({ id }: AlertProps) => {
 			return;
 		}
 
-		DefaultService.getAlerts({matchers: [`__id__=${id}`]})
+		DefaultService.getAlerts({ matchers: [`__id__=${id}`] })
 			.then((alerts) => {
 				if (alerts.length === 0) {
 					return;
