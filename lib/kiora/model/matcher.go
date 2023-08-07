@@ -48,25 +48,31 @@ func (m *Matcher) UnmarshalText(raw string) error {
 
 	switch {
 	case strings.Contains(raw, "=~"):
-		parts = strings.Split(raw, "=~")
+		parts = strings.SplitN(raw, "=~", 2)
 		m.IsRegex = true
 		m.IsNegative = false
 	case strings.Contains(raw, "!~"):
-		parts = strings.Split(raw, "!~")
+		parts = strings.SplitN(raw, "!~", 2)
 		m.IsRegex = true
 		m.IsNegative = true
 	case strings.Contains(raw, "!="):
-		parts = strings.Split(raw, "!=")
+		parts = strings.SplitN(raw, "!=", 2)
 		m.IsRegex = false
 		m.IsNegative = true
 	default:
-		parts = strings.Split(raw, "=")
+		parts = strings.SplitN(raw, "=", 2)
 		m.IsRegex = false
 		m.IsNegative = false
 	}
 
 	if len(parts) != 2 {
 		return errors.New("invalid matcher")
+	}
+
+	// Matchers can be optionally quoted. If they are, we need to remove the quotes and unescape the string.
+	if strings.HasPrefix(parts[1], "\"") && strings.HasSuffix(parts[1], "\"") {
+		parts[1] = parts[1][1 : len(parts[1])-1]
+		parts[1] = strings.ReplaceAll(parts[1], "\\\"", "\"")
 	}
 
 	m.Label = parts[0]
