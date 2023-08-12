@@ -30,8 +30,14 @@ const (
 
 // Defines values for GetAlertsParamsOrder.
 const (
-	ASC  GetAlertsParamsOrder = "ASC"
-	DESC GetAlertsParamsOrder = "DESC"
+	GetAlertsParamsOrderASC  GetAlertsParamsOrder = "ASC"
+	GetAlertsParamsOrderDESC GetAlertsParamsOrder = "DESC"
+)
+
+// Defines values for GetSilencesParamsOrder.
+const (
+	GetSilencesParamsOrderASC  GetSilencesParamsOrder = "ASC"
+	GetSilencesParamsOrderDESC GetSilencesParamsOrder = "DESC"
 )
 
 // Alert defines model for Alert.
@@ -103,7 +109,7 @@ type GetAlertsParams struct {
 	// Order The order of the results. Only valid if `sort` is also specified.
 	Order *GetAlertsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
 
-	// Matchers Get only the given alert by ID
+	// Matchers The matchers used to filter the returned list. Only alerts that match all the matchers will be returned.
 	Matchers *[]string `form:"matchers,omitempty" json:"matchers,omitempty"`
 }
 
@@ -120,6 +126,29 @@ type GetAlertsStatsParams struct {
 	// Args The arguments to the query, depending on the query type.
 	Args *map[string]string `form:"args,omitempty" json:"args,omitempty"`
 }
+
+// GetSilencesParams defines parameters for GetSilences.
+type GetSilencesParams struct {
+	// Limit The maximum number of results to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset The offset into the results to return. Used for pagination
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Sort The fields to sort the results by
+	Sort *[]string `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Order The order of the results. Only valid if `sort` is also specified.
+	Order *GetSilencesParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Matchers The matchers used to filter the returned list. Only silences that match all the matchers will be returned.
+	// Note that matchers are applied literally to silences, e.g. sending `instance=~foo` will _only_ return silences
+	// which contain the matcher `instance=~foo`
+	Matchers *[]string `form:"matchers,omitempty" json:"matchers,omitempty"`
+}
+
+// GetSilencesParamsOrder defines parameters for GetSilences.
+type GetSilencesParamsOrder string
 
 // PostAlertsJSONRequestBody defines body for PostAlerts for application/json ContentType.
 type PostAlertsJSONRequestBody = PostAlertsJSONBody
@@ -146,7 +175,7 @@ type ServerInterface interface {
 	GetAlertsStats(w http.ResponseWriter, r *http.Request, params GetAlertsStatsParams)
 	// Get silences
 	// (GET /silences)
-	GetSilences(w http.ResponseWriter, r *http.Request)
+	GetSilences(w http.ResponseWriter, r *http.Request, params GetSilencesParams)
 	// Silence alerts
 	// (POST /silences)
 	PostSilences(w http.ResponseWriter, r *http.Request)
@@ -298,8 +327,53 @@ func (siw *ServerInterfaceWrapper) GetAlertsStats(w http.ResponseWriter, r *http
 func (siw *ServerInterfaceWrapper) GetSilences(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSilencesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "sort", r.URL.Query(), &params.Sort)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "order" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "order", r.URL.Query(), &params.Order)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "matchers" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "matchers", r.URL.Query(), &params.Matchers)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "matchers", Err: err})
+		return
+	}
+
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetSilences(w, r)
+		siw.Handler.GetSilences(w, r, params)
 	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -455,29 +529,31 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

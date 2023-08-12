@@ -56,7 +56,7 @@ func (m *inMemoryDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) err
 	return nil
 }
 
-func (m *inMemoryDB) QueryAlerts(ctx context.Context, q *query.AlertQuery) []model.Alert {
+func (m *inMemoryDB) QueryAlerts(ctx context.Context, q query.AlertQuery) []model.Alert {
 	m.aLock.RLock()
 	defer m.aLock.RUnlock()
 	switch filter := q.Filter.(type) {
@@ -94,12 +94,12 @@ func (m *inMemoryDB) StoreSilences(ctx context.Context, silences ...model.Silenc
 	return nil
 }
 
-func (m *inMemoryDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
+func (m *inMemoryDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
 	m.sLock.RLock()
 	defer m.sLock.RUnlock()
 	silences := []model.Silence{}
 	for _, silence := range m.silences {
-		if query.MatchesSilence(ctx, &silence) {
+		if query.Filter.MatchesSilence(ctx, &silence) {
 			silences = append(silences, silence)
 		}
 	}

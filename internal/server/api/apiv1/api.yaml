@@ -36,7 +36,7 @@ paths:
              - DESC
         - in: query
           name: matchers
-          description: Get only the given alert by ID
+          description: The matchers used to filter the returned list. Only alerts that match all the matchers will be returned.
           schema:
             type: array
             items:
@@ -112,6 +112,42 @@ paths:
   /silences:
     get:
       summary: Get silences
+      parameters:
+        - in: query
+          name: limit
+          description: The maximum number of results to return
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          description: The offset into the results to return. Used for pagination
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          description: The fields to sort the results by
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: order
+          description: The order of the results. Only valid if `sort` is also specified.
+          schema:
+            type: string
+            enum:
+             - ASC
+             - DESC
+        - in: query
+          name: matchers
+          description: |
+            The matchers used to filter the returned list. Only silences that match all the matchers will be returned.
+            Note that matchers are applied literally to silences, e.g. sending `instance=~foo` will _only_ return silences
+            which contain the matcher `instance=~foo`
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: Returns all the silences

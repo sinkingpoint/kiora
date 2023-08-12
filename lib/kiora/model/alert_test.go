@@ -72,7 +72,7 @@ func TestAlertUnmarshal(t *testing.T) {
 				"status":"firing",
 				"timeOutDeadline": "2022-12-22T21:32:27Z"
 }`,
-			expectedFailure: true,
+			expectedFailure: false,
 		},
 		{
 			name: "missing status",

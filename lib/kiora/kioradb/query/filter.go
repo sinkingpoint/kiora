@@ -292,9 +292,34 @@ func SilenceIsActive() SilenceFilter {
 	})
 }
 
-// AlertMatcher returns an AlertFilter that matches alerts that match the given matcher.
-func AlertMatcher(matcher model.Matcher) AlertFilter {
-	return AlertFilterFunc(func(ctx context.Context, alert *model.Alert) bool {
-		return matcher.Matches(alert.Labels)
-	})
+// MatcherFilter is a Filter that matches alerts or silences that contain the given matcher.
+type MatcherFilter struct {
+	matcher model.Matcher
+}
+
+func Matcher(m model.Matcher) *MatcherFilter {
+	return &MatcherFilter{
+		matcher: m,
+	}
+}
+
+func (i *MatcherFilter) Type() string {
+	return "matcher"
+}
+
+// MatchesAlert returns true if the given matcher matcher the given alert.
+func (m *MatcherFilter) MatchesAlert(ctx context.Context, alert *model.Alert) bool {
+	return m.matcher.Matches(alert.Labels)
+}
+
+// MatchesSilence returns true if the given matcher is in the given silence.
+func (m *MatcherFilter) MatchesSilence(ctx context.Context, silence *model.Silence) bool {
+	for i := range silence.Matchers {
+		matcher := silence.Matchers[i]
+		if matcher.Label == m.matcher.Label && matcher.Value == m.matcher.Value && matcher.IsNegative == m.matcher.IsNegative && matcher.IsRegex == m.matcher.IsRegex {
+			return true
+		}
+	}
+
+	return false
 }

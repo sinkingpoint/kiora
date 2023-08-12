@@ -52,7 +52,7 @@ func (m *mockDB) BroadcastSilences(ctx context.Context, silences ...model.Silenc
 	return nil
 }
 
-func (m *mockDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
+func (m *mockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
 	alerts := []model.Alert{}
 	for _, a := range m.alerts {
 		if query.Filter.MatchesAlert(ctx, &a) {
@@ -79,8 +79,31 @@ func (m *mockDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []mod
 	return alerts
 }
 
-func (m *mockDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
-	return nil
+func (m *mockDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
+	silences := []model.Silence{}
+	for _, s := range m.silences {
+		if query.Filter.MatchesSilence(ctx, &s) {
+			silences = append(silences, s)
+		}
+	}
+
+	if query.Offset > 0 {
+		if query.Offset > len(silences) {
+			return []model.Silence{}
+		}
+
+		silences = silences[query.Offset:]
+	}
+
+	if query.Limit > 0 {
+		if query.Limit > len(silences) {
+			return silences
+		}
+
+		silences = silences[:query.Limit]
+	}
+
+	return silences
 }
 
 func (m *mockDB) StoreSilences(ctx context.Context, silences ...model.Silence) error {
@@ -257,6 +280,124 @@ func TestGetAlertsMatchers(t *testing.T) {
 			require.NoError(t, json.Unmarshal(responseBody, &alerts))
 
 			require.Equal(t, len(tt.expectedAlerts), len(alerts), "expected %d alerts, got %d", len(tt.expectedAlerts), len(alerts))
+		})
+	}
+}
+
+func TestGetSilencesMatches(t *testing.T) {
+	referenceSilences := []model.Silence{
+		{
+			ID: "test",
+			Matchers: []model.Matcher{
+				{
+					Label: "instance",
+					Value: "test",
+				},
+			},
+			StartTime: stubs.Time.Now(),
+			EndTime:   stubs.Time.Now().Add(time.Hour),
+		},
+		{
+			ID: "test2",
+			Matchers: []model.Matcher{
+				{
+					Label: "instance",
+					Value: "test2",
+				},
+			},
+			StartTime: stubs.Time.Now(),
+			EndTime:   stubs.Time.Now().Add(time.Hour),
+		},
+		{
+			ID: "test3",
+			Matchers: []model.Matcher{
+				{
+					Label: "instance",
+					Value: "test2",
+				},
+			},
+			StartTime: stubs.Time.Now(),
+			EndTime:   stubs.Time.Now().Add(time.Hour),
+		},
+		{
+			ID: "test4",
+			Matchers: []model.Matcher{
+				{
+					Label:   "instance",
+					Value:   "test2",
+					IsRegex: true,
+				},
+			},
+			StartTime: stubs.Time.Now(),
+			EndTime:   stubs.Time.Now().Add(time.Hour),
+		},
+	}
+
+	tests := []struct {
+		name     string
+		matchers []string
+		expected []int
+	}{
+		{
+			// Tests that an empty set of matchers returns every silence.
+			name:     "test match all",
+			matchers: []string{},
+			expected: []int{0, 1, 2, 3},
+		},
+		{
+			// Tests that a matcher that matches a single silence returns only that silence.
+			name:     "test match instance",
+			matchers: []string{"instance=test"},
+			expected: []int{0},
+		},
+		{
+			// Tests that a matcher that matches multiple silences returns all of those silences.
+			name:     "test match instance multiple",
+			matchers: []string{"instance=test2"},
+			expected: []int{1, 2},
+		},
+		{
+			// Tests that a matcher that matches a regex returns the regex silence, but _not_ the non regex silences.
+			name:     "test match instance regex",
+			matchers: []string{"instance=~test2"},
+			expected: []int{3},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := &mockDB{
+				silences: referenceSilences,
+			}
+
+			router := mux.NewRouter()
+			apiv1.Register(router, api.NewAPIImpl(services.NewKioraBus(db, db, zerolog.New(os.Stderr), nil), nil), zerolog.New(os.Stderr))
+
+			resp := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodGet, "http://localhost/api/v1/silences", nil)
+			require.NoError(t, err)
+
+			q := request.URL.Query()
+			for _, m := range tt.matchers {
+				q.Add("matchers", m)
+			}
+
+			request.URL.RawQuery = q.Encode()
+
+			router.ServeHTTP(resp, request)
+
+			response := resp.Result()
+			defer response.Body.Close()
+
+			responseBody, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusOK, response.StatusCode, string(responseBody))
+
+			alerts := []model.Silence{}
+			require.NoError(t, json.Unmarshal(responseBody, &alerts))
+
+			require.Equal(t, len(tt.expected), len(alerts), "expected %d silences, got %d", len(tt.expected), len(alerts))
 		})
 	}
 }

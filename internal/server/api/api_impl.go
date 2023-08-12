@@ -18,7 +18,7 @@ var _ = API(&APIImpl{})
 // API defines an interface that represents all the operations that can be performed on the kiora API.
 type API interface {
 	// GetAlerts returns a list of alerts matching the given query.
-	GetAlerts(ctx context.Context, q *query.AlertQuery) ([]model.Alert, error)
+	GetAlerts(ctx context.Context, q query.AlertQuery) ([]model.Alert, error)
 
 	// PostAlerts stores the given alerts in the database, updating any existing alerts with the same labels.
 	PostAlerts(ctx context.Context, alerts []model.Alert) error
@@ -27,7 +27,7 @@ type API interface {
 	QueryAlertStats(ctx context.Context, q query.AlertStatsQuery) ([]query.StatsResult, error)
 
 	// GetSilences returns a list of silences matching the given query.
-	GetSilences(ctx context.Context) ([]model.Silence, error)
+	GetSilences(ctx context.Context, query query.SilenceQuery) ([]model.Silence, error)
 
 	// PostSilences stores the given silences in the database, updating any existing silences with the same ID.
 	PostSilence(ctx context.Context, silences model.Silence) error
@@ -51,7 +51,7 @@ func NewAPIImpl(bus services.Bus, clusterer clustering.Clusterer) *APIImpl {
 	}
 }
 
-func (a *APIImpl) GetAlerts(ctx context.Context, q *query.AlertQuery) ([]model.Alert, error) {
+func (a *APIImpl) GetAlerts(ctx context.Context, q query.AlertQuery) ([]model.Alert, error) {
 	return a.bus.DB().QueryAlerts(ctx, q), nil
 }
 
@@ -63,8 +63,8 @@ func (a *APIImpl) QueryAlertStats(ctx context.Context, q query.AlertStatsQuery) 
 	return kioradb.QueryAlertStats(ctx, a.bus.DB(), q)
 }
 
-func (a *APIImpl) GetSilences(ctx context.Context) ([]model.Silence, error) {
-	return a.bus.DB().QuerySilences(ctx, query.MatchAll()), nil
+func (a *APIImpl) GetSilences(ctx context.Context, q query.SilenceQuery) ([]model.Silence, error) {
+	return a.bus.DB().QuerySilences(ctx, q), nil
 }
 
 func (a *APIImpl) PostSilence(ctx context.Context, silence model.Silence) error {

@@ -137,7 +137,7 @@ func (b *BoltDB) StoreAlerts(ctx context.Context, alerts ...model.Alert) error {
 	return b.cache.StoreAlerts(ctx, alerts...)
 }
 
-func (b *BoltDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
+func (b *BoltDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
 	return b.cache.QueryAlerts(ctx, query)
 }
 
@@ -168,7 +168,7 @@ func (b *BoltDB) StoreSilences(ctx context.Context, silences ...model.Silence) e
 }
 
 // QuerySilences queries the database for silences matching the given query.
-func (b *BoltDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
+func (b *BoltDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
 	return b.cache.QuerySilences(ctx, query)
 }
 

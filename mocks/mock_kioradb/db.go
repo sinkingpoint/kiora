@@ -51,7 +51,7 @@ func (mr *MockDBMockRecorder) Close() *gomock.Call {
 }
 
 // QueryAlerts mocks base method.
-func (m *MockDB) QueryAlerts(ctx context.Context, query *query.AlertQuery) []model.Alert {
+func (m *MockDB) QueryAlerts(ctx context.Context, query query.AlertQuery) []model.Alert {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QueryAlerts", ctx, query)
 	ret0, _ := ret[0].([]model.Alert)
@@ -65,7 +65,7 @@ func (mr *MockDBMockRecorder) QueryAlerts(ctx, query interface{}) *gomock.Call {
 }
 
 // QuerySilences mocks base method.
-func (m *MockDB) QuerySilences(ctx context.Context, query query.SilenceFilter) []model.Silence {
+func (m *MockDB) QuerySilences(ctx context.Context, query query.SilenceQuery) []model.Silence {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QuerySilences", ctx, query)
 	ret0, _ := ret[0].([]model.Silence)

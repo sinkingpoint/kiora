@@ -33,7 +33,7 @@ func NewDBDelegate(db kioradb.DB, logger zerolog.Logger) *DBDelegate {
 func (d *DBDelegate) LocalState(join bool) []byte {
 	dump := DBDump{}
 	dump.Alerts = d.db.QueryAlerts(context.Background(), query.NewAlertQuery(query.MatchAll()))
-	dump.Silences = d.db.QuerySilences(context.Background(), query.MatchAll())
+	dump.Silences = d.db.QuerySilences(context.Background(), query.NewSilenceQuery(query.MatchAll()))
 
 	bytes, _ := msgpack.Marshal(dump)
 	return bytes

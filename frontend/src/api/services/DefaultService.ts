@@ -43,7 +43,7 @@ export class DefaultService {
          */
         order?: 'ASC' | 'DESC',
         /**
-         * Get only the given alert by ID
+         * The matchers used to filter the returned list. Only alerts that match all the matchers will be returned.
          */
         matchers?: Array<string>,
     }): CancelablePromise<Array<Alert>> {
@@ -148,10 +148,47 @@ export class DefaultService {
      * @returns Silence Returns all the silences
      * @throws ApiError
      */
-    public static getSilences(): CancelablePromise<Array<Silence>> {
+    public static getSilences({
+        limit,
+        offset,
+        sort,
+        order,
+        matchers,
+    }: {
+        /**
+         * The maximum number of results to return
+         */
+        limit?: number,
+        /**
+         * The offset into the results to return. Used for pagination
+         */
+        offset?: number,
+        /**
+         * The fields to sort the results by
+         */
+        sort?: Array<string>,
+        /**
+         * The order of the results. Only valid if `sort` is also specified.
+         */
+        order?: 'ASC' | 'DESC',
+        /**
+         * The matchers used to filter the returned list. Only silences that match all the matchers will be returned.
+         * Note that matchers are applied literally to silences, e.g. sending `instance=~foo` will _only_ return silences
+         * which contain the matcher `instance=~foo`
+         *
+         */
+        matchers?: Array<string>,
+    }): CancelablePromise<Array<Silence>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/silences',
+            query: {
+                'limit': limit,
+                'offset': offset,
+                'sort': sort,
+                'order': order,
+                'matchers': matchers,
+            },
         });
     }
 

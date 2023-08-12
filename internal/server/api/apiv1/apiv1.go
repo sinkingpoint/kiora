@@ -127,6 +127,31 @@ func (a *apiv1) PostAlerts(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+func constructQueryOpts(limit *int, offset *int, sort *[]string, order string) ([]query.QueryOption, error) {
+	opts := []query.QueryOption{}
+
+	if limit != nil {
+		opts = append(opts, query.Limit(*limit))
+	}
+
+	if offset != nil {
+		opts = append(opts, query.Offset(*offset))
+	}
+
+	if sort != nil && len(*sort) > 0 {
+		direction := query.OrderAsc
+		if order == string(query.OrderDesc) {
+			direction = query.OrderDesc
+		}
+
+		opts = append(opts, query.OrderBy(*sort, direction))
+	} else if order != "" {
+		return nil, fmt.Errorf("order specified without sort")
+	}
+
+	return opts, nil
+}
+
 // getAlerts returns all the alerts in the system as a JSON array.
 func (a *apiv1) GetAlerts(w http.ResponseWriter, r *http.Request, params GetAlertsParams) {
 	span := trace.SpanFromContext(r.Context())
@@ -147,30 +172,21 @@ func (a *apiv1) GetAlerts(w http.ResponseWriter, r *http.Request, params GetAler
 				// For __id__=value matchers, we can use the ID filter, which is more efficient.
 				queries = append(queries, query.ID(matcher.Value))
 			} else {
-				queries = append(queries, query.AlertMatcher(matcher))
+				queries = append(queries, query.Matcher(matcher))
 			}
 		}
 	}
 
-	opts := []query.QueryOption{}
-	if params.Limit != nil {
-		opts = append(opts, query.Limit(*params.Limit))
+	order := ""
+	if params.Order != nil {
+		order = string(*params.Order)
 	}
 
-	if params.Offset != nil {
-		opts = append(opts, query.Offset(*params.Offset))
-	}
-
-	if params.Sort != nil && len(*params.Sort) > 0 {
-		order := query.OrderAsc
-		if params.Order != nil && *params.Order == DESC {
-			order = query.OrderDesc
-		}
-
-		opts = append(opts, query.OrderBy(*params.Sort, order))
-	} else if params.Order != nil {
-		span.RecordError(fmt.Errorf("order specified without sort"))
-		http.Error(w, "order specified without sort", http.StatusBadRequest)
+	opts, err := constructQueryOpts(params.Limit, params.Offset, params.Sort, order)
+	if err != nil {
+		a.logger.Debug().Err(err).Msg("failed to construct query options")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -349,9 +365,45 @@ func (a *apiv1) PostSilences(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseBytes) // nolint:errcheck
 }
 
-func (a *apiv1) GetSilences(w http.ResponseWriter, r *http.Request) {
+func (a *apiv1) GetSilences(w http.ResponseWriter, r *http.Request, params GetSilencesParams) {
 	span := trace.SpanFromContext(r.Context())
-	silences, err := a.api.GetSilences(r.Context())
+
+	queries := []query.SilenceFilter{}
+	if params.Matchers != nil {
+		for _, matcherString := range *params.Matchers {
+			matcher := model.Matcher{}
+			if err := matcher.UnmarshalText(matcherString); err != nil {
+				a.logger.Debug().Err(err).Msgf("failed to unmarshal matcher %q", matcherString)
+				span.RecordError(err)
+				http.Error(w, fmt.Sprintf("failed to unmarshal matcher: %q", matcherString), http.StatusBadRequest)
+				return
+			}
+
+			if matcher.Label == "__id__" && !matcher.IsRegex && !matcher.IsNegative {
+				// For __id__=value matchers, we can use the ID filter, which is more efficient.
+				queries = append(queries, query.ID(matcher.Value))
+			} else {
+				queries = append(queries, query.Matcher(matcher))
+			}
+		}
+	}
+
+	order := ""
+	if params.Order != nil {
+		order = string(*params.Order)
+	}
+
+	opts, err := constructQueryOpts(params.Limit, params.Offset, params.Sort, order)
+	if err != nil {
+		a.logger.Debug().Err(err).Msg("failed to construct query options")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	query := query.NewSilenceQuery(query.AllSilences(queries...), opts...)
+
+	silences, err := a.api.GetSilences(r.Context(), query)
 	if err != nil {
 		a.logger.Debug().Err(err).Msg("failed to get silences")
 		span.SetStatus(codes.Error, err.Error())

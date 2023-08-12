@@ -7,13 +7,22 @@ const (
 	OrderDesc Order = "DESC"
 )
 
+// Query represents a generic query based on SQL semantics.
 type Query struct {
-	Order   Order
+	// OrderBy is a direction to order the results by.
+	Order Order
+
+	// OrderBy is a list of fields to order the results by.
 	OrderBy []string
-	Offset  int
-	Limit   int
+
+	// Offset is the number of results to skip before returning results.
+	Offset int
+
+	// Limit is the maximum number of results to return.
+	Limit int
 }
 
+// QueryOption represents an option that can be applied to a query.
 type QueryOption interface {
 	Apply(*Query)
 }
@@ -48,7 +57,7 @@ type AlertQuery struct {
 	Filter AlertFilter
 }
 
-func NewAlertQuery(filter AlertFilter, ops ...QueryOption) *AlertQuery {
+func NewAlertQuery(filter AlertFilter, ops ...QueryOption) AlertQuery {
 	q := AlertQuery{
 		Filter: filter,
 	}
@@ -57,5 +66,22 @@ func NewAlertQuery(filter AlertFilter, ops ...QueryOption) *AlertQuery {
 		op.Apply(&q.Query)
 	}
 
-	return &q
+	return q
+}
+
+type SilenceQuery struct {
+	Query
+	Filter SilenceFilter
+}
+
+func NewSilenceQuery(filter SilenceFilter, ops ...QueryOption) SilenceQuery {
+	q := SilenceQuery{
+		Filter: filter,
+	}
+
+	for _, op := range ops {
+		op.Apply(&q.Query)
+	}
+
+	return q
 }

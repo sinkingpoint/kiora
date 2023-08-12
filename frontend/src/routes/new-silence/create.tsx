@@ -57,6 +57,7 @@ const checkFormValidity = () => {
 };
 
 interface CreatePageProps {
+	// onPreview is called when the user clicks the preview button, with the current state of the form.
 	onPreview: (p: PreviewPageProps) => void;
 }
 
