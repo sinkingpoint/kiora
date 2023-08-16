@@ -18,7 +18,7 @@ func TestKioraClusterAlerts(t *testing.T) {
 
 	nodes := StartKioraCluster(t, 3)
 
-	nodes[0].SendAlert(t, context.TODO(), dummyAlert())
+	nodes[0].SendAlert(context.TODO(), dummyAlert())
 
 	// Wait a bit for the gossip to settle.
 	time.Sleep(1 * time.Second)
@@ -45,7 +45,7 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 
 	nodes := StartKioraCluster(t, 3)
 	for i := range nodes {
-		nodes[i].SendAlert(t, context.TODO(), alert)
+		nodes[i].SendAlert(context.TODO(), alert)
 	}
 
 	// Wait a bit for the gossip to settle.
@@ -73,7 +73,7 @@ func TestClusterAlertOnlySentOnce(t *testing.T) {
 
 	// Apply the alert _a second time_ to test deduplication logic.
 	for i := range nodes {
-		nodes[i].SendAlert(t, context.TODO(), alert)
+		nodes[i].SendAlert(context.TODO(), alert)
 	}
 
 	// Wait for the gossip to settle.
@@ -102,16 +102,16 @@ func TestAcknowledgementGetsRegistered(t *testing.T) {
 	// Send an alert.
 	alert := dummyAlert()
 	nodes := StartKioraCluster(t, 3)
-	nodes[0].SendAlert(t, context.TODO(), alert)
+	nodes[0].SendAlert(context.TODO(), alert)
 
 	time.Sleep(2 * time.Second)
 
 	// Make sure the alert exists.
-	alerts := nodes[0].GetAlerts(t, context.TODO())
+	alerts := nodes[0].GetAlerts(context.TODO())
 	require.Len(t, alerts, 1)
 
 	// Send an acknowledgement for that alert.
-	nodes[0].SendAlertAcknowledgement(t, context.TODO(), ackRequest{
+	nodes[0].SendAlertAcknowledgement(context.TODO(), ackRequest{
 		AlertAcknowledgement: model.AlertAcknowledgement{
 			Creator: "test_creator",
 			Comment: "test_comment",
@@ -122,7 +122,7 @@ func TestAcknowledgementGetsRegistered(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Get the alerts again and make sure our acknowledgement is there.
-	alerts = nodes[0].GetAlerts(t, context.TODO())
+	alerts = nodes[0].GetAlerts(context.TODO())
 	require.Len(t, alerts, 1)
 
 	require.NotNil(t, alerts[0].Acknowledgement)
@@ -149,17 +149,17 @@ func TestSilencesSilence(t *testing.T) {
 	nodes := StartKioraCluster(t, 3)
 
 	// Send a silence.
-	nodes[0].SendSilence(t, context.TODO(), silence)
+	nodes[0].SendSilence(context.TODO(), silence)
 	time.Sleep(2 * time.Second)
 
 	// Send in an alert that shouldn't be silenced.
-	nodes[0].SendAlert(t, context.TODO(), nonSilencedAlert)
+	nodes[0].SendAlert(context.TODO(), nonSilencedAlert)
 	// Send an alert that should be silenced.
-	nodes[0].SendAlert(t, context.TODO(), silencedAlert)
+	nodes[0].SendAlert(context.TODO(), silencedAlert)
 	time.Sleep(2 * time.Second)
 
 	// Make sure the alert exists.
-	alerts := nodes[0].GetAlerts(t, context.TODO())
+	alerts := nodes[0].GetAlerts(context.TODO())
 	require.Len(t, alerts, 2)
 
 	foundSilenced := 0
@@ -198,15 +198,15 @@ func TestSilencesSilenceAfterAlert(t *testing.T) {
 	silence := dummySilence()
 
 	nodes := StartKioraCluster(t, 3)
-	nodes[0].SendAlert(t, context.TODO(), alert)
+	nodes[0].SendAlert(context.TODO(), alert)
 	time.Sleep(2 * time.Second)
 
 	// Send a silence.
-	nodes[0].SendSilence(t, context.TODO(), silence)
+	nodes[0].SendSilence(context.TODO(), silence)
 	time.Sleep(2 * time.Second)
 
 	// Make sure the alert exists and is silenced.
-	alerts := nodes[0].GetAlerts(t, context.TODO())
+	alerts := nodes[0].GetAlerts(context.TODO())
 	require.Len(t, alerts, 1)
 	require.Equal(t, model.AlertStatusSilenced, alerts[0].Status)
 }

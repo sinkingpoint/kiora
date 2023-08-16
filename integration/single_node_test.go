@@ -13,7 +13,7 @@ import (
 // Test that Kiora doesn't immediately exit.
 func TestKioraStart(t *testing.T) {
 	initT(t)
-	kiora := NewKioraInstance().Start(t)
+	kiora := NewKioraInstance(t).Start()
 	time.Sleep(1 * time.Second)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -26,11 +26,11 @@ func TestKioraStart(t *testing.T) {
 func TestKioraAlertPost(t *testing.T) {
 	initT(t)
 
-	kiora := NewKioraInstance().Start(t)
+	kiora := NewKioraInstance(t).Start()
 
 	// Send a bunch of the same alert.
 	for i := 0; i < 50; i++ {
-		kiora.SendAlert(t, context.TODO(), dummyAlert())
+		kiora.SendAlert(context.TODO(), dummyAlert())
 	}
 
 	// Sleep a bit to apply the alert.
@@ -46,22 +46,22 @@ func TestKioraAlertPost(t *testing.T) {
 func TestKioraResolveResends(t *testing.T) {
 	initT(t)
 
-	kiora := NewKioraInstance().Start(t)
+	kiora := NewKioraInstance(t).Start()
 
 	alert := dummyAlert()
 	resolved := dummyAlert()
 	resolved.Status = model.AlertStatusResolved
 
-	kiora.SendAlert(t, context.Background(), alert)
+	kiora.SendAlert(context.Background(), alert)
 	time.Sleep(1 * time.Second)
 	require.Equal(t, 1, strings.Count(kiora.Stdout(), "foo"))
 
-	kiora.SendAlert(t, context.Background(), resolved)
+	kiora.SendAlert(context.Background(), resolved)
 	time.Sleep(1 * time.Second)
 	require.Contains(t, kiora.stdout.String(), "resolved")
 	require.Equal(t, 2, strings.Count(kiora.Stdout(), "foo"))
 
-	kiora.SendAlert(t, context.Background(), alert)
+	kiora.SendAlert(context.Background(), alert)
 	time.Sleep(1 * time.Second)
 	require.Equal(t, 3, strings.Count(kiora.Stdout(), "foo"))
 }

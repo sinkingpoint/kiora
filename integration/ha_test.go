@@ -28,7 +28,7 @@ func TestFailover(t *testing.T) {
 
 	for len(nodes) > 0 {
 		for i := range nodes {
-			nodes[i].SendAlert(t, context.TODO(), alert)
+			nodes[i].SendAlert(context.TODO(), alert)
 		}
 
 		// wait a bit for the gossip to settle.
@@ -56,7 +56,7 @@ func TestFailover(t *testing.T) {
 
 		// resolve the alert so it can fire again.
 		for i := range nodes {
-			nodes[i].SendAlert(t, context.TODO(), resolvedAlert)
+			nodes[i].SendAlert(context.TODO(), resolvedAlert)
 		}
 	}
 }

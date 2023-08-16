@@ -13,13 +13,13 @@ import (
 func TestGrouping(t *testing.T) {
 	initT(t)
 
-	k := NewKioraInstance().WithConfig(t, `digraph config {
+	k := NewKioraInstance(t).WithConfig(`digraph config {
 		wait_1s [type="group_wait" duration="1s"];
 		group_by_alertname [type="group_labels" labels="alertname"];
 		console [type="stdout"];
 
 		alerts -> group_by_alertname -> wait_1s -> console;
-	}`).Start(t)
+	}`).Start()
 
 	defer func() {
 		require.NoError(t, k.Stop())
@@ -47,8 +47,8 @@ func TestGrouping(t *testing.T) {
 
 	require.NoError(t, alert2.Materialise())
 
-	k.SendAlert(t, context.TODO(), alert1)
-	k.SendAlert(t, context.TODO(), alert2)
+	k.SendAlert(context.TODO(), alert1)
+	k.SendAlert(context.TODO(), alert2)
 
 	// The alert should be delayed by the group_wait, so neither alert should have come through yet.
 	require.NotContains(t, k.Stdout(), "bar")

@@ -31,6 +31,8 @@ type ackRequest struct {
 
 // KioraInstance wraps an instance of Kiora started as a separate process as a black box.
 type KioraInstance struct {
+	t *testing.T
+
 	// The cluster name of this instance.
 	name string
 
@@ -63,8 +65,9 @@ type KioraInstance struct {
 }
 
 // NewKioraInstance constructs a new KioraInstance that will start a Kiora run with the given CLI args.
-func NewKioraInstance(args ...string) *KioraInstance {
+func NewKioraInstance(t *testing.T, args ...string) *KioraInstance {
 	return &KioraInstance{
+		t:           t,
 		args:        args,
 		exitChannel: make(chan error),
 		configFile:  "../testdata/kiora.dot",
@@ -78,17 +81,17 @@ func (k *KioraInstance) WithName(name string) *KioraInstance {
 	return k
 }
 
-func (k *KioraInstance) WithConfig(t *testing.T, config string) *KioraInstance {
-	t.Helper()
+func (k *KioraInstance) WithConfig(config string) *KioraInstance {
+	k.t.Helper()
 	file, err := os.CreateTemp("", "")
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
-	t.Cleanup(func() {
+	k.t.Cleanup(func() {
 		file.Close()
 	})
 
 	_, err = file.WriteString(config)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	k.configFile = file.Name()
 	return k
@@ -100,18 +103,18 @@ func (k *KioraInstance) WithConfigFile(configFile string) *KioraInstance {
 }
 
 // Start actually executes the Kiora command, running it in a background go routine.
-func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
-	t.Helper()
+func (k *KioraInstance) Start() *KioraInstance {
+	k.t.Helper()
 	name := kioraInstanceName()
 	if k.name == "" {
 		k.name = name
 	}
 
 	httpPort, err := getRandomPort()
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	clusterPort, err := getRandomPort()
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	args := append([]string{
 		"run",
@@ -132,32 +135,33 @@ func (k *KioraInstance) Start(t *testing.T) *KioraInstance {
 	k.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	// Setup a cleanup job that stops the instance, and removes the data directory.
-	t.Cleanup(func() {
-		t.Logf("Name: %q Stderr: \n%s", k.name, k.Stderr())
-		t.Logf("Name: %q Stdout: \n%s", k.name, k.Stdout())
+	k.t.Cleanup(func() {
+		k.t.Logf("Name: %q Stderr: \n%s", k.name, k.Stderr())
+		k.t.Logf("Name: %q Stdout: \n%s", k.name, k.Stdout())
 		if !k.shutdown {
-			require.NoError(t, k.Stop())
+			require.NoError(k.t, k.Stop())
 		}
-		require.NoError(t, os.RemoveAll("../artifacts/test/"+name))
+		require.NoError(k.t, os.RemoveAll("../artifacts/test/"+name))
 	})
 
 	go func() {
 		k.exitChannel <- k.cmd.Run()
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// 20s is arbitrary here, long enough that an overloaded system wont fail, short enough to catch most errors.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	require.NoError(t, k.WaitTillUp(t, ctx))
+	require.NoError(k.t, k.WaitTillUp(ctx))
 
 	return k
 }
 
-func (k *KioraInstance) IsUp(t *testing.T, ctx context.Context) bool {
-	t.Helper()
+func (k *KioraInstance) IsUp(ctx context.Context) bool {
+	k.t.Helper()
 	url := k.GetHTTPURL("/")
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	resp, err := http.DefaultClient.Do(req)
 	if resp != nil && resp.Body != nil {
@@ -166,13 +170,13 @@ func (k *KioraInstance) IsUp(t *testing.T, ctx context.Context) bool {
 	return err == nil
 }
 
-func (k *KioraInstance) WaitTillUp(t *testing.T, ctx context.Context) error {
-	t.Helper()
+func (k *KioraInstance) WaitTillUp(ctx context.Context) error {
+	k.t.Helper()
 	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
 		case <-ticker.C:
-			if k.IsUp(t, ctx) {
+			if k.IsUp(ctx) {
 				return nil
 			}
 		case <-ctx.Done():
@@ -221,67 +225,67 @@ func (k *KioraInstance) WaitForExit(ctx context.Context) error {
 	}
 }
 
-func (k *KioraInstance) SendAlert(t *testing.T, ctx context.Context, alert model.Alert) {
-	t.Helper()
+func (k *KioraInstance) SendAlert(ctx context.Context, alert model.Alert) {
+	k.t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/alerts")
 
 	alertBytes, err := json.Marshal([]model.Alert{alert})
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(alertBytes))
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	resp.Body.Close()
 
-	require.Equal(t, http.StatusAccepted, resp.StatusCode, "body: %s", string(body))
+	require.Equal(k.t, http.StatusAccepted, resp.StatusCode, "body: %s", string(body))
 }
 
-func (k *KioraInstance) SendAlertAcknowledgement(t *testing.T, ctx context.Context, ack ackRequest) {
-	t.Helper()
+func (k *KioraInstance) SendAlertAcknowledgement(ctx context.Context, ack ackRequest) {
+	k.t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/alerts/ack")
 
 	ackBytes, err := json.Marshal(ack)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(ackBytes))
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	resp.Body.Close()
 
-	require.Equal(t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
+	require.Equal(k.t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
 }
 
-func (k *KioraInstance) SendSilence(t *testing.T, ctx context.Context, silence model.Silence) {
-	t.Helper()
+func (k *KioraInstance) SendSilence(ctx context.Context, silence model.Silence) {
+	k.t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/silences")
 
 	silenceBytes, err := json.Marshal(silence)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 
 	resp, err := http.Post(requestURL, "application/json", bytes.NewReader(silenceBytes))
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	resp.Body.Close()
 
-	require.Equal(t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
+	require.Equal(k.t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
 }
 
-func (k *KioraInstance) GetAlerts(t *testing.T, ctx context.Context) []model.Alert {
-	t.Helper()
+func (k *KioraInstance) GetAlerts(ctx context.Context) []model.Alert {
+	k.t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/alerts")
 	resp, err := http.Get(requestURL)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	body, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	resp.Body.Close()
 
-	require.Equal(t, http.StatusOK, resp.StatusCode, "body: %s", string(body))
+	require.Equal(k.t, http.StatusOK, resp.StatusCode, "body: %s", string(body))
 	alerts := []model.Alert{}
 	err = json.Unmarshal(body, &alerts)
-	require.NoError(t, err)
+	require.NoError(k.t, err)
 	return alerts
 }
 
@@ -321,12 +325,12 @@ func StartKioraCluster(t *testing.T, numNodes int) []*KioraInstance {
 	t.Helper()
 
 	// Start a leader node, telling it to bootstrap the cluster.
-	leader := NewKioraInstance().WithName("node-0").Start(t)
+	leader := NewKioraInstance(t).WithName("node-0").Start()
 
 	// Start n-1 instances.
 	nodes := []*KioraInstance{}
 	for i := 1; i < numNodes; i++ {
-		node := NewKioraInstance("--cluster.bootstrap-peers", leader.GetClusterHost()).WithName(fmt.Sprintf("node-%d", i)).Start(t)
+		node := NewKioraInstance(t, "--cluster.bootstrap-peers", leader.GetClusterHost()).WithName(fmt.Sprintf("node-%d", i)).Start()
 		nodes = append(nodes, node)
 	}
 

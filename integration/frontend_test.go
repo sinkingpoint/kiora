@@ -12,7 +12,7 @@ import (
 func TestFrontendIsEmbedded(t *testing.T) {
 	initT(t)
 
-	kiora := NewKioraInstance().Start(t)
+	kiora := NewKioraInstance(t).Start()
 	time.Sleep(1 * time.Second)
 
 	resp, err := http.Get(kiora.GetHTTPURL("/"))
