@@ -1,8 +1,6 @@
 package model
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -50,31 +48,17 @@ func (s *Silence) validate() error {
 	return nil
 }
 
-func (s *Silence) UnmarshalJSON(b []byte) error {
-	rawSilence := struct {
-		ID        string    `json:"id"`
-		Creator   string    `json:"creator"`
-		Comment   string    `json:"comment"`
-		Matchers  []Matcher `json:"matchers"`
-		StartTime time.Time `json:"startsAt"`
-		EndTime   time.Time `json:"endsAt"`
-	}{}
-
-	decoder := json.NewDecoder(bytes.NewReader(b))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&rawSilence); err != nil {
-		return errors.Wrap(err, "failed to unmarshal silence")
+func NewSilence(creator, comment string, matchers []Matcher, startTime, endTime time.Time) (Silence, error) {
+	silence := Silence{
+		ID:        uuid.New().String(),
+		Creator:   creator,
+		Comment:   comment,
+		Matchers:  matchers,
+		StartTime: startTime,
+		EndTime:   endTime,
 	}
 
-	s.ID = uuid.New().String()
-	s.Creator = rawSilence.Creator
-	s.Comment = rawSilence.Comment
-	s.Matchers = rawSilence.Matchers
-	s.StartTime = rawSilence.StartTime
-	s.EndTime = rawSilence.EndTime
-
-	return s.validate()
+	return silence, silence.validate()
 }
 
 func (s *Silence) IsActive() bool {

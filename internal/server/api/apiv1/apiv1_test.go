@@ -362,6 +362,12 @@ func TestGetSilencesMatches(t *testing.T) {
 			matchers: []string{"instance=~test2"},
 			expected: []int{3},
 		},
+		{
+			// Tests that a matcher that matches a regex returns the regex silence, but _not_ the non regex silences.
+			name:     "test match instance regex",
+			matchers: []string{"__id__=test4"},
+			expected: []int{3},
+		},
 	}
 
 	for _, tt := range tests {

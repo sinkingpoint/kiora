@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -64,4 +65,15 @@ func TestKioraResolveResends(t *testing.T) {
 	kiora.SendAlert(context.Background(), alert)
 	time.Sleep(1 * time.Second)
 	require.Equal(t, 3, strings.Count(kiora.Stdout(), "foo"))
+}
+
+func TestGetSilence(t *testing.T) {
+	initT(t)
+	instance := NewKioraInstance(t).Start()
+
+	silence := instance.SendSilence(context.Background(), dummySilence())
+	time.Sleep(1 * time.Second)
+
+	require.Len(t, instance.GetSilences(context.Background(), []string{}), 1)
+	require.Len(t, instance.GetSilences(context.Background(), []string{fmt.Sprintf("__id__=%s", silence.ID)}), 1)
 }

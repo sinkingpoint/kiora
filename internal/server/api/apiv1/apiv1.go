@@ -328,12 +328,12 @@ func (a *apiv1) PostSilences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	silence := model.Silence{
-		Creator:   silenceBody.Creator,
-		Comment:   silenceBody.Comment,
-		StartTime: silenceBody.StartsAt,
-		EndTime:   silenceBody.EndsAt,
-		Matchers:  make([]model.Matcher, len(silenceBody.Matchers)),
+	silence, err := model.NewSilence(silenceBody.Creator, silenceBody.Comment, make([]model.Matcher, len(silenceBody.Matchers)), silenceBody.StartsAt, silenceBody.EndsAt)
+	if err != nil {
+		a.logger.Debug().Err(err).Msg("failed to parse silence")
+		span.SetStatus(codes.Error, err.Error())
+		http.Error(w, fmt.Sprintf("failed to parse silence: %q", err.Error()), http.StatusBadRequest)
+		return
 	}
 
 	for i, matcher := range silenceBody.Matchers {
@@ -346,7 +346,7 @@ func (a *apiv1) PostSilences(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.api.PostSilence(r.Context(), silence); err != nil {
-		a.logger.Debug().Err(err).Msg("failed to broadcast alert acknowledgment")
+		a.logger.Debug().Err(err).Msg("failed to post silence")
 		span.SetStatus(codes.Error, err.Error())
 		http.Error(w, fmt.Sprintf("failed to post silence: %q", err.Error()), http.StatusInternalServerError)
 		return
@@ -386,6 +386,10 @@ func (a *apiv1) GetSilences(w http.ResponseWriter, r *http.Request, params GetSi
 				queries = append(queries, query.Matcher(matcher))
 			}
 		}
+	}
+
+	if len(queries) == 0 {
+		queries = append(queries, query.MatchAll())
 	}
 
 	order := ""

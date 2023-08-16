@@ -32,7 +32,6 @@ func dummyAlert() model.Alert {
 
 func dummySilence() model.Silence {
 	return model.Silence{
-		ID:        "foo",
 		StartTime: time.Now(),
 		EndTime:   time.Now().Add(time.Hour),
 		Matchers: []model.Matcher{

@@ -257,7 +257,7 @@ func (k *KioraInstance) SendAlertAcknowledgement(ctx context.Context, ack ackReq
 	require.Equal(k.t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
 }
 
-func (k *KioraInstance) SendSilence(ctx context.Context, silence model.Silence) {
+func (k *KioraInstance) SendSilence(ctx context.Context, silence model.Silence) model.Silence {
 	k.t.Helper()
 	requestURL := k.GetHTTPURL("/api/v1/silences")
 
@@ -271,6 +271,11 @@ func (k *KioraInstance) SendSilence(ctx context.Context, silence model.Silence) 
 	resp.Body.Close()
 
 	require.Equal(k.t, http.StatusCreated, resp.StatusCode, "body: %s", string(body))
+
+	silence = model.Silence{}
+	require.NoError(k.t, json.Unmarshal(body, &silence))
+
+	return silence
 }
 
 func (k *KioraInstance) GetAlerts(ctx context.Context) []model.Alert {
@@ -287,6 +292,36 @@ func (k *KioraInstance) GetAlerts(ctx context.Context) []model.Alert {
 	err = json.Unmarshal(body, &alerts)
 	require.NoError(k.t, err)
 	return alerts
+}
+
+func (k *KioraInstance) GetSilences(ctx context.Context, matchers []string) []model.Silence {
+	k.t.Helper()
+
+	requestURL := k.GetHTTPURL("/api/v1/silences")
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	require.NoError(k.t, err)
+
+	if len(matchers) > 0 {
+		q := request.URL.Query()
+		for _, matcher := range matchers {
+			q.Add("matchers", matcher)
+		}
+
+		request.URL.RawQuery = q.Encode()
+	}
+
+	resp, err := http.DefaultClient.Do(request)
+	require.NoError(k.t, err)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(k.t, err)
+
+	resp.Body.Close()
+
+	silences := []model.Silence{}
+	require.NoError(k.t, json.Unmarshal(body, &silences))
+
+	return silences
 }
 
 // kioraInstanceName returns a 16 character long random string that will be used as the name of a KioraInstance.

@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
@@ -53,7 +54,9 @@ func (n *bufferDB) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return n.Flush(ctx)
 		case <-ticker.C:
-			n.Flush(ctx)
+			if err := n.Flush(ctx); err != nil {
+				log.Err(err).Msg("failed to flush buffers")
+			}
 		}
 	}
 }
@@ -112,9 +115,12 @@ func (b *bufferDB) flushAlerts(ctx context.Context) error {
 	ctx, span := otel.Tracer("").Start(ctx, "bufferDB.flushAlerts")
 	defer span.End()
 
-	if err := b.db.StoreAlerts(ctx, b.alertsBuffer...); err != nil {
-		return errors.Wrap(err, "failed to store alerts")
+	if len(b.alertsBuffer) > 0 {
+		if err := b.db.StoreAlerts(ctx, b.alertsBuffer...); err != nil {
+			return errors.Wrap(err, "failed to store alerts")
+		}
 	}
+
 	b.alertsBuffer = b.alertsBuffer[:0]
 	return nil
 }
@@ -125,9 +131,12 @@ func (b *bufferDB) flushSilences(ctx context.Context) error {
 	ctx, span := otel.Tracer("").Start(ctx, "bufferDB.flushSilences")
 	defer span.End()
 
-	if err := b.db.StoreSilences(ctx, b.silencesBuffer...); err != nil {
-		return err
+	if len(b.silencesBuffer) > 0 {
+		if err := b.db.StoreSilences(ctx, b.silencesBuffer...); err != nil {
+			return err
+		}
 	}
+
 	b.silencesBuffer = b.silencesBuffer[:0]
 	return nil
 }
