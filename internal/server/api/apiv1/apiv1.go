@@ -127,7 +127,7 @@ func (a *apiv1) PostAlerts(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func constructQueryOpts(limit *int, offset *int, sort *[]string, order string) ([]query.QueryOption, error) {
+func constructQueryOpts(limit, offset *int, sort *[]string, order string) ([]query.QueryOption, error) {
 	opts := []query.QueryOption{}
 
 	if limit != nil {

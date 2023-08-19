@@ -7,7 +7,7 @@ lint-backend:
 	golangci-lint run ./...
 
 lint-frontend:
-	cd frontend && npm run lint.
+	cd frontend && npm run lint
 
 lint: lint-backend lint-frontend
 

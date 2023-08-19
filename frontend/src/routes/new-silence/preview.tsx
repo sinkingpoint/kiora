@@ -56,8 +56,8 @@ const PreviewPage = ({ duration, creator, comment, matchers }: PreviewPageProps)
 			<span>Invalid duration</span>
 		);
 	
-	const filterSpans = matchers.map((filter, i) => {
-		return <LabelMatcherCard matcher={filter} />
+	const filterSpans = matchers.map((filter) => {
+		return <LabelMatcherCard key={filter} matcher={filter} />
 	});
 
 	return (

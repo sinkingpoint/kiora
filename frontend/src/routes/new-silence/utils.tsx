@@ -1,7 +1,4 @@
 // getSilenceEnd takes a raw duration string and returns a Date object
-
-import { Matcher } from "../../api";
-
 // representing the end of the silence, if the duration is valid. Otherwise, it returns null.
 export const getSilenceEnd = (rawDuration: string): Date => {
 	const durationMatches = rawDuration.match(/^([0-9]+)([mhdw])$/);

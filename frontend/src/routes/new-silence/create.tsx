@@ -1,6 +1,5 @@
 import { h, Fragment } from "preact";
 import Button from "../../components/button";
-import style from "./styles.css";
 import { ChangeEvent, useState } from "preact/compat";
 import { PreviewPageProps } from "./preview";
 import { getSilenceEnd } from "./utils";
@@ -62,13 +61,13 @@ const CreatePage = ({ onPreview }: CreatePageProps) => {
 		);
 
 	// filterSpans is an array of spans that display the label matchers.
-	const filterSpans = matchers.map((filter, i) => {
-		return <LabelMatcherCard matcher={filter} onDelete={() => {
+	const filterSpans = matchers.map((matcher, i) => {
+		return <LabelMatcherCard key={matcher} matcher={matcher} onDelete={() => {
 			const newFilters = [...matchers];
 			newFilters.splice(i, 1);
 			setFilterInURL(newFilters);
 			setMatchers(newFilters);
-		}}/>
+		}} />
 	});
 
 	return (

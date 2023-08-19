@@ -11,9 +11,8 @@ interface LoaderProps {
 const Loader = ({ loader, inputs, children }: LoaderProps) => {
 	const [loaded, setLoaded] = useState(false);
 
-	let effectInputs: Inputs = [loader, loaded, setLoaded];
-	if(inputs) {
-		effectInputs = [...effectInputs, ...inputs];
+	if(!inputs) {
+		inputs = [];
 	}
 
 	useEffect(() => {
@@ -21,7 +20,7 @@ const Loader = ({ loader, inputs, children }: LoaderProps) => {
 			loader();
 			setLoaded(true);
 		}
-	}, effectInputs);
+	}, [loader, loaded, setLoaded, ...inputs]);
 
 	return loaded ? children : <Spinner />;
 };
