@@ -1,4 +1,4 @@
-package nopfilter
+package nop
 
 import (
 	"context"

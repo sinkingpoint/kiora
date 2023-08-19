@@ -1,4 +1,4 @@
-package durationfilter_test
+package duration_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/internal/stubs"
-	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/durationfilter"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/duration"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/require"
 )
@@ -59,7 +59,7 @@ func TestDurationFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filter, err := durationfilter.NewDurationFilter(tt.attrs)
+			filter, err := duration.NewDurationFilter(tt.attrs)
 			require.NoError(t, err)
 			if success := filter.Filter(context.Background(), &tt.silence); success != tt.expectedSuccess {
 				t.Errorf("expected success: %t, but we didn't get it", tt.expectedSuccess)

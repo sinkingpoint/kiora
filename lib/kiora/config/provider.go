@@ -9,6 +9,9 @@ import (
 
 type NotifierName string
 
+// Tenant represents a logical grouping of alerts/silences that share limits.
+type Tenant string
+
 // DefaultGroupWait is the default amount of time that alerts sit around waiting for more alerts to be added to the group.
 // This is pretty arbitrary, but increasing it will increase the amount of time that alerts are delayed, while sending fewer
 // notifications. Decreasing it will decrease the amount of time that alerts are delayed, but will send more notifications.
@@ -50,6 +53,10 @@ type Config interface {
 	// ValidateData returns an error that can be displayed to the user if the
 	// data is invalid according to whatever rules the config has.
 	ValidateData(ctx context.Context, data Fielder) error
+
+	// GetTenant returns the associated tenant for the given fielder, or an error if it
+	// cannot be ascertained. If multi-tenancy is _not_ enabled, then both the return values should be empty.
+	GetTenant(ctx context.Context, data Fielder) (Tenant, error)
 }
 
 // NotifierSettings represents a Notifier with additional settings. Such as grouping, and rate limiting settings.

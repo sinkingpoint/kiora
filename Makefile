@@ -4,7 +4,7 @@ test:
 	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
 
 lint-backend:
-	golangci-lint run ./..
+	golangci-lint run ./...
 
 lint-frontend:
 	cd frontend && npm run lint.

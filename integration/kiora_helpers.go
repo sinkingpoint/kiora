@@ -66,6 +66,7 @@ type KioraInstance struct {
 
 // NewKioraInstance constructs a new KioraInstance that will start a Kiora run with the given CLI args.
 func NewKioraInstance(t *testing.T, args ...string) *KioraInstance {
+	t.Helper()
 	return &KioraInstance{
 		t:           t,
 		args:        args,

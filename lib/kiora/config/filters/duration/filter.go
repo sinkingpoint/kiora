@@ -1,4 +1,4 @@
-package durationfilter
+package duration
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package regexfilter
+package regex
 
 import (
 	"context"

@@ -106,7 +106,6 @@ func (c *ConfigFile) validateData(ctx context.Context, leaf string, data config.
 	return allErrs
 }
 
-// AlertAcknowledgementIsValid returns true if we can find a path to the acks node from the roots of the graph.
 func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) error {
 	switch data.(type) {
 	case *model.AlertAcknowledgement:
@@ -116,6 +115,10 @@ func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) erro
 	default:
 		panic("BUG: unhandled data validation")
 	}
+}
+
+func (c *ConfigFile) GetTenant(ctx context.Context, data config.Fielder) (config.Tenant, error) {
+	return "", nil
 }
 
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.

@@ -106,6 +106,21 @@ func (mr *MockConfigMockRecorder) GetNotifiersForAlert(ctx, alert interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotifiersForAlert", reflect.TypeOf((*MockConfig)(nil).GetNotifiersForAlert), ctx, alert)
 }
 
+// GetTenant mocks base method.
+func (m *MockConfig) GetTenant(ctx context.Context, data config.Fielder) (config.Tenant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTenant", ctx, data)
+	ret0, _ := ret[0].(config.Tenant)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTenant indicates an expected call of GetTenant.
+func (mr *MockConfigMockRecorder) GetTenant(ctx, data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTenant", reflect.TypeOf((*MockConfig)(nil).GetTenant), ctx, data)
+}
+
 // ValidateData mocks base method.
 func (m *MockConfig) ValidateData(ctx context.Context, data config.Fielder) error {
 	m.ctrl.T.Helper()

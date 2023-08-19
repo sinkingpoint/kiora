@@ -1,10 +1,10 @@
-package regexfilter_test
+package regex_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/regexfilter"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/regex"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +54,7 @@ func TestRegexFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			filter, err := regexfilter.NewRegexFilter(map[string]string{
+			filter, err := regex.NewRegexFilter(map[string]string{
 				"field": tt.Label,
 				"regex": tt.Regex,
 			})
