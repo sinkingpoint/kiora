@@ -6,7 +6,7 @@ import AlertCard from "../../components/alertcard";
 import Button from "../../components/button";
 import { getSilenceEnd } from "./utils";
 import { formatDate } from "../../utils/date";
-import { parseMatcher } from "../../components/labelmatchercard";
+import LabelMatcherCard, { parseMatcher } from "../../components/labelmatchercard";
 
 const MaxAlertsToDisplay = 20;
 
@@ -18,8 +18,8 @@ export interface PreviewPageProps {
 }
 
 const CreateSilence = ({ duration, creator, comment, matchers }: PreviewPageProps) => {
-	const startsAt = formatDate(new Date());
-	const endsAt = formatDate(getSilenceEnd(duration));
+	const startsAt = new Date().toISOString();
+	const endsAt = getSilenceEnd(duration).toISOString();
 
 	const modelMatchers = matchers.map((matcher) => parseMatcher(matcher));
 
@@ -45,24 +45,45 @@ const PreviewPage = ({ duration, creator, comment, matchers }: PreviewPageProps)
 		});
 	};
 
+	const endDate = getSilenceEnd(duration);
+	const end =
+		endDate !== null ? (
+			<span>
+				Ends at{" "}
+				{formatDate(endDate)}
+			</span>
+		) : (
+			<span>Invalid duration</span>
+		);
+	
+	const filterSpans = matchers.map((filter, i) => {
+		return <LabelMatcherCard matcher={filter} />
+	});
+
 	return (
 		<>
-			<table>
-				<tr>
-					<td>Duration:</td>
-					<td>{duration}</td>
-				</tr>
+			<div>
+				<label>Duration</label>
+			</div>
 
-				<tr>
-					<td>Creator:</td>
-					<td>{creator}</td>
-				</tr>
+			<div style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+				{duration} {end}
+			</div>
 
-				<tr>
-					<td>Comment:</td>
-					<td>{comment}</td>
-				</tr>
-			</table>
+			<div>
+				<label>Matchers</label>
+			</div>
+			<div style={{ flexWrap: "wrap" }}>{filterSpans}</div>
+
+			<div>
+				<label>Creator</label>
+			</div>
+			<div>{creator}</div>
+
+			<div>
+				<label>Comment</label>
+			</div>
+			<div>{creator}</div>
 
 			<div>
 				<Button

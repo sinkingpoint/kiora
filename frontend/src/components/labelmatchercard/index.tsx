@@ -37,7 +37,7 @@ export const parseMatcher = (matcher: string): Matcher | null => {
 
 export interface LabelMatcherCardProps {
     matcher: string;
-    onDelete: () => void;
+    onDelete?: () => void;
 }
 
 // LabelMatcher takes a matcher string and returns a span element that displays the matcher.
@@ -51,12 +51,15 @@ const LabelMatcherCard = ({matcher, onDelete}: LabelMatcherCardProps) => {
 		operator = isNegative ? "!=" : "=";
 	}
 
+	console.log(onDelete);
+	const canBeEdited = onDelete !== undefined;
+
 	return (
 		<span className={style["label-matcher"]}>
 			{label} {operator} {value}
-			<button type="button" onClick={onDelete} class={style["delete-label-button"]}>
+			{canBeEdited && <button type="button" onClick={onDelete} class={style["delete-label-button"]}>
 				🞫
-			</button>
+			</button>}
 		</span>
 	);
 };
