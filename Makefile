@@ -1,30 +1,28 @@
-.PHONY: test-backend lint-frontend lint-backend fmt-backend fmt-frontend lint fmt integration coverage ci build build-unchecked run run-cluster generate clean
+.PHONY: test-backend lint-frontend lint-backend fmt-backend fmt-frontend lint fmt integration ci build build-unchecked run run-cluster generate clean
 test:
 	mkdir -p artifacts/
 	go test -short -race -cover -coverprofile=artifacts/cover.out ./...
 
 lint-backend:
-	golangci-lint run ./...
+	golangci-lint run ./..
+
+lint-frontend:
+	cd frontend && npm run lint.
+
+lint: lint-backend lint-frontend
+
 fmt-backend:
 	go fmt ./...
 
-lint-frontend:
-	cd frontend && npm run lint
 fmt-frontend:
 	cd frontend && npm run prettier --write ./src
 
-lint: lint-backend lint-frontend
 fmt: fmt-backend fmt-frontend
 
 integration:
 	go test -count=1 ./integration
 
-coverage: test
-	go tool cover -html=artifacts/cover.out
-
 ci: fmt lint test
-
-build: build-frontend build-backend
 
 build-backend:
 	go build -o ./artifacts/tuku ./cmd/tuku
@@ -35,11 +33,7 @@ build-frontend:
 	rm -r ./internal/server/frontend/assets
 	cp -r ./frontend/build ./internal/server/frontend/assets
 
-run:
-	./artifacts/kiora -c ./testdata/kiora.dot
-
-run-cluster:
-	./testdata/run-cluster.sh
+build: build-frontend build-backend
 
 generate:
 	mockgen -source ./lib/kiora/kioradb/db.go > mocks/mock_kioradb/db.go

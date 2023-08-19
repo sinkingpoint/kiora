@@ -1,23 +1,29 @@
-import { useEffect, useState } from "preact/hooks";
+import { Inputs, useEffect, useState } from "preact/hooks";
 import Spinner from "../spinner";
 import { h } from "preact";
 
 interface LoaderProps {
 	loader: () => void;
-	done: JSX.Element;
+	inputs?: Inputs;
+	children?: JSX.Element;
 }
 
-const Loader = ({ loader, done }: LoaderProps) => {
+const Loader = ({ loader, inputs, children }: LoaderProps) => {
 	const [loaded, setLoaded] = useState(false);
+
+	let effectInputs: Inputs = [loader, loaded, setLoaded];
+	if(inputs) {
+		effectInputs = [...effectInputs, ...inputs];
+	}
 
 	useEffect(() => {
 		if (!loaded) {
 			loader();
 			setLoaded(true);
 		}
-	}, [loader, loaded, setLoaded]);
+	}, effectInputs);
 
-	return loaded ? done : <Spinner />;
+	return loaded ? children : <Spinner />;
 };
 
 export default Loader;

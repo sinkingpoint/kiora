@@ -34,36 +34,3 @@ export const getSilenceEnd = (rawDuration: string): Date => {
 
 	return now;
 };
-
-// parseMatcher takes a matcher string and returns a Matcher object if the string is valid.
-export const parseMatcher = (matcher: string): Matcher | null => {
-	const matcherMatches = matcher.match(/([a-zA-Z0-9_]+)(!=|!~|=~|=)"(.*)"/);
-	if (matcherMatches === null) {
-		return null;
-	}
-
-	const validOperators = ["=", "!=", "=~", "!~"];
-	const operator = matcherMatches[2];
-	if (!validOperators.includes(operator)) {
-		return null;
-	}
-
-	// If the operator is a regex operator, check that the regex is valid.
-	if (operator.includes("~")) {
-		try {
-			new RegExp(matcherMatches[3]);
-		} catch {
-			return null;
-		}
-	}
-
-	const isRegex = operator.includes("~");
-	const isNegative = operator.includes("!");
-
-	return {
-		label: matcherMatches[1],
-		value: matcherMatches[3],
-		isRegex,
-		isNegative,
-	};
-};

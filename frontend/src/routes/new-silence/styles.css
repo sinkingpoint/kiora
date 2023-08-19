@@ -1,18 +1,3 @@
-.label-matcher {
-	padding: 5px;
-	border: solid var(--border);
-	word-wrap: none;
-	white-space: nowrap;
-	margin-right: 5px;
-	margin-top: 5px;
-}
-
-.delete-label-button {
-	height: 100%;
-	background: inherit;
-	border: none;
-}
-
 .silence-form {
 	display: flex;
 	flex-direction: column;

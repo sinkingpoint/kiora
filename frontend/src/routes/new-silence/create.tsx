@@ -3,28 +3,9 @@ import Button from "../../components/button";
 import style from "./styles.css";
 import { ChangeEvent, useState } from "preact/compat";
 import { PreviewPageProps } from "./preview";
-import { getSilenceEnd, parseMatcher } from "./utils";
-
-// LabelMatcher takes a matcher string and returns a span element that displays the matcher.
-const LabelMatcher = (matcher: string, onDelete: () => void) => {
-	const { label, value, isRegex, isNegative } = parseMatcher(matcher);
-	let operator = "";
-
-	if (isRegex) {
-		operator = isNegative ? "!~" : "=~";
-	} else {
-		operator = isNegative ? "!=" : "=";
-	}
-
-	return (
-		<span className={style["label-matcher"]}>
-			{label} {operator} {value}
-			<button type="button" onClick={onDelete} class={style["delete-label-button"]}>
-				🞫
-			</button>
-		</span>
-	);
-};
+import { getSilenceEnd } from "./utils";
+import { formatDate } from "../../utils/date";
+import LabelMatcherCard, { parseMatcher } from "../../components/labelmatchercard";
 
 // setFilterInURL sets the filter query parameter in the URL to the given matchers.
 const setFilterInURL = (matchers: string[]) => {
@@ -74,13 +55,7 @@ const CreatePage = ({ onPreview }: CreatePageProps) => {
 		endDate !== null ? (
 			<span>
 				Ends at{" "}
-				{endDate.toLocaleString([], {
-					day: "numeric",
-					month: "short",
-					year: "numeric",
-					hour: "2-digit",
-					minute: "2-digit",
-				})}
+				{formatDate(endDate)}
 			</span>
 		) : (
 			<span>Invalid duration</span>
@@ -88,12 +63,12 @@ const CreatePage = ({ onPreview }: CreatePageProps) => {
 
 	// filterSpans is an array of spans that display the label matchers.
 	const filterSpans = matchers.map((filter, i) => {
-		return LabelMatcher(filter, () => {
+		return <LabelMatcherCard matcher={filter} onDelete={() => {
 			const newFilters = [...matchers];
 			newFilters.splice(i, 1);
 			setFilterInURL(newFilters);
 			setMatchers(newFilters);
-		});
+		}}/>
 	});
 
 	return (

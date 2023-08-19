@@ -4,7 +4,9 @@ import { Alert, DefaultService } from "../../api";
 import { useState } from "react";
 import AlertCard from "../../components/alertcard";
 import Button from "../../components/button";
-import { getSilenceEnd, parseMatcher } from "./utils";
+import { getSilenceEnd } from "./utils";
+import { formatDate } from "../../utils/date";
+import { parseMatcher } from "../../components/labelmatchercard";
 
 const MaxAlertsToDisplay = 20;
 
@@ -16,8 +18,8 @@ export interface PreviewPageProps {
 }
 
 const CreateSilence = ({ duration, creator, comment, matchers }: PreviewPageProps) => {
-	const startsAt = new Date().toISOString();
-	const endsAt = getSilenceEnd(duration).toISOString();
+	const startsAt = formatDate(new Date());
+	const endsAt = formatDate(getSilenceEnd(duration));
 
 	const modelMatchers = matchers.map((matcher) => parseMatcher(matcher));
 
@@ -71,9 +73,7 @@ const PreviewPage = ({ duration, creator, comment, matchers }: PreviewPageProps)
 				/>
 			</div>
 
-			<Loader
-				loader={fetchAffectedAlerts}
-				done={
+			<Loader loader={fetchAffectedAlerts}>
 					<>
 						<div>
 							<h2>
@@ -89,8 +89,7 @@ const PreviewPage = ({ duration, creator, comment, matchers }: PreviewPageProps)
 							)}
 						</div>
 					</>
-				}
-			/>
+			</Loader>
 		</>
 	);
 };
