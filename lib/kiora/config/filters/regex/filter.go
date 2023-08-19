@@ -2,12 +2,12 @@ package regex
 
 import (
 	"context"
-
-	"github.com/grafana/regexp"
+	"regexp"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 )
 
 func init() {
@@ -16,30 +16,18 @@ func init() {
 
 // RegexFilter is a filter that matches if the given alert a) has the given label and b) that label matches a regex.
 type RegexFilter struct {
-	Label string
-	Regex *regexp.Regexp
+	Label string         `config:"field" required:"true"`
+	Regex *regexp.Regexp `config:"regex" required:"true"`
 }
 
 func NewRegexFilter(attrs map[string]string) (config.Filter, error) {
-	field := attrs["field"]
-	if field == "" {
-		return nil, errors.New("expected `field` in regex filter")
+	delete(attrs, "type")
+	var regexFilter RegexFilter
+	if err := unmarshal.UnmarshalConfig(attrs, &regexFilter, unmarshal.UnmarshalOpts{DisallowUnknownFields: true}); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal regex filter")
 	}
 
-	regexStr := attrs["regex"]
-	if regexStr == "" {
-		return nil, errors.New("expected `regex` in regex filter")
-	}
-
-	regex, err := regexp.Compile(regexStr)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to compile regex")
-	}
-
-	return &RegexFilter{
-		Label: field,
-		Regex: regex,
-	}, nil
+	return &regexFilter, nil
 }
 
 func (r *RegexFilter) Type() string {

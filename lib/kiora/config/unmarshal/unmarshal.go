@@ -3,8 +3,10 @@ package unmarshal
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // UnmarshalOpts is a struct of the options that can be passed to UnmarshalConfig.
@@ -171,6 +173,26 @@ func unmarshalValue(valueStr string, v interface{}) error {
 	case *[]string:
 		strSlice := strings.Split(valueStr, ",")
 		*v = strSlice
+	case **regexp.Regexp:
+		regex, err := regexp.Compile(valueStr)
+		if err != nil {
+			return err
+		}
+
+		*v = regex
+	case *time.Duration, **time.Duration:
+		duration, err := time.ParseDuration(valueStr)
+		if err != nil {
+			return err
+		}
+
+		if v, ok := v.(*time.Duration); ok {
+			*v = duration
+		}
+
+		if v, ok := v.(**time.Duration); ok {
+			*v = &duration
+		}
 	default:
 		return fmt.Errorf("UnmarshalConfig: unsupported field type: %T", v)
 	}

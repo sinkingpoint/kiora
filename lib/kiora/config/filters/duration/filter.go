@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 )
 
 func init() {
@@ -13,42 +14,20 @@ func init() {
 }
 
 type DurationFilter struct {
-	Field string
-	Max   *time.Duration
-	Min   *time.Duration
+	Field string         `config:"field" required:"true"`
+	Max   *time.Duration `config:"max"`
+	Min   *time.Duration `config:"min"`
 }
 
 func NewDurationFilter(attrs map[string]string) (config.Filter, error) {
-	field := attrs["field"]
-	if field == "" {
-		return nil, fmt.Errorf("expected `field` in duration filter")
+	delete(attrs, "type")
+	var durationFilter DurationFilter
+
+	if err := unmarshal.UnmarshalConfig(attrs, &durationFilter, unmarshal.UnmarshalOpts{DisallowUnknownFields: true}); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal duration filter: %w", err)
 	}
 
-	durations := &DurationFilter{
-		Field: field,
-	}
-
-	minStr := attrs["min"]
-	if minStr != "" {
-		minDuration, err := time.ParseDuration(minStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse min duration: %w", err)
-		}
-
-		durations.Min = &minDuration
-	}
-
-	maxStr := attrs["max"]
-	if maxStr != "" {
-		maxDuration, err := time.ParseDuration(maxStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse max duration: %w", err)
-		}
-
-		durations.Max = &maxDuration
-	}
-
-	return durations, nil
+	return &durationFilter, nil
 }
 
 func (d *DurationFilter) Describe() string {
