@@ -32,8 +32,8 @@ const CreateSilence = ({ duration, creator, comment, matchers }: PreviewPageProp
 			creator,
 			comment,
 		},
-	}).then(() => {
-		window.location.href = "/";
+	}).then((response) => {
+		window.location.href = `/silences/${response.id}`;
 	});
 };
 
