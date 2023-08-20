@@ -75,17 +75,30 @@ func (s *Silence) Matches(l Labels) bool {
 	return true
 }
 
+func (s *Silence) Fields() map[string]any {
+	return map[string]any{
+		"__id__":        s.ID,
+		"__creator__":   s.Creator,
+		"__comment__":   s.Comment,
+		"__starts_at__": s.StartTime,
+		"__ends_at__":   s.EndTime,
+		"__duration__":  s.EndTime.Sub(s.StartTime),
+	}
+}
+
 func (s *Silence) Field(name string) (any, error) {
 	switch name {
-	case "creator":
+	case "__id__":
+		return s.ID, nil
+	case "__creator__":
 		return s.Creator, nil
-	case "comment":
+	case "__comment__":
 		return s.Comment, nil
-	case "startsAt":
+	case "__starts_at__":
 		return s.StartTime, nil
-	case "endsAt":
+	case "__ends_at__":
 		return s.EndTime, nil
-	case "duration":
+	case "__duration__":
 		if s.EndTime.IsZero() {
 			return time.Duration(math.MaxInt64), nil
 		}

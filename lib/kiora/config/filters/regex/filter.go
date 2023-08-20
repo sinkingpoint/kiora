@@ -2,7 +2,8 @@ package regex
 
 import (
 	"context"
-	"regexp"
+
+	"github.com/grafana/regexp"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"

@@ -1,4 +1,6 @@
 digraph config {
+    tenant_key = "{{ .service }}";
+
     dont_group [type="group_wait" duration="0s"];
     console [type="stdout"];
     alerts -> dont_group -> console;

@@ -3,10 +3,12 @@ package unmarshal
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
+
+	"github.com/grafana/regexp"
 )
 
 // UnmarshalOpts is a struct of the options that can be passed to UnmarshalConfig.
@@ -193,6 +195,13 @@ func unmarshalValue(valueStr string, v interface{}) error {
 		if v, ok := v.(**time.Duration); ok {
 			*v = &duration
 		}
+	case **template.Template:
+		tmpl, err := template.New("").Parse(valueStr)
+		if err != nil {
+			return err
+		}
+
+		*v = tmpl
 	default:
 		return fmt.Errorf("UnmarshalConfig: unsupported field type: %T", v)
 	}

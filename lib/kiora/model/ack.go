@@ -8,11 +8,18 @@ type AlertAcknowledgement struct {
 	Comment string `json:"comment"`
 }
 
+func (a *AlertAcknowledgement) Fields() map[string]any {
+	return map[string]any{
+		"__creator__": a.Creator,
+		"__comment__": a.Comment,
+	}
+}
+
 func (a *AlertAcknowledgement) Field(name string) (any, error) {
 	switch name {
-	case "creator":
+	case "__creator__":
 		return a.Creator, nil
-	case "comment":
+	case "__comment__":
 		return a.Comment, nil
 	default:
 		return "", fmt.Errorf("field %q doesn't exist", name)

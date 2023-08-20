@@ -106,21 +106,6 @@ func (mr *MockConfigMockRecorder) GetNotifiersForAlert(ctx, alert interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotifiersForAlert", reflect.TypeOf((*MockConfig)(nil).GetNotifiersForAlert), ctx, alert)
 }
 
-// GetTenant mocks base method.
-func (m *MockConfig) GetTenant(ctx context.Context, data config.Fielder) (config.Tenant, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTenant", ctx, data)
-	ret0, _ := ret[0].(config.Tenant)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetTenant indicates an expected call of GetTenant.
-func (mr *MockConfigMockRecorder) GetTenant(ctx, data interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTenant", reflect.TypeOf((*MockConfig)(nil).GetTenant), ctx, data)
-}
-
 // ValidateData mocks base method.
 func (m *MockConfig) ValidateData(ctx context.Context, data config.Fielder) error {
 	m.ctrl.T.Helper()
@@ -133,4 +118,42 @@ func (m *MockConfig) ValidateData(ctx context.Context, data config.Fielder) erro
 func (mr *MockConfigMockRecorder) ValidateData(ctx, data interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateData", reflect.TypeOf((*MockConfig)(nil).ValidateData), ctx, data)
+}
+
+// MockTenanter is a mock of Tenanter interface.
+type MockTenanter struct {
+	ctrl     *gomock.Controller
+	recorder *MockTenanterMockRecorder
+}
+
+// MockTenanterMockRecorder is the mock recorder for MockTenanter.
+type MockTenanterMockRecorder struct {
+	mock *MockTenanter
+}
+
+// NewMockTenanter creates a new mock instance.
+func NewMockTenanter(ctrl *gomock.Controller) *MockTenanter {
+	mock := &MockTenanter{ctrl: ctrl}
+	mock.recorder = &MockTenanterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTenanter) EXPECT() *MockTenanterMockRecorder {
+	return m.recorder
+}
+
+// GetTenant mocks base method.
+func (m *MockTenanter) GetTenant(ctx context.Context, data config.Fielder) (config.Tenant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTenant", ctx, data)
+	ret0, _ := ret[0].(config.Tenant)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTenant indicates an expected call of GetTenant.
+func (mr *MockTenanterMockRecorder) GetTenant(ctx, data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTenant", reflect.TypeOf((*MockTenanter)(nil).GetTenant), ctx, data)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
+	"text/template"
 
 	"github.com/awalterschulze/gographviz"
 	"github.com/hashicorp/go-multierror"
@@ -11,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
+	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
 	"go.opentelemetry.io/otel"
 )
@@ -22,6 +25,13 @@ const (
 )
 
 var _ = config.Config(&ConfigFile{})
+var _ = config.Tenanter(&ConfigFile{})
+
+// Opts is the set of options that can be passed to the config file as top level options in the graph.
+type Opts struct {
+	// TenantKey is a template that is used to generate the tenant for a given alert / silence.
+	TenantKey *template.Template `config:"tenant_key"`
+}
 
 // Link represents a connection between nodes, that may or may not have an attached filter.
 type Link struct {
@@ -30,8 +40,16 @@ type Link struct {
 }
 
 type ConfigFile struct {
-	nodes        map[string]config.Node
-	links        map[string][]Link
+	// opts is the set of options that were passed to the config file.
+	opts Opts
+
+	// nodes is a map of node name to node. This is used to look up nodes by name.
+	nodes map[string]config.Node
+
+	// links is a map of node name to a list of links that go out of that node.
+	links map[string][]Link
+
+	// reverseLinks is a map of node name to a list of links that go into that node, for backwards traversal.
 	reverseLinks map[string][]Link
 }
 
@@ -117,13 +135,10 @@ func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) erro
 	}
 }
 
-func (c *ConfigFile) GetTenant(ctx context.Context, data config.Fielder) (config.Tenant, error) {
-	return "", nil
-}
-
 // LoadConfigFile reads the given file, and parses it into a config, returning any parsing errors.
 func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 	conf := &ConfigFile{
+		opts:         Opts{},
 		nodes:        make(map[string]config.Node),
 		links:        make(map[string][]Link),
 		reverseLinks: make(map[string][]Link),
@@ -142,6 +157,10 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 	configGraph := newConfigGraph()
 	if err := gographviz.Analyse(graphAst, &configGraph); err != nil {
 		return conf, errors.Wrap(err, "failed to load config file")
+	}
+
+	if err := unmarshal.UnmarshalConfig(configGraph.attrs, &conf.opts, unmarshal.UnmarshalOpts{DisallowUnknownFields: true}); err != nil {
+		return conf, errors.Wrap(err, "failed to parse config file")
 	}
 
 	bus := NewKioraNodeBus(&configGraph, logger)
@@ -264,6 +283,20 @@ func (c *ConfigFile) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *ConfigFile) GetTenant(ctx context.Context, data config.Fielder) (config.Tenant, error) {
+	if c.opts.TenantKey == nil {
+		return "", nil
+	}
+
+	tenant := strings.Builder{}
+	err := c.opts.TenantKey.Execute(&tenant, data.Fields())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute tenant key template")
+	}
+
+	return config.Tenant(tenant.String()), nil
 }
 
 // HashSet is a helper type that manages a set of strings.

@@ -53,10 +53,6 @@ type Config interface {
 	// ValidateData returns an error that can be displayed to the user if the
 	// data is invalid according to whatever rules the config has.
 	ValidateData(ctx context.Context, data Fielder) error
-
-	// GetTenant returns the associated tenant for the given fielder, or an error if it
-	// cannot be ascertained. If multi-tenancy is _not_ enabled, then both the return values should be empty.
-	GetTenant(ctx context.Context, data Fielder) (Tenant, error)
 }
 
 // NotifierSettings represents a Notifier with additional settings. Such as grouping, and rate limiting settings.
@@ -95,4 +91,9 @@ func (n NotifierSettings) WithGroupWait(wait time.Duration) NotifierSettings {
 func (n NotifierSettings) WithNotifier(notifier Notifier) NotifierSettings {
 	n.Notifier = notifier
 	return n
+}
+
+type Tenanter interface {
+	// GetTenant returns the tenant that the given data belongs to.
+	GetTenant(ctx context.Context, data Fielder) (Tenant, error)
 }

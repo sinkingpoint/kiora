@@ -170,6 +170,23 @@ func (a *Alert) Acknowledge(ack *AlertAcknowledgement) error {
 	return nil
 }
 
+func (a *Alert) Fields() map[string]any {
+	fields := map[string]any{}
+
+	for k, v := range a.Labels {
+		fields[k] = v
+	}
+
+	fields["__id__"] = a.ID
+	fields["__status__"] = a.Status
+	fields["__starts_at__"] = a.StartTime
+	fields["__ends_at__"] = a.EndTime
+	fields["__timeout_deadline__"] = a.TimeOutDeadline
+	fields["__last_notify_time__"] = a.LastNotifyTime
+
+	return fields
+}
+
 func (a *Alert) Field(name string) (any, error) {
 	if val, ok := a.Labels[name]; ok {
 		return val, nil
