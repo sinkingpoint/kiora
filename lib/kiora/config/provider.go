@@ -2,6 +2,8 @@ package config
 
 import (
 	"context"
+	"strings"
+	"text/template"
 	"time"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
@@ -96,4 +98,25 @@ func (n NotifierSettings) WithNotifier(notifier Notifier) NotifierSettings {
 type Tenanter interface {
 	// GetTenant returns the tenant that the given data belongs to.
 	GetTenant(ctx context.Context, data Fielder) (Tenant, error)
+}
+
+// TemplateTenanter is a Tenanter that uses a template to generate the tenant.
+type TemplateTenanter struct {
+	Template *template.Template
+}
+
+// NewTemplateTenanter creates a new TemplateTenanter with the given template.
+func NewTemplateTenanter(t *template.Template) *TemplateTenanter {
+	return &TemplateTenanter{
+		Template: t,
+	}
+}
+
+func (t *TemplateTenanter) GetTenant(ctx context.Context, data Fielder) (Tenant, error) {
+	var tenant strings.Builder
+	if err := t.Template.Execute(&tenant, data.Fields()); err != nil {
+		return "", err
+	}
+
+	return Tenant(tenant.String()), nil
 }

@@ -15,6 +15,8 @@ type Globals struct {
 	httpClient *http.Client
 	logger     zerolog.Logger
 	templates  *template.Template
+
+	Tenanter Tenanter
 }
 
 // GlobalsOpt is the interface that can be passed to NewGlobals to configure
@@ -39,6 +41,13 @@ func WithLogger(logger zerolog.Logger) GlobalsOpt {
 func WithTemplates(templates *template.Template) GlobalsOpt {
 	return func(g *Globals) {
 		g.templates = templates
+	}
+}
+
+// WithTenanter sets the tenanter that will be returned by Tenanter.
+func WithTenanter(t Tenanter) GlobalsOpt {
+	return func(g *Globals) {
+		g.Tenanter = t
 	}
 }
 

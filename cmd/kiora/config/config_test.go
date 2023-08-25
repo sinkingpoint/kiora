@@ -43,6 +43,20 @@ func TestConfigLoad(t *testing.T) {
 			}`,
 			expectSuccess: false,
 		},
+		{
+			name: "tenant key",
+			config: `digraph Config {
+				tenant_key = "foo-{{ .tenant }}"
+			}`,
+			expectSuccess: true,
+		},
+		{
+			name: "unknown global",
+			config: `digraph Config {
+				foo = "bar"
+			}`,
+			expectSuccess: false,
+		},
 	}
 
 	for _, tt := range tests {
