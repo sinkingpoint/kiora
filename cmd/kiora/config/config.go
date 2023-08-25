@@ -24,8 +24,10 @@ const (
 	ACK_LEAF      = "acks"
 )
 
-var _ = config.Config(&ConfigFile{})
-var _ = config.Tenanter(&ConfigFile{})
+var (
+	_ = config.Config(&ConfigFile{})
+	_ = config.Tenanter(&ConfigFile{})
+)
 
 // Opts is the set of options that can be passed to the config file as top level options in the graph.
 type Opts struct {
@@ -163,7 +165,7 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 		return conf, errors.Wrap(err, "failed to parse config file")
 	}
 
-	bus := NewKioraNodeBus(&configGraph, logger)
+	globals := config.NewGlobals(config.WithLogger(logger), config.WithTemplates(template.New("")))
 
 	for _, rawNode := range configGraph.nodes {
 		nodeType := rawNode.attrs["type"]
@@ -172,7 +174,7 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 			return conf, fmt.Errorf("invalid node type: %q", nodeType)
 		}
 
-		node, err := cons(rawNode.name, bus, rawNode.attrs)
+		node, err := cons(rawNode.name, globals, rawNode.attrs)
 		if err != nil {
 			return conf, err
 		}

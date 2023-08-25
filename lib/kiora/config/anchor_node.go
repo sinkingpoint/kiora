@@ -1,7 +1,7 @@
 package config
 
 func init() {
-	RegisterNode("", func(name string, bus NodeBus, attrs map[string]string) (Node, error) {
+	RegisterNode("", func(name string, globals *Globals, attrs map[string]string) (Node, error) {
 		return &AnchorNode{}, nil
 	})
 }

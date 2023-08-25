@@ -37,7 +37,7 @@ type FileNotifier struct {
 	file    io.WriteCloser
 }
 
-func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node, error) {
+func New(name string, globals *config.Globals, attrs map[string]string) (config.Node, error) {
 	encodingName := DEFAULT_ENCODING
 	if enc, ok := attrs["encoding"]; ok {
 		encodingName = enc

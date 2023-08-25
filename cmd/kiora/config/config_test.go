@@ -75,19 +75,19 @@ func TestConfigAckFilter(t *testing.T) {
 		{
 			name: "bad email",
 			config: `digraph Config {
-				email_filter -> acks [type="regex" field="creator" regex=".*@example.com"];
+				email_filter -> acks [type="regex" field="__creator__" regex=".*@example.com"];
 			}`,
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@notanemail",
 			},
 			expectError: []string{
-				"field creator doesn't match",
+				"field __creator__ doesn't match",
 			},
 		},
 		{
 			name: "good email",
 			config: `digraph Config {
-				email_filter -> acks [type="regex" field="creator" regex=".*@example.com"];
+				email_filter -> acks [type="regex" field="__creator__" regex=".*@example.com"];
 			}`,
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@example.com",
@@ -100,14 +100,14 @@ func TestConfigAckFilter(t *testing.T) {
 				console [type="stdout"];
 				alerts -> console;
 
-				test_email -> test_comment [type="regex" field="creator" regex=".+@example.com"];
-				test_comment -> acks [type="regex" field="comment" regex=".+"];
+				test_email -> test_comment [type="regex" field="__creator__" regex=".+@example.com"];
+				test_comment -> acks [type="regex" field="__comment__" regex=".+"];
 			}`,
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@example.com",
 			},
 			expectError: []string{
-				"field comment doesn't match",
+				"field __comment__ doesn't match",
 			},
 		},
 		{
@@ -117,11 +117,11 @@ func TestConfigAckFilter(t *testing.T) {
 				// that should also be allowed to acknowledge alerts. To do this, we can specify multiple paths into the acks pseudonode.
 			
 				// First, the regular human path, which must have an email and a comment.
-				test_email -> test_comment [type="regex" field="creator" regex=".+@example.com"]; // First check the email
-				test_comment -> acks [type="regex" field="comment" regex=".+"]; // Then check the comment.
+				test_email -> test_comment [type="regex" field="__creator__" regex=".+@example.com"]; // First check the email
+				test_comment -> acks [type="regex" field="__comment__" regex=".+"]; // Then check the comment.
 			
 				// And then a bot path where we don't need a comment, if the from is RespectTables:
-				test_respect_tables -> acks [type="regex" field="creator" regex="RespectTables"];
+				test_respect_tables -> acks [type="regex" field="__creator__" regex="RespectTables"];
 			}`,
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@example.com",
@@ -136,11 +136,11 @@ func TestConfigAckFilter(t *testing.T) {
 				// that should also be allowed to acknowledge alerts. To do this, we can specify multiple paths into the acks pseudonode.
 			
 				// First, the regular human path, which must have an email and a comment.
-				test_email -> test_comment [type="regex" field="creator" regex=".+@example.com"]; // First check the email
-				test_comment -> acks [type="regex" field="comment" regex=".+"]; // Then check the comment.
+				test_email -> test_comment [type="regex" field="__creator__" regex=".+@example.com"]; // First check the email
+				test_comment -> acks [type="regex" field="__comment__" regex=".+"]; // Then check the comment.
 			
 				// And then a bot path where we don't need a comment, if the from is RespectTables:
-				test_respect_tables -> acks [type="regex" field="creator" regex="RespectTables"];
+				test_respect_tables -> acks [type="regex" field="__creator__" regex="RespectTables"];
 			}`,
 			ack: &model.AlertAcknowledgement{
 				Creator: "RespectTables",

@@ -21,7 +21,7 @@ func TestDurationFilter(t *testing.T) {
 		{
 			name: "test max duration",
 			attrs: map[string]string{
-				"field": "duration",
+				"field": "__duration__",
 				"max":   "1s",
 			},
 			silence: model.Silence{
@@ -33,7 +33,7 @@ func TestDurationFilter(t *testing.T) {
 		{
 			name: "test min duration",
 			attrs: map[string]string{
-				"field": "duration",
+				"field": "__duration__",
 				"min":   "1s",
 			},
 			silence: model.Silence{
@@ -45,7 +45,7 @@ func TestDurationFilter(t *testing.T) {
 		{
 			name: "test both",
 			attrs: map[string]string{
-				"field": "duration",
+				"field": "__duration__",
 				"min":   "1s",
 				"max":   "5h",
 			},

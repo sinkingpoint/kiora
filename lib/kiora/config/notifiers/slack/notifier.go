@@ -34,14 +34,14 @@ type slackPayload struct {
 
 // SlackNotifier is a notifier that sends alerts to a slack channel.
 type SlackNotifier struct {
-	name   config.NotifierName
-	bus    config.NodeBus
-	client *http.Client
+	name    config.NotifierName
+	globals *config.Globals
+	client  *http.Client
 
 	apiURL *unmarshal.MaybeSecretFile
 }
 
-func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node, error) {
+func New(name string, globals *config.Globals, attrs map[string]string) (config.Node, error) {
 	rawNode := struct {
 		ApiURL       *unmarshal.MaybeSecretFile `config:"api_url" required:"true"`
 		TemplateFile *unmarshal.MaybeFile       `config:"template_file"`
@@ -53,14 +53,14 @@ func New(name string, bus config.NodeBus, attrs map[string]string) (config.Node,
 		return nil, errors.Wrap(err, "failed to unmarshal config")
 	}
 
-	if err := bus.RegisterTemplate("slack", DefaultSlackTemplate); err != nil {
+	if err := globals.RegisterTemplate("slack", DefaultSlackTemplate); err != nil {
 		return nil, err
 	}
 
 	return &SlackNotifier{
-		name:   config.NotifierName(name),
-		bus:    bus,
-		client: bus.HTTPClient(),
+		name:    config.NotifierName(name),
+		globals: globals,
+		client:  globals.HTTPClient(),
 
 		apiURL: rawNode.ApiURL,
 	}, nil
@@ -75,7 +75,7 @@ func (s *SlackNotifier) Type() string {
 }
 
 func (s *SlackNotifier) Notify(ctx context.Context, alerts ...model.Alert) *config.NotificationError {
-	tmpl := s.bus.Template("slack")
+	tmpl := s.globals.Template("slack")
 	writer := strings.Builder{}
 	if err := tmpl.Execute(&writer, alerts); err != nil {
 		return &config.NotificationError{

@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterNode("group_wait", func(name string, bus NodeBus, attrs map[string]string) (Node, error) {
+	RegisterNode("group_wait", func(name string, globals *Globals, attrs map[string]string) (Node, error) {
 		rawDuration, ok := attrs["duration"]
 		if !ok {
 			return nil, errors.New("missing duration attribute for group_wait node")
@@ -21,7 +21,7 @@ func init() {
 		return NotifierGroupWait(duration), nil
 	})
 
-	RegisterNode("group_labels", func(name string, bus NodeBus, attrs map[string]string) (Node, error) {
+	RegisterNode("group_labels", func(name string, globals *Globals, attrs map[string]string) (Node, error) {
 		rawLabels, ok := attrs["labels"]
 		if !ok {
 			return nil, errors.New("missing labels attribute for group_labels node")
