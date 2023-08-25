@@ -11,17 +11,13 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 )
 
-func init() {
-	config.RegisterFilter("regex", NewRegexFilter)
-}
-
 // RegexFilter is a filter that matches if the given alert a) has the given label and b) that label matches a regex.
 type RegexFilter struct {
 	Label string         `config:"field" required:"true"`
 	Regex *regexp.Regexp `config:"regex" required:"true"`
 }
 
-func NewRegexFilter(attrs map[string]string) (config.Filter, error) {
+func NewFilter(globals *config.Globals, attrs map[string]string) (config.Filter, error) {
 	delete(attrs, "type")
 	var regexFilter RegexFilter
 	if err := unmarshal.UnmarshalConfig(attrs, &regexFilter, unmarshal.UnmarshalOpts{DisallowUnknownFields: true}); err != nil {

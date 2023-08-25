@@ -9,17 +9,13 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 )
 
-func init() {
-	config.RegisterFilter("duration", NewDurationFilter)
-}
-
 type DurationFilter struct {
 	Field string         `config:"field" required:"true"`
 	Max   *time.Duration `config:"max"`
 	Min   *time.Duration `config:"min"`
 }
 
-func NewDurationFilter(attrs map[string]string) (config.Filter, error) {
+func NewFilter(globals *config.Globals, attrs map[string]string) (config.Filter, error) {
 	delete(attrs, "type")
 	var durationFilter DurationFilter
 

@@ -47,6 +47,7 @@ func TestConfigLoad(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			config.RegisterNodes()
 			fileName := writeConfigFile(t, tt.config)
 			_, err := config.LoadConfigFile(fileName, zerolog.New(os.Stdout))
 			if tt.expectSuccess {
@@ -151,6 +152,7 @@ func TestConfigAckFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			config.RegisterNodes()
 			fileName := writeConfigFile(t, tt.config)
 			cfg, err := config.LoadConfigFile(fileName, zerolog.New(os.Stdout))
 			require.NoError(t, err)

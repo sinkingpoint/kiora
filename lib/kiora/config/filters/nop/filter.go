@@ -6,14 +6,10 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 )
 
-func init() {
-	config.RegisterFilter("", NewNopFilter)
-}
-
 // NopFilter is the default filter when a type is not specified. It does nothing and lets everything through.
 type NopFilter struct{}
 
-func NewNopFilter(attrs map[string]string) (config.Filter, error) {
+func NewFilter(globals *config.Globals, attrs map[string]string) (config.Filter, error) {
 	return &NopFilter{}, nil
 }
 

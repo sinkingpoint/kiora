@@ -54,7 +54,7 @@ func TestRegexFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			filter, err := regex.NewRegexFilter(map[string]string{
+			filter, err := regex.NewFilter(nil, map[string]string{
 				"field": tt.Label,
 				"regex": tt.Regex,
 			})

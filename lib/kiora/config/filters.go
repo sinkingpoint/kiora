@@ -25,7 +25,7 @@ type Fielder interface {
 }
 
 // FilterConstructor is a function that can construct a filter from a set of attributes.
-type FilterConstructor = func(attrs map[string]string) (Filter, error)
+type FilterConstructor = func(globals *Globals, attrs map[string]string) (Filter, error)
 
 var filterRegistry = map[string]FilterConstructor{}
 

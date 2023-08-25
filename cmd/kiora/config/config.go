@@ -190,7 +190,7 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 			return conf, fmt.Errorf("invalid link type: %q", linkType)
 		}
 
-		filter, err := cons(rawLink.attrs)
+		filter, err := cons(globals, rawLink.attrs)
 		if err != nil {
 			return conf, err
 		}
