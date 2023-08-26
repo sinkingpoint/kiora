@@ -13,14 +13,10 @@ func NewFilter(globals *config.Globals, attrs map[string]string) (config.Filter,
 	return &NopFilter{}, nil
 }
 
-func (n *NopFilter) Describe() string {
-	panic("BUG: Describe() called on NopFilter which can never reject a model.")
-}
-
 func (n *NopFilter) Type() string {
 	return "nop"
 }
 
-func (n *NopFilter) Filter(ctx context.Context, _ config.Fielder) bool {
-	return true
+func (n *NopFilter) Filter(ctx context.Context, _ config.Fielder) error {
+	return nil
 }

@@ -3,8 +3,6 @@ package config
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
 	"github.com/hashicorp/go-multierror"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 )
@@ -47,8 +45,8 @@ func searchForNode(ctx context.Context, graph *ConfigFile, fromNode, destination
 
 	var allErrs error
 	for _, link := range graph.links[fromNode] {
-		if !link.incomingFilter.Filter(ctx, data) {
-			allErrs = multierror.Append(allErrs, errors.New(link.incomingFilter.Describe()))
+		if err := link.incomingFilter.Filter(ctx, data); err != nil {
+			allErrs = multierror.Append(allErrs, err)
 			continue
 		}
 

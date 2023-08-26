@@ -2,11 +2,11 @@ package regex
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/grafana/regexp"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config/unmarshal"
 )
@@ -31,20 +31,19 @@ func (r *RegexFilter) Type() string {
 	return "regex"
 }
 
-func (r *RegexFilter) Describe() string {
-	return "field " + r.Label + " doesn't match " + r.Regex.String()
-}
-
-func (r *RegexFilter) Filter(ctx context.Context, f config.Fielder) bool {
+func (r *RegexFilter) Filter(ctx context.Context, f config.Fielder) error {
 	value, err := f.Field(r.Label)
 	if err != nil {
-		return false
+		return fmt.Errorf("failed to get field %q: %w", r.Label, err)
 	}
 
 	if label, ok := value.(string); ok {
-		return r.Regex.MatchString(label)
+		if r.Regex.MatchString(label) {
+			return nil
+		}
+
+		return fmt.Errorf("label %q does not match regex %q", label, r.Regex.String())
 	}
 
-	log.Warn().Str("field", r.Label).Interface("value", value).Msg("regex filter: field is not a string")
-	return false
+	return fmt.Errorf("label %q is not a string", r.Label)
 }

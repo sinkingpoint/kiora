@@ -80,7 +80,7 @@ func (c *ConfigFile) GetNotifiersForAlert(ctx context.Context, a *model.Alert) [
 		}
 
 		for _, link := range c.links[node.name] {
-			matchesFilter := link.incomingFilter == nil || link.incomingFilter.Filter(ctx, a)
+			matchesFilter := link.incomingFilter == nil || link.incomingFilter.Filter(ctx, a) != nil
 			if matchesFilter {
 				stack = append(stack, nodeMeta{
 					name:        link.to,

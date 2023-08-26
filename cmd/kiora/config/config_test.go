@@ -78,14 +78,14 @@ func TestConfigAckFilter(t *testing.T) {
 		name        string
 		config      string
 		ack         *model.AlertAcknowledgement
-		expectError []string
+		expectError bool
 	}{
 		{
 			name: "noop config",
 			config: `digraph Config {
 			}`,
 			ack:         &model.AlertAcknowledgement{},
-			expectError: nil,
+			expectError: false,
 		},
 		{
 			name: "bad email",
@@ -95,9 +95,7 @@ func TestConfigAckFilter(t *testing.T) {
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@notanemail",
 			},
-			expectError: []string{
-				"field __creator__ doesn't match",
-			},
+			expectError: true,
 		},
 		{
 			name: "good email",
@@ -107,7 +105,7 @@ func TestConfigAckFilter(t *testing.T) {
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@example.com",
 			},
-			expectError: nil,
+			expectError: false,
 		},
 		{
 			name: "two step validation",
@@ -121,9 +119,7 @@ func TestConfigAckFilter(t *testing.T) {
 			ack: &model.AlertAcknowledgement{
 				Creator: "colin@example.com",
 			},
-			expectError: []string{
-				"field __comment__ doesn't match",
-			},
+			expectError: true,
 		},
 		{
 			name: "multiple paths",
@@ -142,7 +138,7 @@ func TestConfigAckFilter(t *testing.T) {
 				Creator: "colin@example.com",
 				Comment: "I'm a human, I promise!",
 			},
-			expectError: nil,
+			expectError: false,
 		},
 		{
 			name: "multiple paths 2",
@@ -160,7 +156,7 @@ func TestConfigAckFilter(t *testing.T) {
 			ack: &model.AlertAcknowledgement{
 				Creator: "RespectTables",
 			},
-			expectError: nil,
+			expectError: false,
 		},
 	}
 
@@ -172,16 +168,10 @@ func TestConfigAckFilter(t *testing.T) {
 			require.NoError(t, err)
 
 			err = cfg.ValidateData(context.TODO(), tt.ack)
-			if tt.expectError == nil && err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if tt.expectError != nil && err == nil {
-				t.Fatal("expected error, got none")
-			}
-
-			for _, s := range tt.expectError {
-				require.Contains(t, err.Error(), s, "expected error to contain %q", s)
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

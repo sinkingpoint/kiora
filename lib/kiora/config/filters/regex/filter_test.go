@@ -61,7 +61,12 @@ func TestRegexFilter(t *testing.T) {
 
 			require.NoError(t, err)
 
-			require.Equal(t, tt.ShouldMatch, filter.Filter(context.TODO(), &tt.Alert))
+			err = filter.Filter(context.TODO(), &tt.Alert)
+			if tt.ShouldMatch {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 		})
 	}
 }

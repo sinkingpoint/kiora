@@ -61,8 +61,12 @@ func TestDurationFilter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			filter, err := duration.NewFilter(nil, tt.attrs)
 			require.NoError(t, err)
-			if success := filter.Filter(context.Background(), &tt.silence); success != tt.expectedSuccess {
-				t.Errorf("expected success: %t, but we didn't get it", tt.expectedSuccess)
+
+			matchesFilter := filter.Filter(context.Background(), &tt.silence) == nil
+			if tt.expectedSuccess {
+				require.True(t, matchesFilter)
+			} else {
+				require.False(t, matchesFilter)
 			}
 		})
 	}
