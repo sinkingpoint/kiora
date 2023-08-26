@@ -120,3 +120,19 @@ func (t *TemplateTenanter) GetTenant(ctx context.Context, data Fielder) (Tenant,
 
 	return Tenant(tenant.String()), nil
 }
+
+// StaticTenanter is a Tenanter that always returns the same tenant.
+type StaticTenanter struct {
+	Tenant Tenant
+}
+
+// NewStaticTenanter creates a new StaticTenanter with the given tenant.
+func NewStaticTenanter(tenant Tenant) *StaticTenanter {
+	return &StaticTenanter{
+		Tenant: tenant,
+	}
+}
+
+func (t *StaticTenanter) GetTenant(ctx context.Context, data Fielder) (Tenant, error) {
+	return t.Tenant, nil
+}
