@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
 	"github.com/sinkingpoint/kiora/internal/clustering"
@@ -56,6 +57,17 @@ func (a *APIImpl) GetAlerts(ctx context.Context, q query.AlertQuery) ([]model.Al
 }
 
 func (a *APIImpl) PostAlerts(ctx context.Context, alerts []model.Alert) error {
+	var postErr error
+	for i := range alerts {
+		if err := a.bus.Config().ValidateData(ctx, &alerts[i]); err != nil {
+			postErr = multierror.Append(postErr, err)
+		}
+	}
+
+	if postErr != nil {
+		return postErr
+	}
+
 	return a.bus.Broadcaster().BroadcastAlerts(ctx, alerts...)
 }
 

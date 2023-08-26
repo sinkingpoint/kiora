@@ -123,6 +123,8 @@ func (c *ConfigFile) ValidateData(ctx context.Context, data config.Fielder) erro
 		return c.validateData(ctx, ACK_LEAF, data)
 	case *model.Silence:
 		return c.validateData(ctx, SILENCES_LEAF, data)
+	case *model.Alert:
+		return c.validateData(ctx, ALERT_ROOT, data)
 	default:
 		panic("BUG: unhandled data validation")
 	}

@@ -15,10 +15,10 @@ As of when I wrote this, these are some of the notable features implemented in K
  - Alert Grouping
  - A basic UI
  - Alert Statistics
+ - Multi-Tenancy and Rate limiting
 
 Here's what I want to work on:
 
- - Multi-Tenancy and Rate limiting
  - Alert Histories
 
 ## Install
