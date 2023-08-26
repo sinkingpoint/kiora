@@ -61,6 +61,11 @@ func NewGlobals(opts ...GlobalsOpt) *Globals {
 	for _, opt := range opts {
 		opt(g)
 	}
+
+	if g.Tenanter == nil {
+		g.Tenanter = NewStaticTenanter("")
+	}
+
 	return g
 }
 

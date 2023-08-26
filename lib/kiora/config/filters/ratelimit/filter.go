@@ -93,9 +93,9 @@ type ratelimitBucket struct {
 // updateCount updates the token count based on the time since the last update.
 func (b *ratelimitBucket) updateCount() {
 	timeSinceLastUpdate := time.Since(b.lastUpdate)
-	newTokens := int(timeSinceLastUpdate / b.interval)
+	newTokens := float64(timeSinceLastUpdate) / float64(b.interval) * float64(b.rate)
 	if newTokens > 0 {
-		b.tokenCount += newTokens
+		b.tokenCount += int(newTokens)
 		b.lastUpdate = stubs.Time.Now()
 		if b.tokenCount > b.burst {
 			b.tokenCount = b.burst

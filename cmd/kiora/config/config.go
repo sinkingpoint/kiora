@@ -237,22 +237,6 @@ func (c *ConfigFile) validateConfIsAcyclic(roots map[string]struct{}) error {
 	return nil
 }
 
-// validateConfHasValidRoots makes sure that the config doesn't have any links going into the
-// nodes that are expected to be roots. Roots are expected to be entrypoints into the config,
-// like the POST alerts API, so things going into them doesn't make sense.
-func (c *ConfigFile) validateConfHasValidRoots(roots HashSet) error {
-	for _, link := range c.links {
-		for _, l := range link {
-			if _, ok := roots[l.to]; ok {
-				// We have a link into a root node, which is not allowed.
-				return fmt.Errorf("invalid link going into root node: %q", l.to)
-			}
-		}
-	}
-
-	return nil
-}
-
 // validateConfHasValidLeaves makes sure that the config doesn't have any links going out of the
 // nodes that are expected to be leaves. Leaves are expected to be the end of the config, so
 // things going out of them doesn't make sense.
@@ -272,10 +256,6 @@ func (c *ConfigFile) Validate() error {
 	leaves := toHashSet([]string{ACK_LEAF, SILENCES_LEAF})
 
 	if err := c.validateConfIsAcyclic(roots); err != nil {
-		return err
-	}
-
-	if err := c.validateConfHasValidRoots(roots); err != nil {
 		return err
 	}
 
