@@ -55,6 +55,9 @@ type Config interface {
 	// ValidateData returns an error that can be displayed to the user if the
 	// data is invalid according to whatever rules the config has.
 	ValidateData(ctx context.Context, data Fielder) error
+
+	// Globals returns the global settings for the config.
+	Globals() *Globals
 }
 
 // NotifierSettings represents a Notifier with additional settings. Such as grouping, and rate limiting settings.

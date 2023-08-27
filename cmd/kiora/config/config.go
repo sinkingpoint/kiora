@@ -44,6 +44,8 @@ type ConfigFile struct {
 
 	// reverseLinks is a map of node name to a list of links that go into that node, for backwards traversal.
 	reverseLinks map[string][]Link
+
+	globals *config.Globals
 }
 
 // GetNotifiersForAlert walks the config graph, building up notification settings as we go before returning a list
@@ -164,7 +166,7 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 		tenanter = config.NewTemplateTenanter(options.TenantKey)
 	}
 
-	globals := config.NewGlobals(config.WithLogger(logger), config.WithTenanter(tenanter))
+	conf.globals = config.NewGlobals(config.WithLogger(logger), config.WithTenanter(tenanter))
 
 	for _, rawNode := range configGraph.nodes {
 		nodeType := rawNode.attrs["type"]
@@ -173,7 +175,7 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 			return conf, fmt.Errorf("invalid node type: %q", nodeType)
 		}
 
-		node, err := cons(rawNode.name, globals, rawNode.attrs)
+		node, err := cons(rawNode.name, conf.globals, rawNode.attrs)
 		if err != nil {
 			return conf, err
 		}
@@ -189,7 +191,7 @@ func LoadConfigFile(path string, logger zerolog.Logger) (*ConfigFile, error) {
 			return conf, fmt.Errorf("invalid link type: %q", linkType)
 		}
 
-		filter, err := cons(globals, rawLink.attrs)
+		filter, err := cons(conf.globals, rawLink.attrs)
 		if err != nil {
 			return conf, err
 		}
@@ -264,6 +266,10 @@ func (c *ConfigFile) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *ConfigFile) Globals() *config.Globals {
+	return c.globals
 }
 
 // HashSet is a helper type that manages a set of strings.

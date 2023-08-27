@@ -20,6 +20,7 @@ import (
 	"github.com/sinkingpoint/kiora/internal/server/api/apiv1"
 	"github.com/sinkingpoint/kiora/internal/server/api/promcompat"
 	"github.com/sinkingpoint/kiora/internal/server/frontend"
+	"github.com/sinkingpoint/kiora/internal/server/metrics"
 	"github.com/sinkingpoint/kiora/internal/services"
 	"github.com/sinkingpoint/kiora/internal/services/notify"
 	"github.com/sinkingpoint/kiora/internal/services/notify/notify_config"
@@ -134,6 +135,9 @@ func (k *KioraServer) listenAndServeHTTP(ctx context.Context) error {
 	api := api.NewAPIImpl(k.bus, k.clusterer)
 	apiv1.Register(router, api, k.serverConfig.Logger)
 	promcompat.Register(router, api, k.serverConfig.Logger)
+
+	metrics.RegisterMetricsCollectors(k.ServiceConfig.Globals(), k.bus.DB())
+	metrics.Register(router)
 
 	frontend.Register(router)
 

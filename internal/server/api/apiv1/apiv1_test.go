@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/sinkingpoint/kiora/internal/server/api"
@@ -21,6 +22,7 @@ import (
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb"
 	"github.com/sinkingpoint/kiora/lib/kiora/kioradb/query"
 	"github.com/sinkingpoint/kiora/lib/kiora/model"
+	"github.com/sinkingpoint/kiora/mocks/mock_config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -141,9 +143,10 @@ func TestPostAlerts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
 			db := &mockDB{}
 			api := apiv1.New(
-				api.NewAPIImpl(services.NewKioraBus(db, db, zerolog.New(os.Stderr), nil), nil),
+				api.NewAPIImpl(services.NewKioraBus(db, db, zerolog.New(os.Stderr), mock_config.NewMockConfigAllowingEverything(ctrl)), nil),
 				zerolog.New(os.Stderr),
 			)
 

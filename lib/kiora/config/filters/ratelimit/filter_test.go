@@ -3,9 +3,10 @@ package ratelimit_test
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
+
+	"go.uber.org/atomic"
 
 	"github.com/sinkingpoint/kiora/lib/kiora/config"
 	"github.com/sinkingpoint/kiora/lib/kiora/config/filters/ratelimit"
@@ -51,7 +52,6 @@ func TestRatelimitConcurrency(t *testing.T) {
 	filter, err := ratelimit.NewFilter(globals, map[string]string{
 		"interval": "30s",
 		"rate":     "200",
-		"burst":    "2",
 	})
 
 	require.NoError(t, err)

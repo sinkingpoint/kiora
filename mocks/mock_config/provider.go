@@ -106,6 +106,20 @@ func (mr *MockConfigMockRecorder) GetNotifiersForAlert(ctx, alert interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotifiersForAlert", reflect.TypeOf((*MockConfig)(nil).GetNotifiersForAlert), ctx, alert)
 }
 
+// Globals mocks base method.
+func (m *MockConfig) Globals() *config.Globals {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Globals")
+	ret0, _ := ret[0].(*config.Globals)
+	return ret0
+}
+
+// Globals indicates an expected call of Globals.
+func (mr *MockConfigMockRecorder) Globals() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Globals", reflect.TypeOf((*MockConfig)(nil).Globals))
+}
+
 // ValidateData mocks base method.
 func (m *MockConfig) ValidateData(ctx context.Context, data config.Fielder) error {
 	m.ctrl.T.Helper()
