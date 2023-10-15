@@ -36,12 +36,12 @@ export const parseMatcher = (matcher: string): Matcher | null => {
 };
 
 export interface LabelMatcherCardProps {
-    matcher: string;
-    onDelete?: () => void;
+	matcher: string;
+	onDelete?: () => void;
 }
 
 // LabelMatcher takes a matcher string and returns a span element that displays the matcher.
-const LabelMatcherCard = ({matcher, onDelete}: LabelMatcherCardProps) => {
+const LabelMatcherCard = ({ matcher, onDelete }: LabelMatcherCardProps) => {
 	const { label, value, isRegex, isNegative } = parseMatcher(matcher);
 	let operator = "";
 
@@ -57,9 +57,11 @@ const LabelMatcherCard = ({matcher, onDelete}: LabelMatcherCardProps) => {
 	return (
 		<span className={style["label-matcher"]}>
 			{label} {operator} {value}
-			{canBeEdited && <button type="button" onClick={onDelete} class={style["delete-label-button"]}>
-				🞫
-			</button>}
+			{canBeEdited && (
+				<button type="button" onClick={onDelete} class={style["delete-label-button"]}>
+					🞫
+				</button>
+			)}
 		</span>
 	);
 };

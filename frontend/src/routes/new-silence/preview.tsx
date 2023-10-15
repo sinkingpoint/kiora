@@ -47,17 +47,10 @@ const PreviewPage = ({ duration, creator, comment, matchers }: PreviewPageProps)
 
 	const endDate = getSilenceEnd(duration);
 	const end =
-		endDate !== null ? (
-			<span>
-				Ends at{" "}
-				{formatDate(endDate)}
-			</span>
-		) : (
-			<span>Invalid duration</span>
-		);
-	
+		endDate !== null ? <span>Ends at {formatDate(endDate)}</span> : <span>Invalid duration</span>;
+
 	const filterSpans = matchers.map((filter) => {
-		return <LabelMatcherCard key={filter} matcher={filter} />
+		return <LabelMatcherCard key={filter} matcher={filter} />;
 	});
 
 	return (
@@ -95,21 +88,21 @@ const PreviewPage = ({ duration, creator, comment, matchers }: PreviewPageProps)
 			</div>
 
 			<Loader loader={fetchAffectedAlerts}>
-					<>
-						<div>
-							<h2>
-								{alerts.length} affected alert{alerts.length != 1 && "s"}
-							</h2>
-						</div>
-						<div style={{ display: "flex", flexDirection: "column" }}>
-							{alerts.slice(0, MaxAlertsToDisplay).map((alert) => (
-								<AlertCard key={alert.id} alert={alert} />
-							))}
-							{alerts.length > MaxAlertsToDisplay && (
-								<div>...and {alerts.length - MaxAlertsToDisplay} more</div>
-							)}
-						</div>
-					</>
+				<>
+					<div>
+						<h2>
+							{alerts.length} affected alert{alerts.length != 1 && "s"}
+						</h2>
+					</div>
+					<div style={{ display: "flex", flexDirection: "column" }}>
+						{alerts.slice(0, MaxAlertsToDisplay).map((alert) => (
+							<AlertCard key={alert.id} alert={alert} />
+						))}
+						{alerts.length > MaxAlertsToDisplay && (
+							<div>...and {alerts.length - MaxAlertsToDisplay} more</div>
+						)}
+					</div>
+				</>
 			</Loader>
 		</>
 	);

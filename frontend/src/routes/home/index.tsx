@@ -4,7 +4,7 @@ import { DefaultService } from "../../api";
 import AlertList from "../../components/alertlist";
 import SingleStatPanel from "../../components/stats/single_stat_panel";
 import styles from "./styles.css";
-import Spinner from "../../components/spinner";
+import Loader from "../../components/loader";
 
 interface StatsState {
 	firingAlerts: number;
@@ -60,29 +60,23 @@ const StatsRow = () => {
 			});
 	};
 
-	useEffect(() => {
-		if (stats.loading) {
-			fetchStats();
-		}
-	});
-
-	if (stats.loading) {
-		return <Spinner />;
-	}
+	let content: JSX.Element;
 
 	if (stats.error) {
-		return <div>{stats.error}</div>;
+		content = <div>{stats.error}</div>;
+	} else {
+		content = (
+			<div class={styles.row}>
+				<SingleStatPanel title="Firing Alerts" value={stats.firingAlerts.toString()} />
+				<SingleStatPanel title="Silenced Alerts" value={stats.silencedAlerts.toString()} />
+				<SingleStatPanel title="Acked Alerts" value={stats.ackedAlerts.toString()} />
+				<SingleStatPanel title="Resolved Alerts" value={stats.resolvedAlerts.toString()} />
+				<SingleStatPanel title="Timed Out Alerts" value={stats.timedOutAlerts.toString()} />
+			</div>
+		);
 	}
 
-	return (
-		<div class={styles.row}>
-			<SingleStatPanel title="Firing Alerts" value={stats.firingAlerts.toString()} />
-			<SingleStatPanel title="Silenced Alerts" value={stats.silencedAlerts.toString()} />
-			<SingleStatPanel title="Acked Alerts" value={stats.ackedAlerts.toString()} />
-			<SingleStatPanel title="Resolved Alerts" value={stats.resolvedAlerts.toString()} />
-			<SingleStatPanel title="Timed Out Alerts" value={stats.timedOutAlerts.toString()} />
-		</div>
-	);
+	return <Loader loader={fetchStats}>{content}</Loader>;
 };
 
 const Home = () => {

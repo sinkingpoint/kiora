@@ -51,23 +51,22 @@ const CreatePage = ({ onPreview }: CreatePageProps) => {
 
 	const endDate = getSilenceEnd(duration);
 	const end =
-		endDate !== null ? (
-			<span>
-				Ends at{" "}
-				{formatDate(endDate)}
-			</span>
-		) : (
-			<span>Invalid duration</span>
-		);
+		endDate !== null ? <span>Ends at {formatDate(endDate)}</span> : <span>Invalid duration</span>;
 
 	// filterSpans is an array of spans that display the label matchers.
 	const filterSpans = matchers.map((matcher, i) => {
-		return <LabelMatcherCard key={matcher} matcher={matcher} onDelete={() => {
-			const newFilters = [...matchers];
-			newFilters.splice(i, 1);
-			setFilterInURL(newFilters);
-			setMatchers(newFilters);
-		}} />
+		return (
+			<LabelMatcherCard
+				key={matcher}
+				matcher={matcher}
+				onDelete={() => {
+					const newFilters = [...matchers];
+					newFilters.splice(i, 1);
+					setFilterInURL(newFilters);
+					setMatchers(newFilters);
+				}}
+			/>
+		);
 	});
 
 	return (

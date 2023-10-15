@@ -3,12 +3,11 @@ import { useEffect, useState } from "preact/hooks";
 import { Alert, DefaultService } from "../../api";
 import Single from "../alertcard";
 import styles from "./styles.css";
-import Spinner from "../spinner";
+import Loader from "../loader";
 
 interface AlertViewState {
 	alerts: Alert[];
 	error?: string;
-	loading: boolean;
 }
 
 interface ErrorViewProps {
@@ -37,40 +36,37 @@ const SuccessView = ({ alerts }: SuccessViewProps) => {
 const AlertList = () => {
 	const [alerts, setAlerts] = useState<AlertViewState>({
 		alerts: [],
-		loading: true,
 	});
 
-	useEffect(() => {
-		const fetchAlerts = async () => {
-			await DefaultService.getAlerts({ sort: ["__starts_at__"], order: "DESC", limit: 100 })
-				.then((newAlerts) => {
-					setAlerts({
-						...alerts,
-						alerts: newAlerts,
-						loading: false,
-					});
-				})
-				.catch((error) => {
-					setAlerts({
-						...alerts,
-						error: error.toString(),
-						loading: false,
-					});
+	const fetchAlerts = async () => {
+		await DefaultService.getAlerts({ sort: ["__starts_at__"], order: "DESC", limit: 100 })
+			.then((newAlerts) => {
+				setAlerts({
+					alerts: newAlerts,
+					error: "",
 				});
-		};
+			})
+			.catch((error) => {
+				setAlerts({
+					alerts: [],
+					error: error.toString(),
+				});
+			});
+	};
 
-		if (alerts.loading) {
-			fetchAlerts();
-		}
-	}, [alerts]);
+	let contents: JSX.Element;
 
-	if (alerts.loading) {
-		return <Spinner />;
-	} else if (alerts.error) {
-		return <ErrorView error={alerts.error} />;
+	if (alerts.error) {
+		contents = <ErrorView error={alerts.error} />;
+	} else {
+		contents = <SuccessView alerts={alerts.alerts} />;
 	}
 
-	return <SuccessView alerts={alerts.alerts} />;
+	return (
+		<Loader loader={fetchAlerts} inputs={[alerts, setAlerts]}>
+			{contents}
+		</Loader>
+	);
 };
 
 export default AlertList;

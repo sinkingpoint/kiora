@@ -11,7 +11,7 @@ interface LoaderProps {
 const Loader = ({ loader, inputs, children }: LoaderProps) => {
 	const [loaded, setLoaded] = useState(false);
 
-	if(!inputs) {
+	if (!inputs) {
 		inputs = [];
 	}
 
