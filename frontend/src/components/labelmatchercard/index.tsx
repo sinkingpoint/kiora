@@ -6,12 +6,14 @@ import { Matcher } from "../../api";
 export const parseMatcher = (matcher: string): Matcher | null => {
 	const matcherMatches = matcher.match(/([a-zA-Z0-9_]+)(!=|!~|=~|=)"(.*)"/);
 	if (matcherMatches === null) {
+		console.log("Invalid matcher", matcher);
 		return null;
 	}
 
 	const validOperators = ["=", "!=", "=~", "!~"];
 	const operator = matcherMatches[2];
 	if (!validOperators.includes(operator)) {
+		console.log("Invalid operator for matcher", matcher);
 		return null;
 	}
 
@@ -20,6 +22,7 @@ export const parseMatcher = (matcher: string): Matcher | null => {
 		try {
 			new RegExp(matcherMatches[3]);
 		} catch {
+			console.log("Invalid regex for matcher", matcher);
 			return null;
 		}
 	}
@@ -36,13 +39,21 @@ export const parseMatcher = (matcher: string): Matcher | null => {
 };
 
 export interface LabelMatcherCardProps {
-	matcher: string;
+	matcher: string | Matcher;
 	onDelete?: () => void;
 }
 
 // LabelMatcher takes a matcher string and returns a span element that displays the matcher.
 const LabelMatcherCard = ({ matcher, onDelete }: LabelMatcherCardProps) => {
-	const { label, value, isRegex, isNegative } = parseMatcher(matcher);
+	if(typeof matcher === "string") {
+		matcher = parseMatcher(matcher);
+		if(matcher === null) {
+			return <span>Invalid matcher</span>;
+		}
+	}
+
+	const { label, value, isRegex, isNegative } = matcher;
+
 	let operator = "";
 
 	if (isRegex) {
@@ -51,7 +62,6 @@ const LabelMatcherCard = ({ matcher, onDelete }: LabelMatcherCardProps) => {
 		operator = isNegative ? "!=" : "=";
 	}
 
-	console.log(onDelete);
 	const canBeEdited = onDelete !== undefined;
 
 	return (

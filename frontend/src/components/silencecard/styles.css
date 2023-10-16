@@ -1,0 +1,24 @@
+.single {
+	padding: 10px;
+	border-radius: 5px;
+	border: solid var(--border);
+	margin: 10px;
+}
+
+.single-top {
+	font-size: 1em;
+	font-weight: bold;
+	color: var(--text);
+	padding-left: 10px;
+}
+
+.labels {
+	margin-top: 5px;
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.alert-link {
+	color: inherit;
+	text-decoration: inherit;
+}

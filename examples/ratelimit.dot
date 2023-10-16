@@ -1,5 +1,5 @@
 digraph {
-    tenant_key = "";
+    tenant_key = "{{ .alertname }}";
     // Ratelimit alerts to 300 per 30 seconds per tenant.
     ratelimit -> alerts [type="ratelimit" rate="300" interval="30s"];
 }
